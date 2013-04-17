@@ -4,7 +4,7 @@ module EMTparms_class
     type EMTparms
         character(2)::  name    = 'Whatever'
 
-        real(8)       ::  eta2    = 1
+        real(8)       ::  eta2    = 8
         real(8)       ::  kappa   = 2
         real(8)       ::  lambda  = 3
 
