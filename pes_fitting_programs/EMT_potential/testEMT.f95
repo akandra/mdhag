@@ -12,12 +12,12 @@ program testAtomClass
     namelist / particle_pars_list / particle_pars
 
     ! Read in the lattice parameters
-    open(8,file='parameters_Au_f118.nml')
+    open(8,file='parameters_Au_f119.nml')
     read(8,nml=lattice_pars_list)
     write(*,*) lattice_pars
     close(8)
     ! Read in the particle parameters
-    open(8,file='parameters_H_f118.nml')
+    open(8,file='parameters_H_f119.nml')
     read(8,nml=particle_pars_list)
     write(*,*) particle_pars
     close(8)
