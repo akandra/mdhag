@@ -3,6 +3,7 @@ program testAtomClass
     use atom_class
     use EMTparms_class
     implicit none
+
     ! Data directory: declare variables and types
     type (atom)                          :: particle
     type (atom), allocatable,dimension(:):: lattice

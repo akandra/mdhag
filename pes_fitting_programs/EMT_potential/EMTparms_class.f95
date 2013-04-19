@@ -2,9 +2,15 @@ module EMTparms_class
 
 use atom_class
 
+    real(8), parameter :: sqrt_2 = 1.41421356237
+    real(8), parameter :: sqrt_3 = 1.73205080757
+    real(8), parameter :: isqrt_2 = 0.70710678118
+    real(8), parameter :: pi = 3.14159265359
+    real(8), parameter :: beta = 1.8093997906
+    integer, dimension(3), parameter :: b = (/12, 6, 24/)
+
     type EMTparms
         character(2)::  name    = 'RV'
-
 
         real(8)       ::  eta2    = 0.d0   ! A^-1
         real(8)       ::  kappa   = 0.d0   ! A^-1
@@ -43,58 +49,82 @@ implicit none
     real(8), intent(out)                :: energy
 
 ! declare the variables that appear in the program
-    real(8), parameter :: beta = 1.8093997906
-    real(8), parameter :: bohr = 0.529177
 
-
-    integer :: i,j                           ! running parameter
+    integer :: n_AuAu                        ! number of elements under diagonal
+    integer :: i,j, k                        ! running parameter
     real(8), dimension(n_Au) :: r_HAu        ! distance between H and Au
-    real(8), dimension(n_Au,1) :: r_AuAu       ! distance between Au and Au
+    real(8), dimension(n_Au*(n_Au-1)/2) :: r_AuAu       ! distance between Au and Au
     real(8) :: rcut, rr, acut                ! values to calculate cut-off
-    real(8), dimension(n_Au,1) :: xAu              ! help-array to calculate theta
-    real(8), dimension(n_Au) :: xH
-    real(8), dimension(n_Au,1) :: thetaAu    ! cut-off theta
-    real(8), dimension(n_Au) :: thetaH       ! cut-off theta
-    real(8), dimension(n_Au,1,3) :: xiAu     ! Array for gamma-calculation for Au
-    real(8), dimension(n_Au,3) :: xiH        ! Array for gamma-calculation for H
+    real(8) :: thetaH, gamma1H, gamma2H
+    real(8) :: thetaAu, gamma1Au, gamma2Au
+    real(8), dimension(3) :: xAu, xH, rnnAu, rnnH
+    real(8) :: rtemp, betas0_l, betas0_p     ! temporary real variables
+    real(8), dimension(3) :: r3temp
 
-    real(8),dimension(n_Au,1) :: tempAu=0    ! dummy array for Gold
-    real(8), dimension(n_Au) :: tempH=0      ! dummy array for hydrogen
+
+
+    n_AuAu = n_Au*(n_Au-1)/2
+    ! calculate r_HAu and r_AuAu
+    do i = 1, n_Au
+        r_HAu(i) = sqrt((r0_lat(1,i)-r0_part(1))**2+&
+                        (r0_lat(2,i)-r0_part(2))**2+&
+                        (r0_lat(3,i)-r0_part(3))**2)
+        k = (i - 1)*(n_Au - i/2) - i
+        do j = i+1, n_Au
+            r_AuAu(j+k) = sqrt((r0_lat(1,i)-r0_lat(1,j))**2+&
+                               (r0_lat(2,i)-r0_lat(2,j))**2+&
+                               (r0_lat(3,i)-r0_lat(3,j))**2)
+        end do
+    end do
 
 
 ! calculate cut-off
-    rcut = pars_l%s0 * beta * sqrt(3.)
-    rr = 4. * rcut / (sqrt(3.) + 2.)
-    acut = log(9999.)/(rr -rcut)
+! FUTURE REVISION: cut-off should be defined via lattice constant _AND_ changeable.
 
-    ! calculate r_HAu and r_AuAu
-    rHauloop: do i = 1, n_Au
+    betas0_l = beta * pars_l%s0
+    betas0_p = beta * pars_p%s0
 
-            r_HAu(i) = sqrt((r0_lat(1,i)+r0_part(1))**2+(r0_lat(2,i)+r0_part(2))**2+(r0_lat(3,i)+r0_part(3))**2)
+    rcut = betas0_l * sqrt_3
+    rr = 4 * rcut / (sqrt_3 + 2)
+    acut = 9.21024/(rr -rcut) ! ln(10000)
 
-    end do rHauloop
+    rnnAu(1) = betas0_l
+    rnnAu(2) = rnnAu(1) * sqrt_2
+    rnnAu(3) = rnnAu(1) * sqrt_3
+    rnnH(1) = betas0_p
+    rnnH(2) = rnnH(1) * sqrt_2
+    rnnH(3) = rnnH(1) * sqrt_3
 
-! Start here with first Au-loop. Which views everything from the perspective of the 45th gold atom since that one is pretty much in the middle of the
-!   first layer and it's gonna be replaced by a j, anyway (or, by another layer-implementation).
-    rAuAuloop1: do i = 1, n_Au
-                    r_AuAu(i,1) = sqrt((r0_lat(1,i)-r0_lat(1,45))**2+(r0_lat(2,i)-r0_lat(2,45))**2+(r0_lat(3,i)-r0_lat(3,45))**2)
+    xAu = b / (12 * (1 + exp(acut*(rnnAu-rcut))))
+    xH = b / (12 * (1 + exp(acut*(rnnH-rcut))))
+
+ ! Definition of gamma
+    r3temp = rnnAu-betas0_l
+    gamma1Au = sum(xAu*exp(-pars_l%eta2 * r3temp))
+    gamma2Au = sum(xAu*exp(-pars_l%kappa/beta * r3temp))
+
+    r3temp = rnnH-betas0_p
+    gamma1H = sum(xH*exp(-pars_p%eta2 * r3temp))
+    gamma2H = sum(xH*exp(-pars_p%kappa/beta * r3temp))
+
+    print *, gamma1H, gamma2H
+
+    Auloop: do i = 1, n_Au
 
 
 ! calculate theta
-                    xAu(i,1) =exp( acut * (r_AuAu(i,1) - rcut) )
-                    thetaAu(i,1) = 1 / (1 + xAu(i,1))
+        thetaAu = 1 / (1 + exp( acut * (r_AuAu(i) - rcut) ) )!
 
-                    xH(i) = exp( acut * (r_HAu(i) - rcut) )
-                    thetaH(i) = 1 / (1 + xH(i))
+        thetaH = 1 / (1 + exp( acut * (r_HAu(i) - rcut) ))
 
 ! Calculate Gamma (this is not finished and will turn out to be rather vexing)
-                    rAunn = pars%s0 * beta / 1
-                    xiAu(i,1,1) = 1 / ( 1 + exp( acut (rAunn) ) )
-                    tempAu=
-                    write(*,*) thetaAu, thetaH
+!                    rAunn = pars%s0 * beta / 1
+!                    xiAu(i,1,1) = 1 / ( 1 + exp( acut (rAunn) ) )
+ !                   tempAu=
+ !                   write(*,*) thetaAu, thetaH
 
 
-    end do rAuAuloop1
+    end do Auloop
 
 
 end subroutine emt_init
