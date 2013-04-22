@@ -25,7 +25,7 @@ use atom_class
 
 contains
 
-subroutine emt_init (n_Au, r0_lat, r0_part, pars_p, pars_l, energy)
+subroutine emt_init (cell, n_Au, r0_lat, r0_part, pars_p, pars_l, energy)
 !
 ! Purpose:
 !           Here, the fitting procedure is just implemented and the reference energy calculated.
@@ -41,6 +41,7 @@ implicit none
 !    type(atom), intent (in)  :: particle, lattice(:)
 !    real(8), dimension(:,:), intent (in) :: r0
 !    type(EMTparms),   intent (in)  :: pars_p, pars_l
+    real(8), dimension(3), intent(in)   :: cell
     integer, intent(in)                 :: n_Au
     real(8), dimension(3), intent (in)  :: r0_part
     real(8), dimension(:,:), intent(in) :: r0_lat
@@ -50,39 +51,24 @@ implicit none
 
 ! declare the variables that appear in the program
 
-    integer :: n_AuAu                        ! number of elements under diagonal
     integer :: i,j, k                        ! running parameter
-    real(8), dimension(n_Au) :: r_HAu        ! distance between H and Au
-    real(8), dimension(n_Au*(n_Au-1)/2) :: r_AuAu       ! distance between Au and Au
+    real(8) :: r                             ! distance
     real(8) :: rcut, rr, acut                ! values to calculate cut-off
-    real(8) :: thetaH, gamma1H, gamma2H
-    real(8) :: thetaAu, gamma1Au, gamma2Au
+    real(8) :: gamma1H, gamma2H, Ecoh
+    real(8) :: theta, gamma1Au, gamma2Au, chiAuH
+    real(8) :: sigma_HAu, s_H
+    real(8), dimension(n_Au) :: sigma_AuAu, sigma_AuH, s_Au
     real(8), dimension(3) :: xAu, xH, rnnAu, rnnH
     real(8) :: rtemp, betas0_l, betas0_p     ! temporary real variables
     real(8), dimension(3) :: r3temp
-
-
-
-    n_AuAu = n_Au*(n_Au-1)/2
-    ! calculate r_HAu and r_AuAu
-    do i = 1, n_Au
-        r_HAu(i) = sqrt((r0_lat(1,i)-r0_part(1))**2+&
-                        (r0_lat(2,i)-r0_part(2))**2+&
-                        (r0_lat(3,i)-r0_part(3))**2)
-        k = (i - 1)*(n_Au - i/2) - i
-        do j = i+1, n_Au
-            r_AuAu(j+k) = sqrt((r0_lat(1,i)-r0_lat(1,j))**2+&
-                               (r0_lat(2,i)-r0_lat(2,j))**2+&
-                               (r0_lat(3,i)-r0_lat(3,j))**2)
-        end do
-    end do
-
 
 ! calculate cut-off
 ! FUTURE REVISION: cut-off should be defined via lattice constant _AND_ changeable.
 
     betas0_l = beta * pars_l%s0
     betas0_p = beta * pars_p%s0
+
+    chiAuH = pars_p%n0 / pars_l%n0
 
     rcut = betas0_l * sqrt_3
     rr = 4 * rcut / (sqrt_3 + 2)
@@ -107,24 +93,65 @@ implicit none
     gamma1H = sum(xH*exp(-pars_p%eta2 * r3temp))
     gamma2H = sum(xH*exp(-pars_p%kappa/beta * r3temp))
 
-    print *, gamma1H, gamma2H
 
-    Auloop: do i = 1, n_Au
+! Here, the main loop starts.
+
+    sigma_AuAu = 0
+    sigma_HAu = 0
+
+    do i = 1, n_Au
+    ! calculate r_HAu and r_AuAu. Now we have periodic boundery conditions, too. Muhahahaha!
+
+        do j = i+1, n_Au
+
+            r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
+            r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
+            r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
+            r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
+            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
+            r =  sqrt(sum(r3temp**2))
+
+            ! calculate theta for lattice
+            theta = 1 / (1 + exp( acut * (r - rcut) ) )
+
+            ! calculate sigma
+            rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
+            sigma_AuAu(i) = sigma_AuAu(i) + rtemp
+            sigma_AuAu(j) = sigma_AuAu(j) + rtemp
+        end do
+
+        r3temp(1) = r0_lat(1,i)-r0_part(1)
+        r3temp(2) = r0_lat(2,i)-r0_part(2)
+        r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
+        r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
+        r3temp(3) = r0_lat(3,i)-r0_part(3)
+        r =  sqrt(sum(r3temp**2))
+
+        ! calculate theta
+        theta = 1 / (1 + exp( acut * (r - rcut) ) )
+
+        ! calculate sigma
+        sigma_AuH(i) = theta*exp(-pars_p%eta2 * (r - betas0_p) )
+        rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
+        sigma_HAu = sigma_HAu + rtemp
+
+    end do
+
+    ! don't forget the gamma
+    sigma_AuAu = sigma_AuAu / gamma1Au
+    sigma_AuH = sigma_AuH / gamma1Au
+    sigma_HAu = sigma_HAu / gamma1H
+
+    ! calculation of s
+    s_Au = -log( (sigma_AuAu + chiAuH * sigma_AuH) / 12 ) / ( beta * pars_l%eta2)
+    s_H  = -log( sigma_HAu / (12*chiAuH) ) / ( beta * pars_p%eta2)
+
+    ! calculation of cohesive function
+    Ecoh = sum( (1 + pars_l%lambda*s_Au) * exp(-pars_l%lambda * s_Au)-1 ) * pars_l%E0&
+            + (1 + pars_p%lambda*s_H) * exp(-pars_p%lambda * s_H)* pars_p%E0
 
 
-! calculate theta
-        thetaAu = 1 / (1 + exp( acut * (r_AuAu(i) - rcut) ) )!
-
-        thetaH = 1 / (1 + exp( acut * (r_HAu(i) - rcut) ))
-
-! Calculate Gamma (this is not finished and will turn out to be rather vexing)
-!                    rAunn = pars%s0 * beta / 1
-!                    xiAu(i,1,1) = 1 / ( 1 + exp( acut (rAunn) ) )
- !                   tempAu=
- !                   write(*,*) thetaAu, thetaH
-
-
-    end do Auloop
+    print *, Ecoh
 
 
 end subroutine emt_init

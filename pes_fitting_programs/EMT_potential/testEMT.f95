@@ -24,6 +24,7 @@ program testAtomClass
     integer :: i                    ! running integer to read in reference lattice
     real(8) :: nn0                  ! next neighbour distance in reference slab
     real(8) :: a0                   ! lattice constant
+    real(8), dimension(3) :: cell   ! dimensions of the cell
 
 
     reference_configuration_fname='ref_conf_Au111a.dat'
@@ -45,6 +46,8 @@ program testAtomClass
                     read(8, *) n_lat0_at
                     read(8,*) n_lay0
                     read(8,*) nn0
+                    read(8,*) cell(1)
+                    read(8,*) cell(2)
                     ! read in the values for r0_lat
                     allocate(r0_lat(3,n_lat0_at))
 !                    allocate(r0_lat(3,2))
@@ -55,7 +58,7 @@ program testAtomClass
                     r0_part = (/0.0, 0.0, 6.0/)
 !                    print *, r0_lat
 !                    print *, n_lat0_at, n_lay0, nn0, r0_part
-                    call emt_init(n_lat0_at,r0_lat, r0_part, particle_pars, lattice_pars, energy)
+                    call emt_init(cell, n_lat0_at,r0_lat, r0_part, particle_pars, lattice_pars, energy)
                     print *, energy
 
     end if openif
