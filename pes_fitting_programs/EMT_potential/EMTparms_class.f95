@@ -277,7 +277,7 @@ end subroutine emt_init
 
 
 
-subroutine emt (particle, lattice, r0, pars_p, pars_l, energy)
+subroutine emt (cell, n_l, r0_lat, r_part, pars_p, pars_l, energy)
 !
 ! Purpose:
 !       emt calculates the energy according to the effective medium theory.
@@ -300,12 +300,12 @@ implicit none
 
     real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
     integer, intent(in)                 :: n_l      ! number of lattice atoms
-    real(8), dimension(3), intent (in)  :: r0_part  ! position of the particle (note:
+    real(8), dimension(3), intent (in)  :: r_part  ! position of the particle (note:
                                                     ! only one position for reference)
     real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
-    real(8), intent(out)                :: energy   ! calc. reference energy
+    real(8), intent(out)                :: energy ! calc. reference energy
 
 ! declare the variables that appear in the subroutine
 
@@ -330,6 +330,7 @@ implicit none
     real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
+
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 ! definition of a few values that appear frequently in calculation
@@ -438,11 +439,11 @@ implicit none
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
-        r3temp(1) = r0_lat(1,i)-r0_part(1)
-        r3temp(2) = r0_lat(2,i)-r0_part(2)
+        r3temp(1) = r0_lat(1,i)-r_part(1)
+        r3temp(2) = r0_lat(2,i)-r_part(2)
         r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
         r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-        r3temp(3) = r0_lat(3,i)-r0_part(3)
+        r3temp(3) = r0_lat(3,i)-r_part(3)
         r =  sqrt(sum(r3temp**2))
 
 
@@ -482,6 +483,7 @@ implicit none
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
 
 
+
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 ! The neutral sphere radius is the radius in which the entire density of the
 ! atom is included.
@@ -515,10 +517,12 @@ implicit none
           + (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
 
+
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)
+    print *, 0.5 * ( vref_l - vref_p)
 
 end subroutine emt
 
