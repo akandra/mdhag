@@ -16,7 +16,7 @@ program testAtomClass
     namelist / lattice_pars_list /  lattice_pars
     namelist / particle_pars_list / particle_pars
 
-    real(8) :: energy
+    real(8) :: E_ref, energy        ! reference energy and emt-energy
     integer :: n_lat = 2            ! number of lattice atoms
     integer :: ierror               ! number to check if file opened correctly
     integer :: n_lat0_at            ! number of atoms in reference slab
@@ -58,7 +58,7 @@ program testAtomClass
                     r0_part = (/0.0, 0.0, 6.0/)
 !                    print *, r0_lat
 !                    print *, n_lat0_at, n_lay0, nn0, r0_part
-                    call emt_init(cell, n_lat0_at,r0_lat, r0_part, particle_pars, lattice_pars, energy)
+                    call emt_init(cell, n_lat0_at,r0_lat, r0_part, particle_pars, lattice_pars, E_ref)
                     print *, energy
 
     end if openif
@@ -66,7 +66,7 @@ program testAtomClass
     ! allocate dynamic arrays
     allocate(lattice(n_lat))
 
- !   call emt_init (particle, lattice, r0, particle_pars, lattice_pars, energy)
+ !   call emt_init (cell, n_lat0_at,r0_lat, r0_part, particle_pars, lattice_pars, energy)
 
 !    print *, lattice
     deallocate(lattice)
