@@ -73,13 +73,11 @@ program testAtomClass
 
                     end do readr0lat
                     r0_part = (/0.0, 0.0, 6.0/)
-                    call emt_init(cell, n_lat0_at, r0_lat, r0_part, particle_pars, lattice_pars, E_ref)
+                    call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
                     k = 560
                     readrH: do i = 5, 5
 !
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
-                            r_part=(/0,0,-5/)
-
                             call emt(cell, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)
@@ -91,6 +89,7 @@ program testAtomClass
 !                    print *, energy-E_ref
 
     end if openif
+    print *, energy, energy-E_ref
     close(7)
     close(8)
     close(9)
