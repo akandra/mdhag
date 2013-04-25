@@ -58,6 +58,7 @@ program testAtomClass
     open(9, file=H_position_fname, status='old', action='read', iostat=ierror2)
     open(7, file=H_dft_energy, status='replace', action='write')
     ! add spec that file exists and is read only.  error checking
+    print *, ierror1, ierror2
     ierror = ierror1 + ierror2
         openif: if ( ierror == 0 ) then
                     read(8, *) n_lat0_at
@@ -75,14 +76,17 @@ program testAtomClass
                     r0_part = (/0.0, 0.0, 6.0/)
                     call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
                     k = 560
-                    readrH: do i = 5, 5
+                    readrH: do i = 1, k
 !
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
+
                             call emt(cell, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)
-!                        write(*,'(1X, I2, 4F15.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
-!                       write(7,'(1X, I2, 4F16.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
+                        write(*,'(1X, I2, 4F15.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
+                        write(7,'(1X, I2, 4F16.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
+
+
                     end do readrH
 !                    r0_part = (/0.0, 0.0, 6.0/)
 !                    call emt_init(cell, n_lat0_at, r0_lat, r0_part, particle_pars, lattice_pars, E_ref)

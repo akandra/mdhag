@@ -13,7 +13,9 @@
 
 1366288683 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/atom_class.f95
 
-1366730864 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/EMTparms_class.f95
+1366810272 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/EMTparms_class.f95
 
-1366729150 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/testEMT.f95
+1366883635 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/testEMT.f95
+
+1366883554 source:/home/sjanke/git/mdhag/pes_fitting_programs/EMT_potential/comparison_aimd_005.f95
 
