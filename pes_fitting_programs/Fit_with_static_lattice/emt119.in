@@ -1,0 +1,23 @@
+# H atom
+name  = 'H'
+kappa = 1.57542      # bohr^(-1)
+eta2  = 0.836767     # bohr^(-1)
+s0    = 1.28579      # bohr
+V0    = 0.667655     #
+n0    = 0.0438       # bohr^(-3)
+E0    = -2.371
+lambda= 0.935395     # bohr^(-1)
+
+# Au
+name  = 'Au'
+kappa = 3.48996      # bohr^(-1)
+eta2  = 2.03393      # bohr^(-1)
+s0    = 3.10243      # bohr
+V0    = 2.321        #
+n0    = 0.0025673    # bohr^(-3)
+E0    = -3.80
+lambda= 2.182        # bohr^(-1)
+
+# bohr = 0.5291772
+
+
