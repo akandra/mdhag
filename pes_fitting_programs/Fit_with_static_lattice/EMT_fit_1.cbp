@@ -34,13 +34,13 @@
 		<Unit filename="EMT_fit_1.f95">
 			<Option weight="1" />
 		</Unit>
-		<Unit filename="EMTparms_class.f95">
+		<Unit filename="EMTparms_class_v2.f95">
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="model.f95">
 			<Option weight="0" />
 		</Unit>
-		<Unit filename="nllsq.f">
+		<Unit filename="nllsq.dbl.f">
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="open_file.f95">

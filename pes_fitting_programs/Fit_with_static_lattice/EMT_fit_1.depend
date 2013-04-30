@@ -1,11 +1,17 @@
 # depslib dependency file v1.0
-1367148928 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\model.f95
+1367318418 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\model.f95
 
 1367181946 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emtparms_class.f95
 
-1367156414 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\open_file.f95
+1367314664 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\open_file.f95
 
 1367148928 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq.f
 
-1367181057 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emt_fit_1.f95
+1367319385 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emt_fit_1.f95
+
+1367262353 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq_dp.f
+
+1367271061 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emtparms_class_v2.f95
+
+1367262353 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq.dbl.f
 
