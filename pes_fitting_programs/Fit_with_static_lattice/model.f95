@@ -3,47 +3,64 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
 
     implicit none
 
+    logical debug
+
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
-    real(8)             :: F, YDAT(1), XDAT(3,1), RRR(1)
+    real(8)             :: F
+    real(8)             :: YDAT(1000)   !YDAT(N)
+    real(8)             :: XDAT(1000,3) !XDAT(N,M)
+    real(8)             :: RRR(1000)
     integer             :: I, JP
 
     real(8)             :: B, P, RES
     integer             :: N, M, KK
 
+    integer             :: iteration
     real(8)             :: energy
-    real(8)             :: b_old(20)
+    real(8)             :: r_part(3)
+
 
     COMMON /BLK1/ B(20),P(20),RES,N,M,KK
+    COMMON/ DJA1/ iteration
+    COMMON/debug/ debug(5)
 
-    if(jp .eq. 2) jp=3
-    if(jp .gt. 2) return
+    if ((debug(3))) then
+        debug(3)=.false.
+        print *
+        print '((a))', 'FIRST RUN OF MODEL'
+        print '((a),4i5)', '  i jp n m=', i, jp, n, m
+        print '((a),4f10.5)', '  xi,yi=   ', xdat(i,1), xdat(i,2), xdat(i,3), ydat(i)
+        print '((a),3I10)', '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
+        print *
+        pause 'first run of model';
+    end if
 
     call array2emt_parms( B(1:7 ), particle_parms)
     call array2emt_parms( B(8:14), lattice_parms )
+    r_part=XDAT(i,:)
 
-    !write(*,1000) 'particle_pars=',particle_parms
-
-
-
-    if (mod(i,10)==0) write(*,1000) i,jp,B(8:14)
-                      write(7,1000) i,jp,B(8:14)
-    b_old=B
-
-    call emt (XDAT(:,i), particle_parms, lattice_parms, energy)
+    call emt (r_part, particle_parms, lattice_parms, energy)
 
     F   = energy
     RES = YDAT(I) - F
-    if (YDAT(I) > 5) RES=0       ! ignore points that have energy > 5 eV
+    if(jp==4) RRR(i)=RES
 
+    !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
+    if ( (mod(i,10)==0) .or. (i==N)) then
+        write(*,1000) 'i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
+        write(7,1000) 'i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
+    end if
 
-    IF (JP.EQ.4) RRR(I) = F
+    !write(*,1000) 'iter, i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
 
+    ! filetered out above IF (JP.EQ.4) RRR(I) = F
+
+    if(jp .eq. 2) jp=3
+    if(jp .eq. 4) rrr(i)=f
 
     RETURN
 
-1000 format(i3,i2,2x,7F10.6/7x7F10.7)
+    1000 format((a) 3i5, 3E12.3)
 
-1010 format(a15,4x,7F7.3,/,19x,7f7.3)
-1020 format((a), 4F7.3)
 end subroutine MODEL
