@@ -93,7 +93,8 @@ program testAtomClass
 !                    print *, energy-E_ref
 
     end if openif
-    print *, energy, energy-E_ref
+    print *,    energy, energy-E_ref
+    write(7,*)  energy, energy-E_ref, E_ref
     close(7)
     close(8)
     close(9)

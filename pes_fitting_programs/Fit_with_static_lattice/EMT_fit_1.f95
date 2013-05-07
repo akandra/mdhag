@@ -56,7 +56,7 @@ program EMT_fit_1
     !   At entry, B's are initial guesses for parameters
     !   On exit,  B's are the results of the fit.
     !real(8), allocatable        :: RRR(:)           ! Array used optionally for communication with MODEL
-    real(8)                      :: X(1000,3),Y(1000),RRR(1000)
+    real(8)                     :: X(1000,3),Y(1000),RRR(1000)
     integer, dimension(8)       :: NARRAY           ! Integer array of control parameters
     real, dimension(8)          :: ARRAY = 0        ! Array of statistical parameters. Use 0.0 to get default values.
     integer, dimension(14)      :: IB = 0           ! Integer Array containing the subscripts of parameters to be held constant.
@@ -81,46 +81,62 @@ program EMT_fit_1
     real(8)                                 :: nn0               ! next neighbour distance in reference slab
     real(8), dimension(3)                   :: cell              ! dimensions of the cell
     real(8), allocatable, dimension(:,:)    :: r0_lat            ! lattice positions for reference calc.
-    real(8), dimension(3)                   :: r_part            ! hydrogen position for reference calc.
     !integer, allocatable, dimension(:)      :: site              ! impact site
     integer site(1000)
     real(8)                                 :: energy            ! energy output from emt subroutines
     real(8)                                 :: e_ref             ! reference energy with particle at infinity
     real(8)                                 :: e_max             ! maximum DFT to use in the fit
+    real(8)                                 :: sumsq             ! used to calculate rms error
 
     integer                                 :: i,j,k             ! loop indicies
     integer                                 :: ios               ! io status
 
     ! file names
-    character(len=30)                       :: reference_configuration_fname
-    character(len=30)                       :: H_position_fname
-    character(len=30)                       :: H_dft_energy
+    character(len=100)   :: lattice_configuration_fname
+    character(len=100)   :: particle_position_and_DFT_energies_fname
+    character(len=100)   :: fit_results_fname
+    character(len=100)   :: particle_nml_in
+    character(len=100)   :: particle_nml_out
+    character(len=100)   :: lattice_nml_in
+    character(len=100)   :: lattice_nml_out
 
     logical debug
     common /debug/debug(5)
-    debug=(/.true., .true., .true., .false., .false./)
+    debug=(/.false., .false., .false., .true., .false./)
+    call open_for_overwrite(7,'fit_debug.out')
 
 
-    reference_configuration_fname = 'ref_conf_Au111a.dat'          ! file containing Au coordinates
-    H_position_fname              = 'hau111_plot.E.dat'            ! file containing H coordinates
-    H_dft_energy                  = 'hEMTfortran.dat'              ! for output of EMT energies
+    lattice_configuration_fname             = 'ref_conf_Au111a.dat'
+    particle_position_and_DFT_energies_fname= 'hau111_plot.E.dat'
+
+    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+
+    particle_nml_in                         = 'parameters_and_fit_results\f119.00.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results\f119.02.H.nml'
+
+    lattice_nml_in                          = 'parameters_and_fit_results\f119.00.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results\f119.02.Au.nml'
+
     TITLE = 'EMT NLLSQ Test'
 
     !------------------------------------------------------------------------------------------------------------------
     !                       READ LATTICE AND PARTICLE EMT PARAMETERS
     !------------------------------------------------------------------------------------------------------------------
-    call open_for_read(8,'parameters_Au_stroem-dja2.nml')
-    !call open_for_read(8,'parameters_Au_f119.nml')
+    call open_for_read(8,lattice_nml_in)
     read(8,nml=lattice_pars_list)
+    write(7,*) 'lattice_pars_list'
+    write(7,nml=lattice_pars_list)
 
-    call open_for_read(8,'parameters_H_stroem-dja2.nml')
-    !call open_for_read(8,'parameters_H_f119.nml')
+    call open_for_read(8,particle_nml_in)
     read(8,nml=particle_pars_list)
+    write(7,*) 'particle_pars_list'
+    write(7,nml=particle_pars_list)
+
 
     !------------------------------------------------------------------------------------------------------------------
     !                       READ LATTICE DEFINITION PARAMETSR
     !------------------------------------------------------------------------------------------------------------------
-    call open_for_read (8, reference_configuration_fname)
+    call open_for_read (8, lattice_configuration_fname)
     read(8,*) n_lat0_at
     read(8,*) n_lay0
     read(8,*) nn0
@@ -129,23 +145,21 @@ program EMT_fit_1
     allocate(r0_lat(3,n_lat0_at))           ! allocate array to hold lattice coordinates
     readr0lat: do i = 1, n_lat0_at
         read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
+        !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
     end do readr0lat
 
     !------------------------------------------------------------------------------------
     !          INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
     call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
-    write(*,'((a),F9.5,(a))') 'the reference energy = ',E_ref, ' eV'
-
+    write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
+    write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     !------------------------------------------------------------------------------------
-    !          READ THE PARICLE POSITIONS AND DFT ENERGIES
-    !------------------------------------------------------------------------------------
-
-
+    !          READ THE PARTICLE POSITIONS AND DFT ENERGIES
     !------------------------------------------------------------------------------------
     !          FIRST FIND THE NUMBER OF POINTS BY READING TO EOF
     !------------------------------------------------------------------------------------
-    call open_for_read (8, H_position_fname)
+    call open_for_read (8, particle_position_and_DFT_energies_fname)
     i=1
     do
         read(8,*,iostat=ios)
@@ -157,7 +171,6 @@ program EMT_fit_1
     npts = i-1
     print '((a),i4)','the number of particle positions and energies =',npts
 
-    npts            = 50 !!!!!!!!   FOR TESTING  !!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !------------------------------------------------------------------------------------
     !          NOW ALLOCATE ARRAYS TO STORE THE POINTS
@@ -176,37 +189,50 @@ program EMT_fit_1
 
     do i=1, npts
         read(8,*) site(j), X(j,1), X(j,2), X(j,3), Y(j)
-        if ( (Y(j)<=10) .and. (i<npts) ) j=j+1
+     !   write(7,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
+        if ( (abs(Y(j))<=10) .and. (i<npts) ) j=j+1
     end do
     close(8)
 
-    !  npts=j  FOR TESTING  *******************************
+    npts=j
 
+    !write(7,'(//(a)/)') 'filtered data list'
+    !do i=1,npts
+    !    write(7,*)i,site(j), X(i,1), X(i,2), X(i,3), Y(i)
+    !end do
 
+    call open_for_write(10, fit_results_fname)
 
-    call open_for_write(10, H_dft_energy)
-
+    !*********************************************************************************
+    !npts = 50       !************************** FOR TESTING **************************
+    !*********************************************************************************
 
     !------------------------------------------------------------------------------------------------------------------
     !                       CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
     !------------------------------------------------------------------------------------------------------------------
     k = npts
-    k = 3
 
     if(k>0) then
         write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
         write(*,*)  'site       X              Y              Z             EMT           DFT'
         Write(10,*) 'site       X              Y              Z             EMT           DFT'
-        readrH: do i = 1, k
+        sumsq = 0
+        do i = 1, k
             call emt(X(i,:), particle_pars, lattice_pars, energy)
-            ! old form: call emt(cell, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
-            write(*,'(1X, I2, 5F15.10)')  site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
+            if(i<10) write( *,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
             write(10,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
-        end do readrH
+            write(7, '(1X, I2, 4F16.10)') site(i), X(i,1), X(i,2), X(i,3), energy
+
+            sumsq=sumsq+(energy-Y(i))**2
+        end do
+        write(*,*)
+        write(10,*)
+        write(*,*)  'rms error using starting parameters =',sqrt(sumsq/npts), '  Eref=', E_ref
+        write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), '  Eref=', E_ref
         write(*,*)
         write(10,*)
     end if
-
+stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -218,7 +244,7 @@ program EMT_fit_1
 
     !-----------CHECK WE GOT IT RIGHT -----------
     if (debug(1)) then
-        write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE EMT_PARMS2ARRAY'
+        write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
         write(*,1000) 'particle_pars=',particle_pars
         write(*,1010) 'B(1:7)       =',B(1:7)
         write(*,1000) 'lattice_pars =',lattice_pars
@@ -226,20 +252,32 @@ program EMT_fit_1
 
         !---------------TEST ARRAY2EMT_PARMS--------
         call array2emt_parms(B(1:7),test_pars)
-        write(*,'(/(a)))') 'CHECK CONVERSION SUBROUTINE ARRAY2EMT_PARMS'
-        write(*,'((a)))') '  convert B(1:7) to emt_parms structure and print'
+        write(*,'(/(a))') 'CHECK CONVERSION SUBROUTINE array2emt_parms'
+        write(*,'( (a))') '  convert B(1:7) to emt_parms structure and print'
         write(*,1000) 'test_pars    =',test_pars
     end if
 
     !--------------------------------------------------------------------------
+    !                  SET UP PARAMETERS TO HOLD CONSTANT
+    !--------------------------------------------------------------------------
+    ! Name    part lat  H   Au
+    !
+    ! eta2      1   8
+    ! kappa     2   9
+    ! lambda    3  10
+    ! E0        4  11   x   x     destabilizes fit
+    ! n0        5  12   ?   ?     may destabilize fit
+    ! s0        6  13   x   x     shouldn't change
+    ! V0        7  14       x     shouldn't be <0
+
+    IB    = (/6,13,14,4,11,5,12,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP    = 7                                   ! number of parameters held constant
+
+    !--------------------------------------------------------------------------
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
-
-
     nparms          = 14
-    IP              = 7         ! number of parameters to be held constant during fit.
-    max_iterations  = 20
-
+    max_iterations  = 30
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters
@@ -251,19 +289,17 @@ program EMT_fit_1
     !***********************  ARRAY ***************************
     !                     variable                      default
     ARRAY(1)  = 0.1     ! AL                             .1
-    ARRAY(2)  = 0.00005 ! DELTA - FOR DERIVATIVES        .00001
+    ARRAY(2)  = 0.00001 ! DELTA - FOR DERIVATIVES        .00001
     ARRAY(3)  = 0.00005 ! E     - CONVERGENCE CRITERION  .00005
     ARRAY(4)  = 4.0     ! FF                             4.0
     ARRAY(5)  =45.0     ! GAMCR - CRITICAL ANGLE         45.
     ARRAY(6)  = 2.0     ! T                              2.
     ARRAY(7)  = 0.001   ! TAU                            .001
     ARRAY(8)  = 1E-31   ! ZETA  - CRITERION FOR          1E-31
-    !         SINGULAR MATRIX
+                        !         SINGULAR MATRIX
+    ARRAY=0             ! use default values
 
 
-    !-----------SET UP ARRAY-------------------
-    ARRAY = 0                   ! use defaults for NLLSQ control parameters
-    IB    = (/6,13,14,4,11,5,12,0,0,0,0,0,0,0/)   ! array of indicies of parameters held constant
     TITLE = 'Test of EMT_fit_1'
 
     if(debug(2)) then
@@ -280,8 +316,8 @@ program EMT_fit_1
 
     call array2emt_parms(B(1:07),particle_pars)
     call array2emt_parms(B(8:14),lattice_pars)
-    call open_for_write(11,'parameters_h-001.nml')
-    call open_for_write(12,'parameters_au-001.nml')
+    call open_for_write(11,particle_nml_out)
+    call open_for_write(12,lattice_nml_out)
     write (11,nml=particle_pars_list)
     write (12,nml=lattice_pars_list)
 

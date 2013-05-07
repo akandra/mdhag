@@ -20,20 +20,23 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     real(8)             :: energy
     real(8)             :: r_part(3)
 
+    logical, save       :: first_run=.true.
+
 
     COMMON /BLK1/ B(20),P(20),RES,N,M,KK
     COMMON/ DJA1/ iteration
     COMMON/debug/ debug(5)
 
-    if ((debug(3))) then
-        debug(3)=.false.
+    if ((debug(3)) .and. first_run) then
         print *
         print '((a))', 'FIRST RUN OF MODEL'
         print '((a),4i5)', '  i jp n m=', i, jp, n, m
         print '((a),4f10.5)', '  xi,yi=   ', xdat(i,1), xdat(i,2), xdat(i,3), ydat(i)
-        print '((a),3I10)', '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
+        print '((a),3I10)',   '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
+        print '((a),3I10)',   '  loc(x2))=', loc(xdat(2,1)), loc(xdat(2,2)), loc(xdat(2,3))
         print *
-        pause 'first run of model';
+        write(7,*) 'it i jp    x       y      z       DFT     EMT    RES'
+        !pause 'first run of model';
     end if
 
     call array2emt_parms( B(1:7 ), particle_parms)
@@ -44,23 +47,25 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
 
     F   = energy
     RES = YDAT(I) - F
-    if(jp==4) RRR(i)=RES
 
     !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
-    if ( (mod(i,10)==0) .or. (i==N)) then
-        write(*,1000) 'i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
-        write(7,1000) 'i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
+    if ( jp.eq.2 .and. ((mod(i,10)==0) .or. (i==N))) then
+        write(*,1000) iteration, i, YDAT(i), F, B(1:14)
     end if
 
+    if (debug(4).and.JP==2) then
+        write(7,1010) iteration,i, xdat(i,:),YDAT(i), F, RES, B(1:14)
+    end if
     !write(*,1000) 'iter, i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
 
     ! filetered out above IF (JP.EQ.4) RRR(I) = F
 
     if(jp .eq. 2) jp=3
     if(jp .eq. 4) rrr(i)=f
-
+    first_run=.false.
     RETURN
 
-    1000 format((a) 3i5, 3E12.3)
+    1000 format(2i4, 2f6.2, 7f6.2 / 20x,7f6.2)
+    1010 format(2i4,3f6.2,3E12.3,14f6.2)
 
 end subroutine MODEL

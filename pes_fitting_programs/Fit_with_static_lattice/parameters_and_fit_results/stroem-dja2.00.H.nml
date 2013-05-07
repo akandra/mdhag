@@ -4,7 +4,7 @@
  PARTICLE_PARS%KAPPA    = 8.86282        ! A^-1
  PARTICLE_PARS%LAMBDA   = 7.72709        ! A^-1
  PARTICLE_PARS%E0       =-2.371          ! eV
+ PARTICLE_PARS%N0       = 0.182205       ! A^-3
  PARTICLE_PARS%S0       = 0.680411       ! A
  PARTICLE_PARS%V0       = 0.427          ! eV
- PARTICLE_PARS%N0       = 0.182205       ! A^-3
 /
