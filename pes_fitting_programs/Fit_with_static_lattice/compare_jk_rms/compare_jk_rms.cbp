@@ -39,6 +39,7 @@
 		</Unit>
 		<Unit filename="hEMTfortran.dat" />
 		<Unit filename="hau111_plot.E.dat" />
+		<Unit filename="jk_compare.out" />
 		<Unit filename="open_file.f95">
 			<Option weight="0" />
 		</Unit>

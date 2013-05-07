@@ -52,12 +52,17 @@ program compare_jk
     ! ***       CALULATE RMS ERROR FOR JK DFT AND FIT 119                   ***
     ! *************************************************************************
     sumsq=0
+
+    call open_for_overwrite(8, "jk_compare.out")
+
+    write(8,'((a))') '   i site, x     y     z      jk_EMT      DFT         Diff'
     do i=1,npts
         res=DFT(i)-jk_EMT_energy(i)
-        print '(3f12.5)', DFT(i), jk_EMT_energy(i),res
+        write(8,'(i4,i3,3f6.2, 3f12.7)') i, site10(i), r10(:,i), DFT(i), jk_EMT_energy(i), res
         sumsq=sumsq + res**2
     end do
 
-    print *, 'rms error=', sqrt(sumsq/npts)
+    write(*,*)'rms error=', sqrt(sumsq/npts)
+    write(8,*)'rms error=', sqrt(sumsq/npts)
 
 end program compare_jk
