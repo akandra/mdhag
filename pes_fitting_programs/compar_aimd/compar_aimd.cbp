@@ -31,8 +31,15 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="EMTparms_class.f95" />
-		<Unit filename="comparison_aimd_005.f95" />
+		<Unit filename="EMTparms_class.f95">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="atom_class.f95">
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="comparison_aimd_005.f95">
+			<Option weight="2" />
+		</Unit>
 		<Unit filename="parameters_Au_f119.nml" />
 		<Unit filename="parameters_H_f119.nml" />
 		<Extensions>

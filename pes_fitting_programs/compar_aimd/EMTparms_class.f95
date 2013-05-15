@@ -207,7 +207,7 @@ end subroutine emt_init
 
 
 
-subroutine emt (cell, n_l, r0_lat, r_part, pars_p, pars_l, energy)
+subroutine emt (cell, n_l, r_lat, r_part, pars_p, pars_l, energy)
 !
 ! Purpose:
 !       emt calculates the energy according to the effective medium theory.
@@ -230,12 +230,11 @@ implicit none
 
     real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
     integer, intent(in)                 :: n_l      ! number of lattice atoms
-    real(8), dimension(3), intent (in)  :: r_part  ! position of the particle (note:
-                                                    ! only one position for reference)
-    real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
+    real(8), dimension(3), intent (in)  :: r_part   ! positions of the particle
+    real(8), dimension(:,:), intent(in) :: r_lat    ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
-    real(8), intent(out)                :: energy ! calc. reference energy
+    real(8), intent(out)                :: energy   ! calc. reference energy
 
 ! declare the variables that appear in the subroutine
 
@@ -326,11 +325,11 @@ implicit none
         !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
         ! Because we want them.
 
-            r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
-            r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
+            r3temp(1) = r_lat(1,i)-r_lat(1,j)
+            r3temp(2) = r_lat(2,i)-r_lat(2,j)
             r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
             r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
+            r3temp(3) = r_lat(3,i)-r_lat(3,j)
             r =  sqrt(sum(r3temp**2))
 
 
@@ -369,11 +368,11 @@ implicit none
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
-        r3temp(1) = r0_lat(1,i)-r_part(1)
-        r3temp(2) = r0_lat(2,i)-r_part(2)
+        r3temp(1) = r_lat(1,i)-r_part(1)
+        r3temp(2) = r_lat(2,i)-r_part(2)
         r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
         r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-        r3temp(3) = r0_lat(3,i)-r_part(3)
+        r3temp(3) = r_lat(3,i)-r_part(3)
         r =  sqrt(sum(r3temp**2))
 
 
