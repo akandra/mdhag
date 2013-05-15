@@ -15,6 +15,9 @@ module open_file
             integer, intent(in)     :: lun
             character, intent(in)   :: file_name
         end subroutine
+
+        contains module procedure
+
     endinterface
 
 contains
