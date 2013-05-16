@@ -1,7 +1,7 @@
-test change
 module EMTparms_class
 
 use atom_class
+use math_functions
 
     real(8), parameter :: sqrt_2 = 1.41421356237
     real(8), parameter :: sqrt_3 = 1.73205080757
@@ -262,6 +262,11 @@ implicit none
     real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
+    real(8) :: fexp                     ! exponential function
+
+! Variables and Arrays for partial derivatives
+    real(8), dimension(4) :: dfexp      ! derivatives of fexp
+    real(8), dimension(2) :: dchilp, dchipl
 
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
@@ -272,8 +277,18 @@ implicit none
     kappadbeta_p = pars_p%kappa / beta
 
 ! 'coupling' parameters between p and l
-    chilp = pars_p%n0 / pars_l%n0
-    chipl = 1.0 / chilp
+! derivatives: (1) derivative over nop, (2) over nol
+    dchilp(1) = 1.0 / pars_l%n0         ! d chilp / d nop
+    dchipl(2) = 1.0 / pars_p%n0         ! d chipl / d nol
+
+    chilp = pars_p%n0 * dchilp(1)
+    chipl = pars_l%n0 * dchipl(2)
+
+    dchipl(1) = - chipl * dchipl(2)     ! d chipl / d nop
+    dchilp(2) = - chilp * dchilp(1)     ! d chipl / d nol
+    print *, chilp, dchilp
+    print *, chipl, dchipl
+    stop
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF

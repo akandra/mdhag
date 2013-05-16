@@ -39,9 +39,11 @@ program testAtomClass
     character(len=30)                    :: H_dft_energy
     integer :: ierror2, ierror3      ! number to check if file opened correctly
 
+
     H_position_fname = 'hau111_plot.E.dat' ! File which contains some H coordinates
     H_dft_energy =  'hEMTfortran.dat'
     reference_configuration_fname='ref_conf_Au111a.dat' ! File which contains Au coordinates
+
 
     a_lat=4.201
 

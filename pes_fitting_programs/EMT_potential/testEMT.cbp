@@ -32,16 +32,19 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="EMTparms_class.f95">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="atom_class.f95">
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="emt119.in" />
+		<Unit filename="math_functions.f95">
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="parameters_Au_f119.nml" />
 		<Unit filename="parameters_H_f119.nml" />
 		<Unit filename="testEMT.f95">
-			<Option weight="1" />
+			<Option weight="2" />
 		</Unit>
 		<Extensions>
 			<code_completion />
