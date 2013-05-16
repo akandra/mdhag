@@ -18,6 +18,7 @@ program testAtomClass
     integer :: n_lat0_at            ! number of atoms in reference slab
     integer :: n_lay0               ! number of layers in reference slab
     integer :: i,k                  ! running integer to read in reference lattice
+    real(8) :: a_lat               ! lattice constant of lattice
     real(8) :: nn0                  ! next neighbour distance in reference slab
     real(8) :: a0                   ! lattice constant
     real(8), dimension(3) :: cell   ! dimensions of the cell
@@ -42,6 +43,7 @@ program testAtomClass
     H_dft_energy =  'hEMTfortran.dat'
     reference_configuration_fname='ref_conf_Au111a.dat' ! File which contains Au coordinates
 
+    a_lat=4.201
 
     ! Read in the lattice parameters
     open(8,file='parameters_Au_f119.nml')
@@ -74,13 +76,14 @@ program testAtomClass
 
                     end do readr0lat
 
-                    call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
+                    call emt_init(cell, a_lat, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
+
                     k = 560
                     readrH: do i = 1, k
 !
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
 
-                            call emt(cell, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
+                            call emt(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)
                         write(*,'(1X, I2, 4F15.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
@@ -93,7 +96,8 @@ program testAtomClass
 !                    print *, energy-E_ref
 
     end if openif
-    print *, energy, energy-E_ref
+    print *,    energy, energy-E_ref
+    write(7,*)  energy, energy-E_ref, E_ref
     close(7)
     close(8)
     close(9)

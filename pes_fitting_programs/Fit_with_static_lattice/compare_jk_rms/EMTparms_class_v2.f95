@@ -1,14 +1,20 @@
 module EMTparms_class
 
-use atom_class
+    implicit none
 
-    real(8), parameter :: sqrt_2 = 1.41421356237
-    real(8), parameter :: sqrt_3 = 1.73205080757
-    real(8), parameter :: isqrt_2 = 0.70710678118
-    real(8), parameter :: pi = 3.14159265359
-    real(8), parameter :: beta = 1.8093997906
-    real(8), parameter :: twelveth = 0.0833333333333333
-    integer, dimension(3), parameter :: b = (/12, 6, 24/)
+    real(8), private, parameter                 :: sqrt_2  = 1.41421356237
+    real(8), private, parameter                 :: sqrt_3  = 1.73205080757
+    real(8), private, parameter                 :: isqrt_2 = 0.70710678118
+    real(8), private, parameter                 :: pi      = 3.14159265359
+    real(8), private, parameter                 :: beta    = 1.8093997906
+    real(8), private, parameter                 :: twelveth= 0.0833333333333333
+    integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
+
+    ! storage for variables passed into emt_init that are needed by emt energy
+    real(8), private                :: cell(3)      ! dimensions of cell in x,y and z
+    integer, private                :: n_l          ! number of lattice atoms
+    real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
+    real(8), private                :: Eref         ! reference energy
 
     type EMTparms
         character(2)::  name    = 'RV'
@@ -26,7 +32,7 @@ use atom_class
 
 contains
 
-subroutine emt_init (cell, n_l, r0_lat, pars_p, pars_l, energy)
+subroutine emt_init (cell_in, n_l_in, r0_lat_in, pars_p, pars_l, energy)
 !
 ! Purpose:
 !           Here, the fitting procedure is just implemented and the reference
@@ -41,12 +47,12 @@ implicit none
 
 ! declare variables and parameters that are passed down from the program
 
-    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
-    integer, intent(in)                 :: n_l      ! number of lattice atoms
-    real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
-    type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
-    type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
-    real(8), intent(out)                :: energy    ! calc. reference energy
+    real(8), dimension(3), intent(in)   :: cell_in         ! dimensions of cell in x,y and z
+    integer, intent(in)                 :: n_l_in          ! number of lattice atoms
+    real(8), dimension(:,:), intent(in) :: r0_lat_in       ! positions of lattice atoms
+    type(EMTparms), intent(inout)       :: pars_p       ! parameters of particle
+    type(EMTparms), intent(inout)       :: pars_l       ! parameters of lattice atoms
+    real(8), intent(out)                :: energy       ! calculated reference energy
 
 ! declare the variables that appear in the subroutine
 
@@ -56,8 +62,8 @@ implicit none
     real(8) :: igamma1l, igamma2l       ! inverse gamma for lattice atoms
     real(8) :: theta                    ! variable for cut-off calculation
     real(8) :: chilp                    ! mixing between lattice (l) and particle (p)
-    real(8), dimension(n_l) :: sigma_ll ! contribution to ns, l only
-    real(8), dimension(n_l) :: s_l      ! neutral sphere radius lattice atoms
+    real(8), dimension(n_l_in) :: sigma_ll ! contribution to ns, l only
+    real(8), dimension(n_l_in) :: s_l      ! neutral sphere radius lattice atoms
     real(8) :: V_ll                     ! Pair potential contributions
     real(8) :: vref_l                   ! reference pair pot. contrib.
     real(8) :: Ecoh                     ! cohesive energy of part & lattice atoms
@@ -67,6 +73,18 @@ implicit none
     real(8) :: kappadbeta_l             ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
+
+
+!-----------------------Save inputs in module for use by emt ------------------
+    cell   = cell_in
+    n_l    = n_l_in
+    if (.not. allocated(r0_lat)) then
+        allocate(r0_lat(3,n_l))
+        print *, 'allocated r0_lat for', n_l, 'atoms'
+    else
+        print *, 'r0_lat is all ready allocated'
+    end if
+    r0_lat = r0_lat_in
 
 
 !----------------------------VALUES OF FREQUENT USE----------------------------
@@ -157,11 +175,8 @@ implicit none
 
             rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
             V_ll = V_ll + rtemp
-
-
         end do
     end do
-
 
 !-------------------------------CUT-OFF ENACTION-------------------------------
 ! Don't forget the gamma!
@@ -177,11 +192,10 @@ implicit none
             / ( beta * pars_l%eta2)
 
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
-! These contributions have to be substracted to account for the contributions
+! These contributions have to be subtracted to account for the contributions
 ! that were included twice.
 
     vref_l = 12 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
-
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -200,14 +214,14 @@ implicit none
 ! Summation over all contributions.
 
    energy = Ecoh - V_ll + 0.5 * vref_l
-
-! _____________________________________________________________________________
+   Eref   = energy
 
 end subroutine emt_init
 
 
 
-subroutine emt (cell, n_l, r_lat, r_part, pars_p, pars_l, energy)
+!subroutine emt (cell, n_l, r0_lat, r_part, pars_p, pars_l, energy)
+subroutine emt (r_part, pars_p, pars_l, energy)
 !
 ! Purpose:
 !       emt calculates the energy according to the effective medium theory.
@@ -228,13 +242,14 @@ implicit none
 
 ! declare variables and parameters that are passed down from the program
 
-    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
-    integer, intent(in)                 :: n_l      ! number of lattice atoms
-    real(8), dimension(3), intent (in)  :: r_part   ! positions of the particle
-    real(8), dimension(:,:), intent(in) :: r_lat    ! positions of lattice atoms
+!    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
+!    integer, intent(in)                 :: n_l      ! number of lattice atoms
+    real(8), dimension(3), intent (in)  :: r_part  ! position of the particle (note:
+                                                    ! only one position for reference)
+!    real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
-    real(8), intent(out)                :: energy   ! calc. reference energy
+    real(8), intent(out)                :: energy ! calc. reference energy
 
 ! declare the variables that appear in the subroutine
 
@@ -325,11 +340,11 @@ implicit none
         !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
         ! Because we want them.
 
-            r3temp(1) = r_lat(1,i)-r_lat(1,j)
-            r3temp(2) = r_lat(2,i)-r_lat(2,j)
+            r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
+            r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
             r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
             r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-            r3temp(3) = r_lat(3,i)-r_lat(3,j)
+            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
             r =  sqrt(sum(r3temp**2))
 
 
@@ -368,11 +383,11 @@ implicit none
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
-        r3temp(1) = r_lat(1,i)-r_part(1)
-        r3temp(2) = r_lat(2,i)-r_part(2)
+        r3temp(1) = r0_lat(1,i)-r_part(1)
+        r3temp(2) = r0_lat(2,i)-r_part(2)
         r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
         r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-        r3temp(3) = r_lat(3,i)-r_part(3)
+        r3temp(3) = r0_lat(3,i)-r_part(3)
         r =  sqrt(sum(r3temp**2))
 
 
@@ -450,8 +465,35 @@ implicit none
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
-    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)
+    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p) - Eref
 
 end subroutine emt
+
+subroutine emt_parms2array (emt_parms, array)
+    type(EMTparms)          :: emt_parms
+    real(8), dimension(7)   :: array
+
+    array(1) = emt_parms%eta2
+    array(2) = emt_parms%kappa
+    array(3) = emt_parms%lambda
+    array(4) = emt_parms%E0
+    array(5) = emt_parms%n0
+    array(6) = emt_parms%s0
+    array(7) = emt_parms%V0
+end subroutine emt_parms2array
+
+subroutine array2emt_parms (array, emt_parms)
+    type(EMTparms)          :: emt_parms
+    real(8), dimension(7)   :: array
+
+    emt_parms%eta2   = array(1)
+    emt_parms%kappa  = array(2)
+    emt_parms%lambda = array(3)
+    emt_parms%E0     = array(4)
+    emt_parms%n0     = array(5)
+    emt_parms%s0     = array(6)
+    emt_parms%V0     = array(7)
+end subroutine array2emt_parms
+
 
 end module

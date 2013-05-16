@@ -2,12 +2,12 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="compar_aimd" />
+		<Option title="demo_nllsq.sgl" />
 		<Option pch_mode="2" />
 		<Option compiler="gfortran" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/compar_aimd" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/demo_nllsq.sgl" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gfortran" />
@@ -16,7 +16,7 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/compar_aimd" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/demo_nllsq.sgl" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gfortran" />
@@ -31,21 +31,22 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="EMTparms_class.f95">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="atom_class.f95">
+		<Unit filename="demo_nllsq.sgl.f95">
 			<Option weight="0" />
 		</Unit>
-		<Unit filename="comparison_aimd_005.f95">
-			<Option weight="2" />
+		<Unit filename="demo_nllsq.sgl.sh" />
+		<Unit filename="demo_nllsq_plot.scr" />
+		<Unit filename="model.sgl.f95">
+			<Option weight="0" />
 		</Unit>
-		<Unit filename="parameters_Au_f119.nml" />
-		<Unit filename="parameters_H_f119.nml" />
+		<Unit filename="nllsq.sgl.f">
+			<Option weight="0" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
 			<debugger />
+			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

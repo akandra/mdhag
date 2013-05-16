@@ -1,0 +1,10 @@
+&lattice_pars_list
+ stroem_PARS%NAME="H"
+ stroem_PARS%ETA2=  5.4254         ! A^-1
+ stroem_PARS%KAPPA=  8.86282       ! A^-1
+ stroem_PARS%LAMBDA=  7.72709      ! A^-1
+ stroem_PARS%E0=  -3.8             ! eV
+ stroem_PARS%S0=  0.529177         ! A
+ stroem_PARS%V0=  0.427            ! eV
+ stroem_PARS%N0=  0.182205         ! A^-3
+/
