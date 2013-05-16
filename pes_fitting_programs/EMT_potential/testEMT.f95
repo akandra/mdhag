@@ -73,7 +73,7 @@ program testAtomClass
                                 read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
 
                     end do readr0lat
-                    r0_part = (/0.0, 0.0, 6.0/)
+
                     call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
                     k = 560
                     readrH: do i = 1, k
