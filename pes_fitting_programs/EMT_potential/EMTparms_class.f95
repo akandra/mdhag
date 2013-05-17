@@ -261,8 +261,8 @@ implicit none
     real(8), dimension(3) :: rnndbeta_l, rnndbeta_p ! divide rnn by beta
     real(8) :: betas0_l, betas0_p       ! beta * s0= for l and p
     real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
-    real(8), dimension(3) :: r3temp     ! temporary array variable
-    real(8) :: rtemp                    ! temporary variable
+    real(8), dimension(3) :: r3temp, r3temp1     ! temporary array variable
+    real(8) :: rtemp, rtemp1                    ! temporary variable
 
 ! Variables and Arrays for partial derivatives
     real(8), dimension(4) :: dtemp       ! array to handle fexp/fexplus
@@ -270,10 +270,12 @@ implicit none
 
     ! Order of parameters eta2, no, eo, lambda, vo, kappa, so.
     real(8), dimension(7) :: dgamma1l, dgamma2l, dgamma1p, dgamma2p
-    real(8), dimension(7) :: dtheta
-    real(8), dimension(7) :: dsigma_ll
+    real(8), dimension(7,n_l) :: dsigma_ll
     real(8), dimension(7) :: dsigma_lp_l, dsigma_lp_p
     real(8), dimension(7) :: dsigma_pl_l, dsigma_pl_p
+    real(8), dimension(7) :: dV_ll
+    real(8), dimension(7) :: dV_lp_l, dV_lp_p
+    real(8), dimension(7) :: dV_pl_l, dV_pl_p
 
 
 
@@ -318,39 +320,40 @@ implicit none
     xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
     xp = b * twelveth/ (1 + exp(acut*(rnnp-rcut)))
 
-    rnndbeta_l= rnnl / beta
-    rnndbeta_p= rnnp / beta
-
-
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
+    r3temp = rnnl - betas0_l
 
-    igamma1l = 0.
-    dgamma1l = 0
-    igamma1p = 0.
-    dgamma1p = 0.
-    igamma2l = 0.
+    r3temp1 = xl*exp(- pars_l%eta2*r3temp)
+    igamma1l = 1.0 / sum(r3temp1)
+    dgamma1l = 0.
+    dgamma1l(1) = - sum(r3temp*r3temp1)
+    dgamma1l(7) = sum(r3temp1)*pars_l%eta2*beta
+
+
+    r3temp1 = xl*exp(-kappadbeta_l * r3temp)
+    igamma2l = 1.0 / sum(r3temp1)
     dgamma2l = 0.
-    igamma2p = 0.
+    dgamma2l(6) = - sum(r3temp*r3temp1) / beta
+    dgamma2l(7) = sum(r3temp1)*pars_l%kappa
+
+
+    r3temp = rnnp-betas0_p
+
+    r3temp1 = xp*exp(- pars_p%eta2*r3temp)
+    igamma1p = 1.0 / sum(r3temp1)
+    dgamma1p = 0.
+    dgamma1p(1) = - sum(r3temp*r3temp1)
+    dgamma1p(7) = sum(r3temp1)*pars_p%eta2*beta
+
+
+    r3temp1 = xp*exp(-kappadbeta_p * r3temp)
+    igamma2p = 1.0 / sum(r3temp1)
     dgamma2p = 0.
+    dgamma2p(6) = - sum(r3temp*r3temp1) / beta
+    dgamma2p(7) = sum(r3temp1)*pars_p%kappa
 
-    do i=1,3
-        call fexplus(rnnl(i), xl(i), pars_l%eta2, betas0_l, igamma1l, dgamma1l)
-        call fexplus(rnndbeta_l(i), xl(i), pars_l%kappa, pars_l%s0, igamma2l, dgamma2l)
-        call fexplus(rnnp(i), xp(i), pars_p%eta2, betas0_p, igamma1p, dgamma1p)
-        call fexplus(rnndbeta_p(i), xp(i), pars_p%kappa, pars_p%s0, igamma2p, dgamma2p)
-    end do
-    igamma1l = 1.0 / igamma1l
-    igamma2l = 1.0 / igamma2l
-    igamma1p = 1.0 / igamma1p
-    igamma2p = 1.0 / igamma2p
-
-    dgamma1l(1) = dgamma1l(3)
-
-
-    write(*,'(7f12.7)') dgamma1l
-    stop
 
 
 !------------------------------------------------------------------------------
@@ -360,8 +363,10 @@ implicit none
 ! The values for the sums are set to zero.
 
     sigma_ll = 0
+    dsigma_ll = 0
     sigma_pl = 0
     V_ll = 0
+    dV_ll = 0
     V_lp = 0
     V_pl = 0
 
@@ -384,11 +389,7 @@ implicit none
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
-            call fexp(r, 1.d0, -acut, rcut, theta, dtheta)
-
-            theta = 1.0 / (1 + theta)
-            rtemp = - theta * theta
-            dtheta = rtemp * dtheta
+            theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -402,6 +403,14 @@ implicit none
             sigma_ll(i) = sigma_ll(i) + rtemp
             sigma_ll(j) = sigma_ll(j) + rtemp
 
+            rtemp1 = rtemp*(r - betas0_l)
+            dsigma_ll(1,i) = dsigma_ll(1,i) - rtemp1
+            dsigma_ll(1,j) = dsigma_ll(1,j) - rtemp1
+
+            rtemp1 = rtemp*beta*pars_l%eta2
+            dsigma_ll(7,i) = dsigma_ll(7,i) + rtemp1
+            dsigma_ll(7,j) = dsigma_ll(7,j) + rtemp1
+
 
 
         !-----------------------PAIR POTENTIAL LATTICE-------------------------
@@ -413,6 +422,11 @@ implicit none
             rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
             V_ll = V_ll + rtemp
 
+            rtemp1 = rtemp*(r - betas0_l)
+            dV_ll(6) = dV_ll(6) + rtemp1
+
+            rtemp1 = rtemp*pars_l%kappa
+            dV_ll(7) = dV_ll(7) - rtemp1
 
         end do
 
@@ -455,12 +469,24 @@ implicit none
 ! Don't forget the gamma!
 
     sigma_ll = sigma_ll * igamma1l
+    dsigma_ll(1,:) = (dsigma_ll(1,:) - sigma_ll*dgamma1l(1))*igamma1l
+    dsigma_ll(7,:) = (dsigma_ll(7,:) - sigma_ll*dgamma1l(7))*igamma1l
+
     sigma_lp = sigma_lp * igamma1l
     sigma_pl = sigma_pl * igamma1p
 
     V_ll = V_ll * pars_l%V0 * igamma2l
+    dV_ll(5) = - V_ll/pars_l%V0
+    dV_ll(6) = (dV_ll(6) * pars_l%V0/beta + V_ll*dgamma2l(6)) * igamma2l
+    dV_ll(7) = (dV_ll(7) * pars_l%V0 + V_ll*dgamma2l(7)) * igamma2l
+
     V_lp = V_lp *chilp * pars_l%V0 * igamma2l
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
+
+        write(*,'(4f12.7)') V_ll
+        write(*,'(7f15.7)') dV_ll
+        stop
+
 
 
 
