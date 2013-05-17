@@ -209,7 +209,7 @@ end subroutine emt_init
 
 
 
-subroutine emt (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy)
+subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy)
 !
 ! Purpose:
 !       emt calculates the energy according to the effective medium theory.
@@ -258,15 +258,23 @@ implicit none
     real(8) :: Ecoh                     ! cohesive energy of part & lattice atoms
     real(8), dimension(3) :: xl, xp     ! for cal. cut-off
     real(8), dimension(3) :: rnnl, rnnp ! next neighbour distance for cut-off
+    real(8), dimension(3) :: rnndbeta_l, rnndbeta_p ! divide rnn by beta
     real(8) :: betas0_l, betas0_p       ! beta * s0= for l and p
     real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
-    real(8) :: fexp                     ! exponential function
 
 ! Variables and Arrays for partial derivatives
-    real(8), dimension(4) :: dfexp      ! derivatives of fexp
+    real(8), dimension(4) :: dtemp       ! array to handle fexp/fexplus
     real(8), dimension(2) :: dchilp, dchipl
+
+    ! Order of parameters eta2, no, eo, lambda, vo, kappa, so.
+    real(8), dimension(7) :: dgamma1l, dgamma2l, dgamma1p, dgamma2p
+    real(8), dimension(7) :: dtheta
+    real(8), dimension(7) :: dsigma_ll
+    real(8), dimension(7) :: dsigma_lp_l, dsigma_lp_p
+    real(8), dimension(7) :: dsigma_pl_l, dsigma_pl_p
+
 
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
@@ -286,9 +294,6 @@ implicit none
 
     dchipl(1) = - chipl * dchipl(2)     ! d chipl / d nop
     dchilp(2) = - chilp * dchilp(1)     ! d chipl / d nol
-    print *, chilp, dchilp
-    print *, chipl, dchipl
-    stop
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
@@ -313,16 +318,39 @@ implicit none
     xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
     xp = b * twelveth/ (1 + exp(acut*(rnnp-rcut)))
 
+    rnndbeta_l= rnnl / beta
+    rnndbeta_p= rnnp / beta
+
+
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
-    r3temp = rnnl-betas0_l
-    igamma1l = 1.0 / sum(xl*exp(-pars_l%eta2 * r3temp))
-    igamma2l = 1.0 /sum(xl*exp(-kappadbeta_l * r3temp))
 
-    r3temp = rnnp-betas0_p
-    igamma1p = 1.0 / sum(xp*exp(-pars_p%eta2 * r3temp))
-    igamma2p = 1.0 / sum(xp*exp(-kappadbeta_p * r3temp))
+    igamma1l = 0.
+    dgamma1l = 0
+    igamma1p = 0.
+    dgamma1p = 0.
+    igamma2l = 0.
+    dgamma2l = 0.
+    igamma2p = 0.
+    dgamma2p = 0.
+
+    do i=1,3
+        call fexplus(rnnl(i), xl(i), pars_l%eta2, betas0_l, igamma1l, dgamma1l)
+        call fexplus(rnndbeta_l(i), xl(i), pars_l%kappa, pars_l%s0, igamma2l, dgamma2l)
+        call fexplus(rnnp(i), xp(i), pars_p%eta2, betas0_p, igamma1p, dgamma1p)
+        call fexplus(rnndbeta_p(i), xp(i), pars_p%kappa, pars_p%s0, igamma2p, dgamma2p)
+    end do
+    igamma1l = 1.0 / igamma1l
+    igamma2l = 1.0 / igamma2l
+    igamma1p = 1.0 / igamma1p
+    igamma2p = 1.0 / igamma2p
+
+    dgamma1l(1) = dgamma1l(3)
+
+
+    write(*,'(7f12.7)') dgamma1l
+    stop
 
 
 !------------------------------------------------------------------------------
@@ -356,7 +384,11 @@ implicit none
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
-            theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+            call fexp(r, 1.d0, -acut, rcut, theta, dtheta)
+
+            theta = 1.0 / (1 + theta)
+            rtemp = - theta * theta
+            dtheta = rtemp * dtheta
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -383,6 +415,7 @@ implicit none
 
 
         end do
+
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
@@ -470,6 +503,6 @@ implicit none
 
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)
 
-end subroutine emt
+end subroutine emt_fit
 
 end module

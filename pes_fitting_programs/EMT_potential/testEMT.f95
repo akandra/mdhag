@@ -85,7 +85,7 @@ program testAtomClass
 !
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
 
-                            call emt(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
+                            call emt_fit(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)
                         write(*,'(1X, I2, 4F15.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref
