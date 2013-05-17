@@ -271,7 +271,7 @@ implicit none
     ! Order of parameters eta2, no, eo, lambda, vo, kappa, so.
     real(8), dimension(7) :: dgamma1l, dgamma2l, dgamma1p, dgamma2p
     real(8), dimension(7,n_l) :: dsigma_ll
-    real(8), dimension(7) :: dsigma_lp_l, dsigma_lp_p
+    real(8), dimension(7,n_l) :: dsigma_lp_l, dsigma_lp_p
     real(8), dimension(7) :: dsigma_pl_l, dsigma_pl_p
     real(8), dimension(7) :: dV_ll
     real(8), dimension(7) :: dV_lp_l, dV_lp_p
@@ -454,6 +454,11 @@ implicit none
         rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
         sigma_pl = sigma_pl + rtemp
 
+        dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i)
+
+        dsigma_pl_l(1) = - (r - betas0_l)*sigma_pl
+        dsigma_pl_l(7) = pars_l%eta2*beta*sigma_pl
+
 
     !--------------------MIXED PAIR POTENTIAL CONTRIUBUTION--------------------
 
@@ -473,6 +478,16 @@ implicit none
     dsigma_ll(7,:) = (dsigma_ll(7,:) - sigma_ll*dgamma1l(7))*igamma1l
 
     sigma_lp = sigma_lp * igamma1l
+    dsigma_lp_l(1,:) = - sigma_lp*igamma1l*dgamma1l(1)
+    dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(6)
+    dsigma_lp_p(1,:) = dsigma_lp_p(1,:)*igamma1l
+    dsigma_lp_p(7,:) = sigma_lp(:)*beta*pars_p%eta2
+
+    dsigma_pl_l(1) = dsigma_pl_l(1)*igamma1p
+    dsigma_pl_l(7) = dsigma_pl_l(7)*igamma1p
+    dsigma_pl_p(1) = - sigma_pl*igamma1p*dgamma1p(1)
+    dsigma_pl_p(7) = - sigma_pl*igamma1p*dgamma1p(7)
+
     sigma_pl = sigma_pl * igamma1p
 
     V_ll = V_ll * pars_l%V0 * igamma2l
@@ -483,8 +498,9 @@ implicit none
     V_lp = V_lp *chilp * pars_l%V0 * igamma2l
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
 
-        write(*,'(4f12.7)') V_ll
-        write(*,'(7f15.7)') dV_ll
+        write(*,'(4f12.7)') sigma_lp(45)
+        write(*,'(7f15.7)') dsigma_lp_l(1,45), dsigma_lp_p(1,45)
+        write(*,'(7f15.7)') dsigma_pl_l(45), dsigma_pl_p(45)
         stop
 
 
