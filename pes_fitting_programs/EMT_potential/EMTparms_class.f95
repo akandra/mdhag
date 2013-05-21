@@ -263,6 +263,7 @@ implicit none
     real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp, r3temp1     ! temporary array variable
     real(8) :: rtemp, rtemp1                    ! temporary variable
+    real(8), dimension(n_l) :: rn_ltemp
 
 ! Variables and Arrays for partial derivatives
     real(8), dimension(4) :: dtemp       ! array to handle fexp/fexplus
@@ -276,6 +277,14 @@ implicit none
     real(8), dimension(7) :: dV_ll
     real(8), dimension(7) :: dV_lp_l, dV_lp_p
     real(8), dimension(7) :: dV_pl_l, dV_pl_p
+
+    real(8), dimension(7,n_l) :: ds_l_l, ds_l_p
+    real(8), dimension(7) :: ds_p_l, ds_p_p
+    real(8), dimension(7) :: dvref_l_l, dvref_l_p
+    real(8), dimension(7) :: dvref_p_l, dvref_p_p
+    real(8), dimension(7) :: dEcoh_l_l, dEcoh_l_p
+    real(8), dimension(7) :: dEcoh_p_l, dEcoh_p_p
+
 
 
 
@@ -365,10 +374,30 @@ implicit none
     sigma_ll = 0
     dsigma_ll = 0
     sigma_pl = 0
+    dsigma_lp_l=0
+    dsigma_lp_p=0
+    dsigma_pl_l=0
+    dsigma_pl_p=0
     V_ll = 0
     dV_ll = 0
     V_lp = 0
     V_pl = 0
+    dV_lp_l = 0
+    dV_lp_p = 0
+    dV_pl_l = 0
+    dV_pl_p = 0
+    ds_l_l = 0
+    ds_l_p = 0
+    ds_p_l = 0
+    ds_p_p = 0
+    dvref_l_l=0
+    dvref_l_p=0
+    dvref_p_l=0
+    dvref_p_p=0
+    dEcoh_l_l = 0
+    dEcoh_l_p = 0
+    dEcoh_p_l = 0
+    dEcoh_p_p = 0
 
     do i = 1, n_l
         do j = i+1, n_l
@@ -440,7 +469,6 @@ implicit none
         r3temp(3) = r_lat(3,i)-r_part(3)
         r =  sqrt(sum(r3temp**2))
 
-
     !----------------------------THETA PARTICLE--------------------------------
 
         theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
@@ -456,7 +484,7 @@ implicit none
 
         dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i)
 
-        dsigma_pl_l(1) = - (r - betas0_l)*sigma_pl
+        dsigma_pl_l(1) = dsigma_pl_l(1) - (r - betas0_l)*rtemp
         dsigma_pl_l(7) = pars_l%eta2*beta*sigma_pl
 
 
@@ -464,8 +492,16 @@ implicit none
 
         rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
         V_lp= V_lp + rtemp
+        dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p)
+        dV_lp_p(7) = dV_lp_p(7) + rtemp*pars_p%kappa
+
         rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
         V_pl = V_pl + rtemp
+        dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l)
+        dV_pl_l(7) = dV_pl_l(7) + rtemp*pars_l%kappa
+
+
+
 
     end do
 
@@ -479,16 +515,16 @@ implicit none
 
     sigma_lp = sigma_lp * igamma1l
     dsigma_lp_l(1,:) = - sigma_lp*igamma1l*dgamma1l(1)
-    dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(6)
+    dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(7)
     dsigma_lp_p(1,:) = dsigma_lp_p(1,:)*igamma1l
     dsigma_lp_p(7,:) = sigma_lp(:)*beta*pars_p%eta2
 
     dsigma_pl_l(1) = dsigma_pl_l(1)*igamma1p
     dsigma_pl_l(7) = dsigma_pl_l(7)*igamma1p
+    sigma_pl = sigma_pl * igamma1p
     dsigma_pl_p(1) = - sigma_pl*igamma1p*dgamma1p(1)
     dsigma_pl_p(7) = - sigma_pl*igamma1p*dgamma1p(7)
 
-    sigma_pl = sigma_pl * igamma1p
 
     V_ll = V_ll * pars_l%V0 * igamma2l
     dV_ll(5) = - V_ll/pars_l%V0
@@ -498,10 +534,26 @@ implicit none
     V_lp = V_lp *chilp * pars_l%V0 * igamma2l
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
 
-        write(*,'(4f12.7)') sigma_lp(45)
-        write(*,'(7f15.7)') dsigma_lp_l(1,45), dsigma_lp_p(1,45)
-        write(*,'(7f15.7)') dsigma_pl_l(45), dsigma_pl_p(45)
-        stop
+    dV_lp_l(2) = - V_lp/pars_l%n0
+    dV_lp_l(5) = - V_lp/pars_l%V0
+    dV_lp_l(7) = -V_lp*igamma2l
+    dV_lp_l(6) = dV_lp_l(7)*dgamma2l(6)
+    dV_lp_l(7) = dV_lp_l(7)*dgamma2l(7)
+    dV_lp_p(2) = V_lp/pars_p%n0
+    dV_lp_p(6) = dV_lp_p(6)*igamma2l*chilp * pars_l%V0 / beta
+    dV_lp_p(7) = dV_lp_p(7)*igamma2l*chilp * pars_l%V0
+
+
+
+    dV_pl_l(2) = - V_pl/pars_l%n0
+    dV_pl_l(6) = dV_pl_l(6)*igamma2p*pars_p%V0*chipl/beta
+    dV_pl_l(7) = dV_pl_l(7)*igamma2p*chipl * pars_p%V0
+    dV_pl_p(2) = V_pl/pars_p%n0
+    dV_pl_p(5) = - V_pl/pars_p%V0
+
+    dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
+    dV_pl_p(7) = -V_pl*igamma2p*dgamma2p(7)
+
 
 
 
@@ -510,17 +562,62 @@ implicit none
 ! The neutral sphere radius is the radius in which the entire density of the
 ! atom is included.
 
-    s_l = -log( (sigma_ll + chilp * sigma_lp) * twelveth ) &
+    rn_ltemp = sigma_ll + chilp*sigma_lp
+    s_l = -log( rn_ltemp * twelveth ) &
             / ( beta * pars_l%eta2)
-    s_p  = -log( sigma_pl * chipl * twelveth) / ( beta * pars_p%eta2)
+
+    rn_ltemp = 1.0/(rn_ltemp*pars_l%eta2*beta)
+    ds_l_l(1,:) = -s_l/pars_l%eta2 &
+                  - (dsigma_ll(1,:)+chilp*dsigma_lp_l(1,:))*rn_ltemp
+    ds_l_l(2,:) = -sigma_lp*rn_ltemp*dchilp(2)
+    ds_l_l(7,:) = -rn_ltemp*(dsigma_ll(7,:)+chilp*dsigma_lp_l(7,:))
+
+    ds_l_p(1,:) = - rn_ltemp*chilp*dsigma_lp_p(1,:)
+    ds_l_p(2,:) = -sigma_lp*rn_ltemp*dchilp(1)
+    ds_l_p(7,:) = -rn_ltemp*chilp*dsigma_lp_p(7,:)
+
+
+    rtemp=1.0/(beta*pars_p%eta2)
+    s_p  = -log( sigma_pl * chipl * twelveth) *rtemp
+    ds_p_l(1) = - rtemp /sigma_pl*dsigma_pl_l(1)
+    ds_p_l(2) = -rtemp / pars_l%n0
+    ds_p_l(7) = - rtemp / sigma_pl*dsigma_pl_l(7)
+
+    ds_p_p(1) = -s_p/pars_p%eta2 - rtemp/(sigma_pl)*dsigma_pl_p(1)
+    ds_p_p(2) = rtemp / pars_p%n0
+    ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
+
 
 
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be substracted to account for the contributions
 ! that were included twice.
 
-    vref_l = 12 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
+    rn_ltemp = exp( -pars_l%kappa * s_l)
+    rtemp = -12 * pars_l%V0 * pars_l%kappa
+    vref_l = 12 * pars_l%V0 * sum(rn_ltemp)
+    dvref_l_l(1) = rtemp*sum(rn_ltemp*ds_l_l(1,:))
+    dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
+    dvref_l_l(5) = vref_l/pars_l%V0
+    dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
+    dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
+    dvref_l_p(1) = rtemp*sum(rn_ltemp*ds_l_p(1,:))
+    dvref_l_p(2) = rtemp*sum(rn_ltemp*ds_l_p(2,:))
+    dvref_l_p(7) = rtemp*sum(rn_ltemp*ds_l_p(7,:))
+
+    rtemp = -pars_p%kappa
     vref_p = 12 * pars_p%V0 * exp( -pars_p%kappa * s_p)
+    dvref_p_p(1) = rtemp*vref_p*ds_p_p(1)
+    dvref_p_p(2) = rtemp*vref_p*ds_p_p(2)
+
+    dvref_p_p(5) = vref_p/pars_p%V0
+    dvref_p_p(6) = - vref_p*s_p
+
+    dvref_p_p(7) = rtemp*vref_p*ds_p_p(7)
+
+    dvref_p_l(1) = rtemp*vref_p*ds_p_l(1)
+    dvref_p_l(2) = rtemp*vref_p*ds_p_l(2)
+    dvref_p_l(7) = rtemp*vref_p*ds_p_l(7)
 
 
 
@@ -538,6 +635,18 @@ implicit none
           * pars_l%E0 &
           + (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
+        ! Wir sind hier und morgen machen wir weiter :-D
+
+
+    write(*,'(4f12.7)') vref_l/2, vref_p/2
+    write(*,'(7f15.7)') dvref_l_l/2
+    write(*,'(7f15.7)') dvref_l_p/2
+    write(*,'(7f15.7)') dvref_p_p/2
+    write(*,'(7f15.7)') dvref_p_l/2
+!    write(*,'(7f15.7)') ds_p_p
+
+
+    stop
 
 
 !-------------------------------OVERALL ENERGY---------------------------------
