@@ -212,7 +212,9 @@ end subroutine emt_init
 subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy)
 !
 ! Purpose:
+! ========
 !       emt calculates the energy according to the effective medium theory.
+!       This emt includes the derivitives for the Fit and the Forces
 ! Input variables are (in oder of appearance):
 !           particle: incident particle
 !           lattice : lattice atoms
@@ -221,6 +223,16 @@ subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy)
 !           pars_l  : emt-parameters of lattice
 ! Output variables are:
 !           energy  : emt-energy
+!
+! General Remarks To Fit:
+! =======================
+! If you are using the potential for fitting, we recommand to refrain from
+! fitting so. so_l is directly connected to the lattice constant. If you change
+! it, you'll automatically change the lattice constant of your slab.
+! so_l = a_lattice /(beta *sqrt_2)
+! so_p is related to the DFT density, so, you should not change it, either, if
+! you want to reproduce the DFT density.
+!
 implicit none
 
 !------------------------------------------------------------------------------
@@ -265,27 +277,30 @@ implicit none
     real(8) :: rtemp, rtemp1                    ! temporary variable
     real(8), dimension(n_l) :: rn_ltemp
 
+!-----------------------DECLARE VARIABLES FOR DERIVATIVES----------------------
 ! Variables and Arrays for partial derivatives
-    real(8), dimension(4) :: dtemp       ! array to handle fexp/fexplus
-    real(8), dimension(2) :: dchilp, dchipl
-
-    ! Order of parameters eta2, no, eo, lambda, vo, kappa, so.
-    real(8), dimension(7) :: dgamma1l, dgamma2l, dgamma1p, dgamma2p
+! Apart from chi, all derivatives are 7 long. The first place denotes the
+! derivative according to eta2, followed by no, eo, lambda, vo, kappa and so.
+! The general notation is:
+! e.g. dV_lp_l(1) : the derivative of V_lp with respect to eta2_l.
+    real(8), dimension(2) :: dchilp, dchipl     ! First element: p, then l
+    real(8), dimension(7) :: dgamma1l, dgamma2l
+    real(8), dimension(7) :: dgamma1p, dgamma2p
     real(8), dimension(7,n_l) :: dsigma_ll
-    real(8), dimension(7,n_l) :: dsigma_lp_l, dsigma_lp_p
+    real(8), dimension(7,n_l) :: dsigma_lp_l
+    real(8), dimension(7,n_l) :: dsigma_lp_p
     real(8), dimension(7) :: dsigma_pl_l, dsigma_pl_p
     real(8), dimension(7) :: dV_ll
     real(8), dimension(7) :: dV_lp_l, dV_lp_p
     real(8), dimension(7) :: dV_pl_l, dV_pl_p
-
     real(8), dimension(7,n_l) :: ds_l_l, ds_l_p
     real(8), dimension(7) :: ds_p_l, ds_p_p
     real(8), dimension(7) :: dvref_l_l, dvref_l_p
     real(8), dimension(7) :: dvref_p_l, dvref_p_p
-    real(8), dimension(7) :: dEcoh_l_l, dEcoh_l_p
-    real(8), dimension(7) :: dEcoh_p_l, dEcoh_p_p
+    real(8), dimension(7) :: dEcoh_l, dEcoh_p
+    real(8), dimension(7) :: denergy_l, denergy_p
 
-
+!______________________________________________________________________________
 
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
@@ -332,6 +347,8 @@ implicit none
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
+! The derivative is not defined as the inverse and formed for each gamma
+! individually.
     r3temp = rnnl - betas0_l
 
     r3temp1 = xl*exp(- pars_l%eta2*r3temp)
@@ -369,7 +386,7 @@ implicit none
 !                          INDIVIDUAL CONTRIBUTIONS
 !                          ========================
 !------------------------------------------------------------------------------
-! The values for the sums are set to zero.
+! The values for the sums and the derivatives are set to zero.
 
     sigma_ll = 0
     dsigma_ll = 0
@@ -394,10 +411,10 @@ implicit none
     dvref_l_p=0
     dvref_p_l=0
     dvref_p_p=0
-    dEcoh_l_l = 0
-    dEcoh_l_p = 0
-    dEcoh_p_l = 0
-    dEcoh_p_p = 0
+    dEcoh_l = 0
+    dEcoh_p = 0
+    denergy_l = 0
+    denergy_p = 0
 
     do i = 1, n_l
         do j = i+1, n_l
@@ -477,6 +494,8 @@ implicit none
     !-------------------------------MIXED SIGMA--------------------------------
     ! Contributions of both particle and lattice to neutral sphere radius
     ! To fully include the cut-off, we correct them later by gamma.
+    ! Each of the mixed sigmas depends on both l and p parameters. Not all
+    ! contributions need to be under the loop.
 
         sigma_lp(i) = theta*exp(-pars_p%eta2 * (r - betas0_p) )
         rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
@@ -509,54 +528,55 @@ implicit none
 !-------------------------------CUT-OFF ENACTION-------------------------------
 ! Don't forget the gamma!
 
+! sigma and its derivatives.
     sigma_ll = sigma_ll * igamma1l
-    dsigma_ll(1,:) = (dsigma_ll(1,:) - sigma_ll*dgamma1l(1))*igamma1l
-    dsigma_ll(7,:) = (dsigma_ll(7,:) - sigma_ll*dgamma1l(7))*igamma1l
+        dsigma_ll(1,:) = (dsigma_ll(1,:) - sigma_ll*dgamma1l(1))*igamma1l
+        dsigma_ll(7,:) = (dsigma_ll(7,:) - sigma_ll*dgamma1l(7))*igamma1l
 
     sigma_lp = sigma_lp * igamma1l
-    dsigma_lp_l(1,:) = - sigma_lp*igamma1l*dgamma1l(1)
-    dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(7)
-    dsigma_lp_p(1,:) = dsigma_lp_p(1,:)*igamma1l
-    dsigma_lp_p(7,:) = sigma_lp(:)*beta*pars_p%eta2
+        ! Derivative with respect to l
+        dsigma_lp_l(1,:) = - sigma_lp*igamma1l*dgamma1l(1)
+        dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(7)
+        ! Derivative with respect to p
+        dsigma_lp_p(1,:) = dsigma_lp_p(1,:)*igamma1l
+        dsigma_lp_p(7,:) = sigma_lp(:)*beta*pars_p%eta2
 
-    dsigma_pl_l(1) = dsigma_pl_l(1)*igamma1p
-    dsigma_pl_l(7) = dsigma_pl_l(7)*igamma1p
     sigma_pl = sigma_pl * igamma1p
-    dsigma_pl_p(1) = - sigma_pl*igamma1p*dgamma1p(1)
-    dsigma_pl_p(7) = - sigma_pl*igamma1p*dgamma1p(7)
+        ! Derivative with respect to l
+        dsigma_pl_l(1) = dsigma_pl_l(1)*igamma1p
+        dsigma_pl_l(7) = dsigma_pl_l(7)*igamma1p
+        ! Derivative with respect to p
+        dsigma_pl_p(1) = - sigma_pl*igamma1p*dgamma1p(1)
+        dsigma_pl_p(7) = - sigma_pl*igamma1p*dgamma1p(7)
 
-
+! The pair potential and its derivatives
     V_ll = V_ll * pars_l%V0 * igamma2l
-    dV_ll(5) = - V_ll/pars_l%V0
-    dV_ll(6) = (dV_ll(6) * pars_l%V0/beta + V_ll*dgamma2l(6)) * igamma2l
-    dV_ll(7) = (dV_ll(7) * pars_l%V0 + V_ll*dgamma2l(7)) * igamma2l
+        dV_ll(5) = - V_ll/pars_l%V0
+        dV_ll(6) = (dV_ll(6) * pars_l%V0/beta + V_ll*dgamma2l(6)) * igamma2l
+        dV_ll(7) = (dV_ll(7) * pars_l%V0 + V_ll*dgamma2l(7)) * igamma2l
 
     V_lp = V_lp *chilp * pars_l%V0 * igamma2l
+        ! Derivative with respect to l
+        dV_lp_l(2) = - V_lp/pars_l%n0
+        dV_lp_l(5) = - V_lp/pars_l%V0
+        dV_lp_l(7) = -V_lp*igamma2l             ! this one is temporary
+        dV_lp_l(6) = dV_lp_l(7)*dgamma2l(6)
+        dV_lp_l(7) = dV_lp_l(7)*dgamma2l(7)
+        ! Derivative with respect to p
+        dV_lp_p(2) = V_lp/pars_p%n0
+        dV_lp_p(6) = dV_lp_p(6)*igamma2l*chilp * pars_l%V0 / beta
+        dV_lp_p(7) = dV_lp_p(7)*igamma2l*chilp * pars_l%V0
+
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
-
-    dV_lp_l(2) = - V_lp/pars_l%n0
-    dV_lp_l(5) = - V_lp/pars_l%V0
-    dV_lp_l(7) = -V_lp*igamma2l
-    dV_lp_l(6) = dV_lp_l(7)*dgamma2l(6)
-    dV_lp_l(7) = dV_lp_l(7)*dgamma2l(7)
-    dV_lp_p(2) = V_lp/pars_p%n0
-    dV_lp_p(6) = dV_lp_p(6)*igamma2l*chilp * pars_l%V0 / beta
-    dV_lp_p(7) = dV_lp_p(7)*igamma2l*chilp * pars_l%V0
-
-
-
-    dV_pl_l(2) = - V_pl/pars_l%n0
-    dV_pl_l(6) = dV_pl_l(6)*igamma2p*pars_p%V0*chipl/beta
-    dV_pl_l(7) = dV_pl_l(7)*igamma2p*chipl * pars_p%V0
-    dV_pl_p(2) = V_pl/pars_p%n0
-    dV_pl_p(5) = - V_pl/pars_p%V0
-
-    dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
-    dV_pl_p(7) = -V_pl*igamma2p*dgamma2p(7)
-
-
-
-
+        ! Derivative with respect to l
+        dV_pl_l(2) = - V_pl/pars_l%n0
+        dV_pl_l(6) = dV_pl_l(6)*igamma2p*pars_p%V0*chipl/beta
+        dV_pl_l(7) = dV_pl_l(7)*igamma2p*chipl * pars_p%V0
+        ! Derivative with respect to p
+        dV_pl_p(2) = V_pl/pars_p%n0
+        dV_pl_p(5) = - V_pl/pars_p%V0
+        dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
+        dV_pl_p(7) = -V_pl*igamma2p*dgamma2p(7)
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 ! The neutral sphere radius is the radius in which the entire density of the
@@ -567,25 +587,26 @@ implicit none
             / ( beta * pars_l%eta2)
 
     rn_ltemp = 1.0/(rn_ltemp*pars_l%eta2*beta)
-    ds_l_l(1,:) = -s_l/pars_l%eta2 &
-                  - (dsigma_ll(1,:)+chilp*dsigma_lp_l(1,:))*rn_ltemp
-    ds_l_l(2,:) = -sigma_lp*rn_ltemp*dchilp(2)
-    ds_l_l(7,:) = -rn_ltemp*(dsigma_ll(7,:)+chilp*dsigma_lp_l(7,:))
-
-    ds_l_p(1,:) = - rn_ltemp*chilp*dsigma_lp_p(1,:)
-    ds_l_p(2,:) = -sigma_lp*rn_ltemp*dchilp(1)
-    ds_l_p(7,:) = -rn_ltemp*chilp*dsigma_lp_p(7,:)
-
+        ! Derivative with respect to l
+        ds_l_l(1,:) = -s_l/pars_l%eta2 &
+                      - (dsigma_ll(1,:)+chilp*dsigma_lp_l(1,:))*rn_ltemp
+        ds_l_l(2,:) = -sigma_lp*rn_ltemp*dchilp(2)
+        ds_l_l(7,:) = -rn_ltemp*(dsigma_ll(7,:)+chilp*dsigma_lp_l(7,:))
+        ! Derivative with respect to p
+        ds_l_p(1,:) = - rn_ltemp*chilp*dsigma_lp_p(1,:)
+        ds_l_p(2,:) = -sigma_lp*rn_ltemp*dchilp(1)
+        ds_l_p(7,:) = -rn_ltemp*chilp*dsigma_lp_p(7,:)
 
     rtemp=1.0/(beta*pars_p%eta2)
     s_p  = -log( sigma_pl * chipl * twelveth) *rtemp
-    ds_p_l(1) = - rtemp /sigma_pl*dsigma_pl_l(1)
-    ds_p_l(2) = -rtemp / pars_l%n0
-    ds_p_l(7) = - rtemp / sigma_pl*dsigma_pl_l(7)
-
-    ds_p_p(1) = -s_p/pars_p%eta2 - rtemp/(sigma_pl)*dsigma_pl_p(1)
-    ds_p_p(2) = rtemp / pars_p%n0
-    ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
+        ! Derivative with respect to l
+        ds_p_l(1) = - rtemp /sigma_pl*dsigma_pl_l(1)
+        ds_p_l(2) = -rtemp / pars_l%n0
+        ds_p_l(7) = - rtemp / sigma_pl*dsigma_pl_l(7)
+        ! Derivative with respect to p
+        ds_p_p(1) = -s_p/pars_p%eta2 - rtemp/(sigma_pl)*dsigma_pl_p(1)
+        ds_p_p(2) = rtemp / pars_p%n0
+        ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
 
 
 
@@ -596,30 +617,29 @@ implicit none
     rn_ltemp = exp( -pars_l%kappa * s_l)
     rtemp = -12 * pars_l%V0 * pars_l%kappa
     vref_l = 12 * pars_l%V0 * sum(rn_ltemp)
-    dvref_l_l(1) = rtemp*sum(rn_ltemp*ds_l_l(1,:))
-    dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
-    dvref_l_l(5) = vref_l/pars_l%V0
-    dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
-    dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
-    dvref_l_p(1) = rtemp*sum(rn_ltemp*ds_l_p(1,:))
-    dvref_l_p(2) = rtemp*sum(rn_ltemp*ds_l_p(2,:))
-    dvref_l_p(7) = rtemp*sum(rn_ltemp*ds_l_p(7,:))
+    ! Derivative with respect to l
+        dvref_l_l(1) = rtemp*sum(rn_ltemp*ds_l_l(1,:))
+        dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
+        dvref_l_l(5) = vref_l/pars_l%V0
+        dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
+        dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
+        ! Derivative with respect to p
+        dvref_l_p(1) = rtemp*sum(rn_ltemp*ds_l_p(1,:))
+        dvref_l_p(2) = rtemp*sum(rn_ltemp*ds_l_p(2,:))
+        dvref_l_p(7) = rtemp*sum(rn_ltemp*ds_l_p(7,:))
 
     rtemp = -pars_p%kappa
     vref_p = 12 * pars_p%V0 * exp( -pars_p%kappa * s_p)
-    dvref_p_p(1) = rtemp*vref_p*ds_p_p(1)
-    dvref_p_p(2) = rtemp*vref_p*ds_p_p(2)
-
-    dvref_p_p(5) = vref_p/pars_p%V0
-    dvref_p_p(6) = - vref_p*s_p
-
-    dvref_p_p(7) = rtemp*vref_p*ds_p_p(7)
-
-    dvref_p_l(1) = rtemp*vref_p*ds_p_l(1)
-    dvref_p_l(2) = rtemp*vref_p*ds_p_l(2)
-    dvref_p_l(7) = rtemp*vref_p*ds_p_l(7)
-
-
+        ! Derivative with respect to p
+        dvref_p_p(1) = rtemp*vref_p*ds_p_p(1)
+        dvref_p_p(2) = rtemp*vref_p*ds_p_p(2)
+        dvref_p_p(5) = vref_p/pars_p%V0
+        dvref_p_p(6) = - vref_p*s_p
+        dvref_p_p(7) = rtemp*vref_p*ds_p_p(7)
+        ! Derivative with respect to l
+        dvref_p_l(1) = rtemp*vref_p*ds_p_l(1)
+        dvref_p_l(2) = rtemp*vref_p*ds_p_l(2)
+        dvref_p_l(7) = rtemp*vref_p*ds_p_l(7)
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -635,24 +655,58 @@ implicit none
           * pars_l%E0 &
           + (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
-        ! Wir sind hier und morgen machen wir weiter :-D
 
+    rn_ltemp=-pars_l%E0*pars_l%lambda*s_l*exp(-pars_l%lambda*s_l)
+    rtemp = -pars_p%lambda*s_p*pars_p%E0*exp(-pars_p%lambda*s_p)
+        ! Derivative with respect to l
+        dEcoh_l(1) = sum(pars_l%lambda*rn_ltemp*ds_l_l(1,:))&
+                    +pars_p%lambda*rtemp*ds_p_l(1)
+        dEcoh_l(2) = sum(pars_l%lambda*rn_ltemp*ds_l_l(2,:))&
+                    +pars_p%lambda*rtemp*ds_p_l(2)
+        dEcoh_l(3) = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 )
+        dEcoh_l(4) = sum(s_l*rn_ltemp)
+        dEcoh_l(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l(7,:))&
+                    +pars_p%lambda*rtemp*ds_p_l(7)
 
-    write(*,'(4f12.7)') vref_l/2, vref_p/2
-    write(*,'(7f15.7)') dvref_l_l/2
-    write(*,'(7f15.7)') dvref_l_p/2
-    write(*,'(7f15.7)') dvref_p_p/2
-    write(*,'(7f15.7)') dvref_p_l/2
-!    write(*,'(7f15.7)') ds_p_p
-
-
-    stop
+    rtemp = -pars_p%lambda*s_p*pars_p%E0*exp(-pars_p%lambda*s_p)
+        ! Derivative with respect to p
+        dEcoh_p(1) = sum(pars_l%lambda*rn_ltemp*ds_l_p(1,:))&
+                    +pars_p%lambda*rtemp*ds_p_p(1)
+        dEcoh_p(2) = sum(pars_l%lambda*rn_ltemp*ds_l_p(2,:))&
+                    +pars_p%lambda*rtemp*ds_p_p(2)
+        dEcoh_p(3) = (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)
+        dEcoh_p(4) = s_p*rtemp
+        dEcoh_p(7) = sum(pars_l%lambda*rn_ltemp*ds_l_p(7,:))&
+                    +rtemp*pars_p%lambda*ds_p_p(7)
 
 
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)
+
+    ! Derivative with respect to l
+    denergy_l(1) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))
+    denergy_l(2) = dEcoh_l(2) &
+                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))
+    denergy_l(3) = dEcoh_l(3)
+    denergy_l(4) = dEcoh_l(4)
+    denergy_l(5) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5))
+    denergy_l(6) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))
+    denergy_l(7) = dEcoh_l(7) + dV_ll(7) &
+                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))
+
+    ! Derivative with respect to p
+    denergy_p(1) = dEcoh_p(1) + 0.5*(dvref_l_p(1)+dvref_p_p(1))
+    denergy_p(2) = dEcoh_p(2) &
+                   - 0.5*(-dV_pl_p(2)+dV_lp_p(2)-dvref_l_p(2)-dvref_p_p(2))
+    denergy_p(3) = dEcoh_p(3)
+    denergy_p(4) = dEcoh_p(4)
+    denergy_p(5) = 0.5*(dV_pl_p(5) + dvref_p_p(5))
+    denergy_p(6) = 0.5*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
+    denergy_p(7) = dEcoh_p(7) &
+                   - 0.5*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
+
 
 end subroutine emt_fit
 
