@@ -39,6 +39,8 @@ program testAtomClass
     character(len=30)                    :: H_dft_energy
     integer :: ierror2, ierror3      ! number to check if file opened correctly
 
+! output from emt-fit
+    real(8), dimension(7) :: denergy_l, denergy_p ! derivatives with respect to the parameters eta2, no, eo, lambda, vo, kappa and so
 
     H_position_fname = 'hau111_plot.E.dat' ! File which contains some H coordinates
     H_dft_energy =  'hEMTfortran.dat'
@@ -86,6 +88,7 @@ program testAtomClass
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
 
                             call emt_der_r(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
+                    call emt_fit(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy, denergy_l, denergy_p)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)
                         !write(*,'(1X, I2, 4F15.10)') loc(i), r_part(1), r_part(2), r_part(3), energy-E_ref

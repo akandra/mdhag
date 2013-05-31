@@ -209,7 +209,7 @@ end subroutine emt_init
 
 
 
-subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy)
+subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy, denergy_l, denergy_p)
 !
 ! Purpose:
 ! ========
@@ -250,6 +250,11 @@ implicit none
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
     real(8), intent(out)                :: energy   ! calc. reference energy
+    real(8), dimension(7), intent(out)  :: denergy_l, denergy_p ! derivatives
+                                                        ! with respect to to
+                                                        ! eta2, followed by no,
+                                                        ! eo, lambda, vo, kappa
+                                                        ! and so.
 
 ! declare the variables that appear in the subroutine
 
@@ -280,7 +285,7 @@ implicit none
 !-----------------------DECLARE VARIABLES FOR DERIVATIVES----------------------
 ! Variables and Arrays for partial derivatives
 ! Apart from chi, all derivatives are 7 long. The first place denotes the
-! derivative according to eta2, followed by no, eo, lambda, vo, kappa and so.
+! derivative with respect to to eta2, followed by no, eo, lambda, vo, kappa and so.
 ! The general notation is:
 ! e.g. dV_lp_l(1) : the derivative of V_lp with respect to eta2_l.
     real(8), dimension(2) :: dchilp, dchipl     ! First element: p, then l
@@ -298,7 +303,7 @@ implicit none
     real(8), dimension(7) :: dvref_l_l, dvref_l_p
     real(8), dimension(7) :: dvref_p_l, dvref_p_p
     real(8), dimension(7) :: dEcoh_l, dEcoh_p
-    real(8), dimension(7) :: denergy_l, denergy_p
+
 
 !______________________________________________________________________________
 
