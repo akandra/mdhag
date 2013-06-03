@@ -269,7 +269,8 @@ C     GET MATRIX FROM STORAGE
       DO460I=1,N
 C      RESIDUAL ARRAY OPTION SATISFIED HERE
       J=4
-      CALL MODEL(F,Y,X,RES,I,J)
+      CALLMODEL(F,Y,X,RES,I,J, P)
+C      CALLMODEL(F,Y,X,RES,1,J)
   460  WRITE(IK,2031)I,X(I),Y(I),F,RE
 C     ONE PARAMETER SUPPORT PLANE COMPUTATIONS
 461      FNKW=N-K+IP
@@ -311,10 +312,12 @@ C     RETURNING PARAMETERS WITH NO OUTPUT
  601  BB(J)=B(J)
 C      RESIDUAL ARRAY OPTION WITH NO OUTPUT
  602  J=4
-      CALLMODEL(F,Y,X,RES,1,J)
+      CALLMODEL(F,Y,X,RES,1,J, P)
+C      CALLMODEL(F,Y,X,RES,1,J)
       GOTO(599,599,599,604),J
  604  DO605I=2,N
- 605  CALLMODEL(F,Y,X,RES,I,J)
+ 605  CALLMODEL(F,Y,X,RES,I,J, P)
+C 605  CALLMODEL(F,Y,X,RES,1,J)
       IF(IFP.GE.0)WRITE(IK,2090)
       RETURN
  2000 FORMAT(100H XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -362,6 +365,8 @@ CNEWA         NEWA - CALCULATES PTP MATRIX, A, AND GRADIENT VECTOR, G.
 C**********************************************************************
 C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
+C Changed lines 384 to 404. old lines commented out with !
+C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
       DIMENSION Y(50),X(50),RES(50)
@@ -377,21 +382,25 @@ C**********************************************************************
  1    A(J,I)=0.
       DO50II=1,N
 C     LOOK FOR PARTIALS
-      J=2
-      CALLMODEL(F,Y,X,RES,II,J)
+!     J=2
+      J=1
+!      CALLMODEL(F,Y,X,RES,II,J)
+      CALLMODEL(F,Y,X,RES,II,J,P)
       RD=RE
       DO30JJ=1,K
 C     CHECK FOR OMITTED PARAMETERS
       IF(IP.GT.0)GOTO25
    10 GO TO(20,30,20),J
 C     COMPUTE PARTIALS IF NECESSARY
- 20   AB=B(JJ)
-      B(JJ)=AB+DELTA*AB
-      J=1
-      CALLMODEL(FDEL,Y,X,RES,II,J)
+! 20   AB=B(JJ)
+!      B(JJ)=AB+DELTA*AB
+!      J=1
+   20  J=2
+!      CALLMODEL(FDEL,Y,X,RES,II,J)
+      CALLMODEL(FDEL,Y,X,RES,II,J,P)
       RE=RD
-      P(JJ)=(FDEL-F)/(DELTA*AB)
-      B(JJ)=AB
+!      P(JJ)=(FDEL-F)/(DELTA*AB)
+!      B(JJ)=AB
       GOTO30
    25 DO 26 I=1,IP
       IF(JJ.EQ.IB(I)) GO TO 29
@@ -756,7 +765,8 @@ C**********************************************************************
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N
-      CALL MODEL(F,Y,X,RES,I,1)
+      CALLMODEL(F,Y,X,RES,I,1,P)
+C      CALLMODEL(F,Y,X,RES,1,J)
    10 PHI=PHI+RE*RE
       RETURN
       END

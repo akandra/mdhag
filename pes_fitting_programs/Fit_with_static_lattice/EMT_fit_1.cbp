@@ -37,6 +37,9 @@
 		<Unit filename="EMTparms_class_v2.f95">
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="emt_init.f95">
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="hau111_plot.E.dat" />
 		<Unit filename="model.f95">
 			<Option weight="1" />

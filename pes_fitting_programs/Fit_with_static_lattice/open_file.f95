@@ -16,7 +16,7 @@ module open_file
             character, intent(in)   :: file_name
         end subroutine
 
-        contains module procedure
+ !       contains module procedure
 
     endinterface
 

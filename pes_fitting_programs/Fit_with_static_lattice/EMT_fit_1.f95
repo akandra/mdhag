@@ -27,6 +27,7 @@ program EMT_fit_1
     !
     !   Date        Author      Change
     !   30.04.2013  dja         Initial release
+    !   03.06.2013  smj         derivatives into fit
     !
     !
     !
@@ -34,6 +35,7 @@ program EMT_fit_1
 
     use EMTparms_class
     use open_file
+    use emt_init_data
 
     implicit none
 
@@ -76,11 +78,11 @@ program EMT_fit_1
     namelist / lattice_pars_list  / lattice_pars                ! Namelists to handle I/O of parameters
     namelist / particle_pars_list / particle_pars
 
-    integer                                 :: n_lat0_at         ! number of atoms in reference slab
-    integer                                 :: n_lay0            ! number of layers in reference slab
-    real(8)                                 :: nn0               ! next neighbour distance in reference slab
-    real(8), dimension(3)                   :: cell              ! dimensions of the cell
-    real(8), allocatable, dimension(:,:)    :: r0_lat            ! lattice positions for reference calc.
+!    integer                                 :: n_lat0_at         ! number of atoms in reference slab
+!    integer                                 :: n_lay0            ! number of layers in reference slab
+!    real(8)                                 :: nn0               ! next neighbour distance in reference slab
+!    real(8), dimension(3)                   :: cell              ! dimensions of the cell
+!    real(8), allocatable, dimension(:,:)    :: r0_lat            ! lattice positions for reference calc.
     !integer, allocatable, dimension(:)      :: site              ! impact site
     integer site(1000)
     real(8)                                 :: energy            ! energy output from emt subroutines
@@ -109,13 +111,33 @@ program EMT_fit_1
     lattice_configuration_fname             = 'ref_conf_Au111a.dat'
     particle_position_and_DFT_energies_fname= 'hau111_plot.E.dat'
 
-    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+! These paths are for windows, they don't work under linux
+!    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
 
-    particle_nml_in                         = 'parameters_and_fit_results\f119.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results\f119.02.H.nml'
+!    particle_nml_in                         = 'parameters_and_fit_results\f119.00.H.nml'
+!    particle_nml_out                        = 'parameters_and_fit_results\f119.02.H.nml'
 
-    lattice_nml_in                          = 'parameters_and_fit_results\f119.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results\f119.02.Au.nml'
+!    lattice_nml_in                          = 'parameters_and_fit_results\f119.00.Au.nml'
+!    lattice_nml_out                         = 'parameters_and_fit_results\f119.02.Au.nml'
+
+! These paths are for linux, they probably won't work under windows.
+!    fit_results_fname                       = 'parameters_and_fit_results/f119.02.NLLSQ.out'
+
+!    particle_nml_in                         = 'parameters_and_fit_results/f119.00.H.nml'
+!    particle_nml_out                        = 'parameters_and_fit_results/f119.02.H.nml'
+
+!    lattice_nml_in                          = 'parameters_and_fit_results/f119.00.Au.nml'
+!    lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
+
+! Strömqvist
+    fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
+
+    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
+
+    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
+
 
     TITLE = 'EMT NLLSQ Test'
 
@@ -134,7 +156,7 @@ program EMT_fit_1
 
 
     !------------------------------------------------------------------------------------------------------------------
-    !                       READ LATTICE DEFINITION PARAMETSR
+    !                       READ LATTICE DEFINITION PARAMETERS
     !------------------------------------------------------------------------------------------------------------------
     call open_for_read (8, lattice_configuration_fname)
     read(8,*) n_lat0_at
