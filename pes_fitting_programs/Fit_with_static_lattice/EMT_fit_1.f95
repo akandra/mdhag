@@ -35,7 +35,6 @@ program EMT_fit_1
 
     use EMTparms_class
     use open_file
-    use emt_init_data
 
     implicit none
 
@@ -66,6 +65,7 @@ program EMT_fit_1
     character(20)               :: TITLE            ! string of 20 characters used for title on printout
 
 
+
     !------------------------------------------------------------------------------------------------------------------
     !
     !                                   EMT VARIABLES
@@ -78,11 +78,12 @@ program EMT_fit_1
     namelist / lattice_pars_list  / lattice_pars                ! Namelists to handle I/O of parameters
     namelist / particle_pars_list / particle_pars
 
-!    integer                                 :: n_lat0_at         ! number of atoms in reference slab
-!    integer                                 :: n_lay0            ! number of layers in reference slab
-!    real(8)                                 :: nn0               ! next neighbour distance in reference slab
-!    real(8), dimension(3)                   :: cell              ! dimensions of the cell
-!    real(8), allocatable, dimension(:,:)    :: r0_lat            ! lattice positions for reference calc.
+    integer                                 :: n_lat0_at         ! number of atoms in reference slab
+    integer                                 :: n_lay0            ! number of layers in reference slab
+    real(8)                                 :: nn0               ! next neighbour distance in reference slab
+!    real(8)                                 :: a_lat             ! lattice constant
+    real(8), dimension(3)                   :: cell              ! dimensions of the cell
+    real(8), allocatable, dimension(:,:)    :: r0_lat            ! lattice positions for reference calc.
     !integer, allocatable, dimension(:)      :: site              ! impact site
     integer site(1000)
     real(8)                                 :: energy            ! energy output from emt subroutines
@@ -131,10 +132,8 @@ program EMT_fit_1
 
 ! Strömqvist
     fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
-
     particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
     particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
-
     lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
     lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
 
@@ -155,6 +154,7 @@ program EMT_fit_1
     write(7,nml=particle_pars_list)
 
 
+
     !------------------------------------------------------------------------------------------------------------------
     !                       READ LATTICE DEFINITION PARAMETERS
     !------------------------------------------------------------------------------------------------------------------
@@ -169,11 +169,12 @@ program EMT_fit_1
         read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
         !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
     end do readr0lat
+    a_lat = nn0*sqrt_2
 
     !------------------------------------------------------------------------------------
     !          INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
-    call emt_init(cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
+    call emt_init(a_lat, cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     !------------------------------------------------------------------------------------
@@ -225,6 +226,7 @@ program EMT_fit_1
 
     call open_for_write(10, fit_results_fname)
 
+
     !*********************************************************************************
     !npts = 50       !************************** FOR TESTING **************************
     !*********************************************************************************
@@ -240,7 +242,7 @@ program EMT_fit_1
         Write(10,*) 'site       X              Y              Z             EMT           DFT'
         sumsq = 0
         do i = 1, k
-            call emt(X(i,:), particle_pars, lattice_pars, energy)
+            call emt(a_lat, X(i,:), particle_pars, lattice_pars, energy)
             if(i<10) write( *,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
             write(10,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
             write(7, '(1X, I2, 4F16.10)') site(i), X(i,1), X(i,2), X(i,3), energy
@@ -254,7 +256,8 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-stop
+! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop'    .
+!stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP, PX )
     real(8)             :: energy
     real(8)             :: r_part(3)
 
-    real(8)             :: a_lat
+!    real(8)             :: a_lat       ! doesn't need to be declared because common
     real(8), dimension(7) :: denergy_l, denergy_p
     real(8)             :: PX(20)
     real(8)             :: E_ref
@@ -53,20 +53,19 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP, PX )
     call array2emt_parms( B(1:7 ), particle_parms)
     call array2emt_parms( B(8:14), lattice_parms )
     r_part=XDAT(i,:)
+    print *, lattice_parms
+    print *, particle_parms
 
     ! Cycle which decides via JP if only energy is calculated or also derivatives
     if ( JP == 1 ) then
-        call emt (r_part, particle_parms, lattice_parms, energy)
+        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
     else if ( JP == 2 ) then
         call emt_fit(a_lat, r_part, particle_parms, lattice_parms, energy, denergy_l, denergy_p)
         PX(1:7) = denergy_p
         PX(8:14) = denergy_l
     end if
 
-    ! reference energy needs to be called here and substracted from other energy.
-    call emt_init(cell, n_lat0_at, r0_lat, particle_parms, lattice_parms, E_ref)
-
-    F   = energy - E_ref
+    F   = energy
     RES = YDAT(I) - F
 
     !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
