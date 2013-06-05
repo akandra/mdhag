@@ -122,20 +122,20 @@ program EMT_fit_1
 !    lattice_nml_out                         = 'parameters_and_fit_results\f119.02.Au.nml'
 
 ! These paths are for linux, they probably won't work under windows.
-    fit_results_fname                       = 'parameters_and_fit_results/f119.02.NLLSQ.out'
+!    fit_results_fname                       = 'parameters_and_fit_results/f119.02.NLLSQ.out'
 
-    particle_nml_in                         = 'parameters_and_fit_results/f119.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results/f119.02.H.nml'
+!    particle_nml_in                         = 'parameters_and_fit_results/f119.00.H.nml'
+!    particle_nml_out                        = 'parameters_and_fit_results/f119.02.H.nml'
 
-    lattice_nml_in                          = 'parameters_and_fit_results/f119.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
+!    lattice_nml_in                          = 'parameters_and_fit_results/f119.00.Au.nml'
+!    lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
 
 ! Strömqvist
-!    fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
-!    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
-!    particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
-!    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
-!    lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
+    fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
+    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
+    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'

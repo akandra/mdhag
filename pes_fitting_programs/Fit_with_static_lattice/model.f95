@@ -53,8 +53,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP, PX )
     call array2emt_parms( B(1:7 ), particle_parms)
     call array2emt_parms( B(8:14), lattice_parms )
     r_part=XDAT(i,:)
-    print *, lattice_parms
-    print *, particle_parms
+!    print *, lattice_parms
+!    print *, particle_parms
 
     ! Cycle which decides via JP if only energy is calculated or also derivatives
     if ( JP == 1 ) then

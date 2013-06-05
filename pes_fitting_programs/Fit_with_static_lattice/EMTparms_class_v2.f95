@@ -979,17 +979,18 @@ implicit none
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)-Eref
 
     ! Derivative with respect to l
-    denergy_l(1) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))!-dEref_l(1)
+    denergy_l(1) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))-dEref_l(1)
     denergy_l(2) = dEcoh_l(2) &
-                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))!-dEref_l(2)
-    denergy_l(3) = dEcoh_l(3)!-dEref_l(3)
-    denergy_l(4) = dEcoh_l(4)!-dEref_l(4)
-    denergy_l(5) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5))! -dEref_l(5)
-    denergy_l(6) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))!-dEref_l(6)
+                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))-dEref_l(2)
+    denergy_l(3) = dEcoh_l(3)-dEref_l(3)
+    denergy_l(4) = dEcoh_l(4)-dEref_l(4)
+    denergy_l(5) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5)) -dEref_l(5)
+    denergy_l(6) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))-dEref_l(6)
     denergy_l(7) = dEcoh_l(7) + dV_ll(7) &
-                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))!-dEref_l(7)
+                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))-dEref_l(7)
 
-    ! Derivative with respect to p
+    ! Derivative with respect to p (no correction by dEref since those do not
+    ! contain any p-contribution)
     denergy_p(1) = dEcoh_p(1) + 0.5*(dvref_l_p(1)+dvref_p_p(1))
     denergy_p(2) = dEcoh_p(2) &
                    - 0.5*(-dV_pl_p(2)+dV_lp_p(2)-dvref_l_p(2)-dvref_p_p(2))
@@ -1124,6 +1125,7 @@ implicit none
     dgamma2l(7) = sum(r3temp1)*pars_l%kappa
 
 
+
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
 !                          ========================
@@ -1207,9 +1209,12 @@ implicit none
 !-------------------------------CUT-OFF ENACTION-------------------------------
 ! Don't forget the gamma!
 
+! In checking, sigma_ll(7) differed from the Mathematica values, but I can't
+! pin down the error -- Svenja
     sigma_ll = sigma_ll * igamma1l
         dsigma_ll(1,:) = (dsigma_ll(1,:) - sigma_ll*dgamma1l(1))*igamma1l
         dsigma_ll(7,:) = (dsigma_ll(7,:) - sigma_ll*dgamma1l(7))*igamma1l
+
 
     V_ll = V_ll * pars_l%V0 * igamma2l
 	dV_ll(5) = - V_ll/pars_l%V0
@@ -1231,7 +1236,6 @@ implicit none
         ds_l_l(7,:) = -rn_ltemp*dsigma_ll(7,:)
 
 
-
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be subtracted to account for the contributions
 ! that were included twice.
@@ -1245,6 +1249,7 @@ implicit none
         dvref_l_l(5) = vref_l/pars_l%V0
         dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
         dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
+
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -1269,6 +1274,7 @@ implicit none
         dEcoh_l(4) = sum(s_l*rn_ltemp)
         dEcoh_l(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l(7,:))
 
+
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
@@ -1283,6 +1289,8 @@ implicit none
     dEref_l(5) = dV_ll(5) + 0.5*dvref_l_l(5)
     dEref_l(6) = dV_ll(6) + 0.5*dvref_l_l(6)
     dEref_l(7) = dEcoh_l(7) + dV_ll(7) + 0.5*dvref_l_l(7)
+
+
 
 end subroutine emt_init
 
