@@ -111,11 +111,21 @@ program EMT_fit_1
 
     fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
 
-    particle_nml_in                         = 'parameters_and_fit_results\f119.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results\f119.02.H.nml'
+    particle_nml_in                         = 'parameters_and_fit_results/f119.00.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/f119.02.H.nml'
 
-    lattice_nml_in                          = 'parameters_and_fit_results\f119.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results\f119.02.Au.nml'
+    lattice_nml_in                          = 'parameters_and_fit_results/f119.00.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
+
+! Strömqvist
+    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+
+    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/stroem.03.H.nml'
+
+    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/stroem.03.Au.nml'
+
 
     TITLE = 'EMT NLLSQ Test'
 
@@ -232,7 +242,7 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-stop
+!stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
