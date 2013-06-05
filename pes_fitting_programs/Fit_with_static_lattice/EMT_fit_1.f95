@@ -109,7 +109,7 @@ program EMT_fit_1
     lattice_configuration_fname             = 'ref_conf_Au111a.dat'
     particle_position_and_DFT_energies_fname= 'hau111_plot.E.dat'
 
-    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+    fit_results_fname                       = 'parameters_and_fit_results/f119.02.NLLSQ.out'
 
     particle_nml_in                         = 'parameters_and_fit_results/f119.00.H.nml'
     particle_nml_out                        = 'parameters_and_fit_results/f119.02.H.nml'
@@ -118,13 +118,13 @@ program EMT_fit_1
     lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
 
 ! Strömqvist
-    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+!    fit_results_fname                       = 'parameters_and_fit_results\f119.02.NLLSQ.out'
 
-    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results/stroem.03.H.nml'
+!    particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
+!    particle_nml_out                        = 'parameters_and_fit_results/stroem.03.H.nml'
 
-    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results/stroem.03.Au.nml'
+!    lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
+!    lattice_nml_out                         = 'parameters_and_fit_results/stroem.03.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
