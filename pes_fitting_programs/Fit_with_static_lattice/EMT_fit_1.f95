@@ -297,7 +297,7 @@ program EMT_fit_1
     ! V0        7  14       x     shouldn't be <0
 
     IB    = (/6,13,14,4,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP    = 7                                   ! number of parameters held constant
+    IP    = 5                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
