@@ -131,6 +131,7 @@ program EMT_fit_1
 !    lattice_nml_out                         = 'parameters_and_fit_results/f119.02.Au.nml'
 
 ! Strömqvist
+! Strömqvist parameters modified in so, so they'll give a good fit.
     fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
     particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
     particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
@@ -295,7 +296,7 @@ program EMT_fit_1
     ! s0        6  13   x   x     shouldn't change
     ! V0        7  14       x     shouldn't be <0
 
-    IB    = (/6,13,14,4,11,5,12,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IB    = (/6,13,14,4,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
     IP    = 7                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
