@@ -36,7 +36,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP, PX )
 
     ! Just put the lattice constant here... perhaps we will find a better place to put it
     ! later.
-    a_lat=4.201
+
 
     if ((debug(3)) .and. first_run) then
         print *

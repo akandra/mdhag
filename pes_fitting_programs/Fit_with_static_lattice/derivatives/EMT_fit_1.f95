@@ -113,30 +113,30 @@ program EMT_fit_1
     particle_position_and_DFT_energies_fname= 'hau111_plot.E.dat'
 
 ! These paths are for windows, they don't work under linux
-! fit_results_fname = 'parameters_and_fit_results\f119.02.NLLSQ.out'
+!   fit_results_fname = 'parameters_and_fit_results\f119.02.NLLSQ.out'
 
-! particle_nml_in = 'parameters_and_fit_results\f119.00.H.nml'
-! particle_nml_out = 'parameters_and_fit_results\f119.02.H.nml'
+!   particle_nml_in = 'parameters_and_fit_results\f119.00.H.nml'
+!   particle_nml_out = 'parameters_and_fit_results\f119.02.H.nml'
 
-! lattice_nml_in = 'parameters_and_fit_results\f119.00.Au.nml'
-! lattice_nml_out = 'parameters_and_fit_results\f119.02.Au.nml'
+!   lattice_nml_in = 'parameters_and_fit_results\f119.00.Au.nml'
+!   lattice_nml_out = 'parameters_and_fit_results\f119.02.Au.nml'
 
 ! These paths are for linux, they probably won't work under windows.
-! fit_results_fname = 'parameters_and_fit_results/f119.02.NLLSQ.out'
+!   fit_results_fname = 'parameters_and_fit_results/f119_der.02.NLLSQ.out'
 
-! particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
-! particle_nml_out = 'parameters_and_fit_results/f119.02.H.nml'
+!    particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
+!    particle_nml_out = 'parameters_and_fit_results/f119_der.02.H.nml'
 
-! lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
-! lattice_nml_out = 'parameters_and_fit_results/f119.02.Au.nml'
+!   lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
+!   lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
+    fit_results_fname = 'parameters_and_fit_results/stroem_der.02.NLLSQ.out'
     particle_nml_in = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out = 'parameters_and_fit_results/stroem.02.H.nml'
+    particle_nml_out = 'parameters_and_fit_results/stroem_der.02.H.nml'
     lattice_nml_in = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out = 'parameters_and_fit_results/stroem.02.Au.nml'
+    lattice_nml_out = 'parameters_and_fit_results/stroem_der.02.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -258,7 +258,7 @@ write(*,*)
         write(10,*)
     end if
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
-!stop
+stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -296,14 +296,14 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     ! s0 6 13 x x shouldn't change
     ! V0 7 14 x shouldn't be <0
 
-    IB = (/6,13,14,4,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 5 ! number of parameters held constant
+    IB = (/6,0,0,0,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 1 ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 30
+    max_iterations = 10
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

@@ -1,6 +1,7 @@
 module EMTparms_class
 
     implicit none
+    save
 
     real(8), private, parameter                 :: sqrt_2  = 1.41421356237
     real(8), private, parameter                 :: sqrt_3  = 1.73205080757
@@ -8,6 +9,7 @@ module EMTparms_class
     real(8), private, parameter                 :: pi      = 3.14159265359
     real(8), private, parameter                 :: beta    = 1.8093997906
     real(8), private, parameter                 :: twelveth= 0.0833333333333333
+    real(8), private, parameter                 :: a_latt = 4.2009999281019770
     integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
     ! storage for variables passed into emt_init that are needed by emt energy
@@ -15,6 +17,7 @@ module EMTparms_class
     integer, private                :: n_l          ! number of lattice atoms
     real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
     real(8), private                :: Eref         ! reference energy
+
 
     type EMTparms
         character(2)::  name    = 'RV'
@@ -74,7 +77,6 @@ implicit none
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
 
-
 !-----------------------Save inputs in module for use by emt ------------------
     cell   = cell_in
     n_l    = n_l_in
@@ -104,7 +106,12 @@ implicit none
 ! FOR FUTURE REVISION:
 !            cut-off should be defined via lattice constant _AND_ changeable.
 
-    rcut = betas0_l * sqrt_3
+!    rcut = betas0_l * sqrt_3
+!    rr = 4 * rcut / (sqrt_3 + 2)
+!    acut = 9.21024/(rr -rcut) ! ln(10000)
+
+! Be careful, this section is WRONG and has just been implemented to Check
+    rcut = a_latt * sqrt_3 * isqrt_2
     rr = 4 * rcut / (sqrt_3 + 2)
     acut = 9.21024/(rr -rcut) ! ln(10000)
 
@@ -114,7 +121,7 @@ implicit none
     rnnl(3) = rnnl(1) * sqrt_3
 
     xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
-
+print*, a_latt, isqrt_2, sqrt_3
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
@@ -295,10 +302,14 @@ implicit none
 ! FOR FUTURE REVISION:
 !            cut-off should be defined via lattice constant _AND_ changeable.
 
-    rcut = betas0_l * sqrt_3
+!    rcut = betas0_l * sqrt_3
+!    rr = 4 * rcut / (sqrt_3 + 2)
+!    acut = 9.21024/(rr -rcut) ! ln(10000)
+
+! Be careful, this section is WRONG and has just been implemented to Check
+    rcut = a_latt * sqrt_3 * isqrt_2
     rr = 4 * rcut / (sqrt_3 + 2)
     acut = 9.21024/(rr -rcut) ! ln(10000)
-
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
     rnnl(2) = rnnl(1) * sqrt_2
@@ -466,6 +477,7 @@ implicit none
 ! Summation over all contributions.
 
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p) - Eref
+    print *, Eref
 
 end subroutine emt
 

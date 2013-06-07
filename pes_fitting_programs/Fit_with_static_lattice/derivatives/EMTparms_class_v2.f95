@@ -87,7 +87,7 @@ implicit none
         allocate(r0_lat(3,n_l))
         print *, 'allocated r0_lat for', n_l, 'atoms'
     else
-!        print *, 'r0_lat is already allocated'
+        print *, 'r0_lat is already allocated'
     end if
     r0_lat = r0_lat_in
 
@@ -673,8 +673,8 @@ implicit none
     dgamma2p(6) = - sum(r3temp*r3temp1) / beta
     dgamma2p(7) = sum(r3temp1)*pars_p%kappa
 
-print *, 'emt_normal', dgamma1l(7)
-print *, 'emt_normal', dgamma2l(7)
+!print *, 'emt', dgamma1l(7)
+!print *, 'emt', dgamma2l(7)
 
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
@@ -1001,7 +1001,7 @@ print *, 'emt_normal', dgamma2l(7)
     denergy_p(6) = 0.5*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy_p(7) = dEcoh_p(7) &
                    - 0.5*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
-
+print*, Eref
 
 end subroutine emt_fit
 
@@ -1125,8 +1125,11 @@ implicit none
     dgamma2l(6) = - sum(r3temp*r3temp1) / beta
     dgamma2l(7) = sum(r3temp1)*pars_l%kappa
 
+print*, 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 print *, 'emt_init', dgamma1l(7)
 print *, 'emt_init', dgamma2l(7)
+print*, a_lat
+print*, 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
