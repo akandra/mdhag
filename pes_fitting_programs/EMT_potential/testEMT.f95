@@ -66,7 +66,7 @@ program testAtomClass
     ! add spec that file exists and is read only.  error checking
     print *, ierror1, ierror2
     ierror = ierror1 + ierror2
-        openif:  if ( ierror == 0 ) then
+        openif: if ( ierror == 0 ) then
                     read(8, *) n_lat0_at
                     read(8,*) n_lay0
                     read(8,*) nn0
