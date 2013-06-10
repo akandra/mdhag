@@ -242,7 +242,7 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-!stop
+stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -280,14 +280,14 @@ program EMT_fit_1
     ! s0        6  13   x   x     shouldn't change
     ! V0        7  14       x     shouldn't be <0
 
-    IB    = (/6,13,14,4,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP    = 5                                   ! number of parameters held constant
+    IB    = (/6,13,14,4,11,1,2,3,4,7,8,9,10,0/) ! indicies of parameters held constant
+    IP    = 13                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms          = 14
-    max_iterations  = 30
+    max_iterations  = 5
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters

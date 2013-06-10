@@ -37,6 +37,9 @@
 		<Unit filename="EMTparms_class_v2.f95">
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="emt_init.f95">
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="hau111_plot.E.dat" />
 		<Unit filename="model.f95">
 			<Option weight="1" />
@@ -47,6 +50,14 @@
 		<Unit filename="open_file.f95">
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="parameters_Au_f119.nml" />
+		<Unit filename="parameters_Au_stroem-dja1.nml" />
+		<Unit filename="parameters_Au_stroem-dja2.nml" />
+		<Unit filename="parameters_Au_stroem.nml" />
+		<Unit filename="parameters_H_f119.nml" />
+		<Unit filename="parameters_H_stroem-dja1.nml" />
+		<Unit filename="parameters_H_stroem-dja2.nml" />
+		<Unit filename="parameters_H_stroem.nml" />
 		<Unit filename="ref_conf_Au111.dat" />
 		<Unit filename="ref_conf_Au111a.dat" />
 		<Extensions>

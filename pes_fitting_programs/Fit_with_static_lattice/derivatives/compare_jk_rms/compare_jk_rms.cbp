@@ -2,12 +2,12 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="EMT_fit_1" />
+		<Option title="compare_jk_rms" />
 		<Option pch_mode="2" />
 		<Option compiler="gfortran" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/EMT_fit_1" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/compare_jk_rms" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gfortran" />
@@ -16,7 +16,7 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/EMT_fit_1" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/compare_jk_rms" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gfortran" />
@@ -31,24 +31,18 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="EMT_fit_1.f95">
-			<Option weight="1" />
-		</Unit>
 		<Unit filename="EMTparms_class_v2.f95">
 			<Option weight="0" />
 		</Unit>
-		<Unit filename="hau111_plot.E.dat" />
-		<Unit filename="model.f95">
+		<Unit filename="compare_jk.f95">
 			<Option weight="1" />
 		</Unit>
-		<Unit filename="nllsq.dbl.f">
-			<Option weight="0" />
-		</Unit>
+		<Unit filename="hEMTfortran.dat" />
+		<Unit filename="hau111_plot.E.dat" />
+		<Unit filename="jk_compare.out" />
 		<Unit filename="open_file.f95">
 			<Option weight="0" />
 		</Unit>
-		<Unit filename="ref_conf_Au111.dat" />
-		<Unit filename="ref_conf_Au111a.dat" />
 		<Extensions>
 			<code_completion />
 			<envvars />
