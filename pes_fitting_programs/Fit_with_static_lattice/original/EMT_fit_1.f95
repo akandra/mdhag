@@ -118,13 +118,13 @@ program EMT_fit_1
 !    lattice_nml_out                         = 'parameters_and_fit_results/f119.01.Au.nml'
 
 ! Strömqvist
-    fit_results_fname                       = 'parameters_and_fit_results/stroem.01.NLLSQ.out'
+    fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
 
     particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results/stroem.01.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
 
     lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results/stroem.01.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -242,7 +242,7 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-stop
+!stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -280,14 +280,14 @@ stop
     ! s0        6  13   x   x     shouldn't change
     ! V0        7  14       x     shouldn't be <0
 
-    IB    = (/6,13,14,4,11,1,2,3,4,7,8,9,10,0/) ! indicies of parameters held constant
+    IB    = (/6,13,14,12,11,1,2,3,4,7,8,9,10,0/) ! indicies of parameters held constant
     IP    = 13                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms          = 14
-    max_iterations  = 5
+    max_iterations  = 10
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters

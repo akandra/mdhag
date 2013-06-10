@@ -121,7 +121,7 @@ implicit none
     rnnl(3) = rnnl(1) * sqrt_3
 
     xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
-print*, a_latt, isqrt_2, sqrt_3
+
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
@@ -477,7 +477,7 @@ implicit none
 ! Summation over all contributions.
 
     energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p) - Eref
-    print *, Eref
+!    print *, Eref
 
 end subroutine emt
 

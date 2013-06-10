@@ -395,9 +395,9 @@ C     COMPUTE PARTIALS IF NECESSARY
 ! 20   AB=B(JJ)
 !      B(JJ)=AB+DELTA*AB
 !      J=1
-   20  J=2
+ 20   J=2
 !      CALLMODEL(FDEL,Y,X,RES,II,J)
-      CALLMODEL(FDEL,Y,X,RES,II,J,P)
+      CALLMODEL(FDEL,Y,X,RES,II,J,P(1:14))
       RE=RD
 !      P(JJ)=(FDEL-F)/(DELTA*AB)
 !      B(JJ)=AB

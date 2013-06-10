@@ -132,11 +132,11 @@ program EMT_fit_1
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'parameters_and_fit_results/stroem_der.02.NLLSQ.out'
+    fit_results_fname = 'parameters_and_fit_results/stroem_der.01.NLLSQ.out'
     particle_nml_in = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out = 'parameters_and_fit_results/stroem_der.02.H.nml'
+    particle_nml_out = 'parameters_and_fit_results/stroem_der.01.H.nml'
     lattice_nml_in = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out = 'parameters_and_fit_results/stroem_der.02.Au.nml'
+    lattice_nml_out = 'parameters_and_fit_results/stroem_der.01.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -258,7 +258,7 @@ write(*,*)
         write(10,*)
     end if
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
-stop
+!stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -286,18 +286,18 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     !--------------------------------------------------------------------------
     ! SET UP PARAMETERS TO HOLD CONSTANT
     !--------------------------------------------------------------------------
-    ! Name part lat H Au
+    ! Name part lat H Au (be careful! Changed with regard to old procedure!)
     !
-    ! eta2 1 8
-    ! kappa 2 9
-    ! lambda 3 10
-    ! E0 4 11 x x destabilizes fit
-    ! n0 5 12 ? ? may destabilize fit
-    ! s0 6 13 x x shouldn't change
-    ! V0 7 14 x shouldn't be <0
+    ! eta2      1 8
+    ! n0        2 9     ? ? may destabilize fit
+    ! E0        3 10    x x destabilizes fit
+    ! lambda    4 11
+    ! V0        5 12      x shouldn't be <0
+    ! kappa     6 13
+    ! s0        7 14    x x shouldn't change
 
-    IB = (/6,0,0,0,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 1 ! number of parameters held constant
+    IB = (/3,10,12,7,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 5 ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY

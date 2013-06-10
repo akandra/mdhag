@@ -23,13 +23,13 @@ module EMTparms_class
         character(2)::  name    = 'RV'
 
         real(8)       ::  eta2    = 0.d0   ! A^-1
-        real(8)       ::  kappa   = 0.d0   ! A^-1
-        real(8)       ::  lambda  = 0.d0   ! A^-1
-
-        real(8)       ::  E0      = 0.d0   ! eV
         real(8)       ::  n0      = 0.d0   ! A^-3
-        real(8)       ::  s0      = 0.d0   ! A
+        real(8)       ::  E0      = 0.d0   ! eV
+
+        real(8)       ::  lambda  = 0.d0   ! A^-1
         real(8)       ::  V0      = 0.d0   ! eV
+        real(8)       ::  kappa   = 0.d0   ! A^-1
+        real(8)       ::  s0      = 0.d0   ! A
 
     end type EMTparms
 
@@ -491,7 +491,7 @@ implicit none
 end subroutine emt
 
 
-subroutine emt_fit (a_lat, r_part, pars_p, pars_l, energy, denergy_l, denergy_p)
+subroutine emt_fit (a_lat, r_part, pars_p, pars_l, energy, denergy)
 !subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy, denergy_l, denergy_p)
 !
 ! Purpose:
@@ -533,7 +533,7 @@ implicit none
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
     real(8), intent(out)                :: energy   ! calc. reference energy
-    real(8), dimension(7), intent(out)  :: denergy_l, denergy_p ! derivatives
+    real(8), dimension(14), intent(out)  :: denergy ! derivatives
                                                         ! with respect to to
                                                         ! eta2, followed by no,
                                                         ! eo, lambda, vo, kappa
@@ -587,11 +587,21 @@ implicit none
     real(8), dimension(7) :: dvref_p_l, dvref_p_p
     real(8), dimension(7) :: dEcoh_l, dEcoh_p
 
+! reference energy
+    real(8), dimension(n_l) :: s_l_ref
+    real(8), dimension(7,n_l) :: ds_l_l_ref
+    real(8) :: vref_l_ref
+    real(8), dimension(7) :: dvref_l_l_ref
+    real(8) :: Ecoh_ref, E_ref
+    real(8), dimension(7) :: dEcoh_ref, dE_ref
+
 ! variables which were caused by making compatible with nllsq model
 ! Here, at present, the gold atoms are allocated to the positions of the
 ! reference gold atoms
     real(8), allocatable :: r_lat(:,:)
     allocate(r_lat(3,n_l))
+
+
 
 !______________________________________________________________________________
 
@@ -673,8 +683,6 @@ implicit none
     dgamma2p(6) = - sum(r3temp*r3temp1) / beta
     dgamma2p(7) = sum(r3temp1)*pars_p%kappa
 
-!print *, 'emt', dgamma1l(7)
-!print *, 'emt', dgamma2l(7)
 
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
@@ -707,8 +715,15 @@ implicit none
     dvref_p_p=0
     dEcoh_l = 0
     dEcoh_p = 0
-    denergy_l = 0
-    denergy_p = 0
+    denergy = 0
+    s_l_ref = 0
+    ds_l_l_ref = 0
+    dvref_l_l_ref=0
+    vref_l_ref=0
+    Ecoh_ref=0
+    dEcoh_ref=0
+    E_ref=0
+    dE_ref=0
 
     do i = 1, n_l
         do j = i+1, n_l
@@ -879,6 +894,7 @@ implicit none
     rn_ltemp = sigma_ll + chilp*sigma_lp
     s_l = -log( rn_ltemp * twelveth ) &
             / ( beta * pars_l%eta2)
+    s_l_ref = -log( sigma_ll*twelveth )/( beta*pars_l%eta2)
 
     rn_ltemp = 1.0/(rn_ltemp*pars_l%eta2*beta)
         ! Derivative with respect to l
@@ -901,6 +917,13 @@ implicit none
         ds_p_p(1) = -s_p/pars_p%eta2 - rtemp/(sigma_pl)*dsigma_pl_p(1)
         ds_p_p(2) = rtemp / pars_p%n0
         ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
+
+    ! Derivatives for reference energy:
+    rn_ltemp = 1.0/(sigma_ll*pars_l%eta2*beta)
+        ! Derivative with respect to l
+        ds_l_l_ref(1,:) = -s_l/pars_l%eta2 &
+                      - dsigma_ll(1,:)*rn_ltemp
+        ds_l_l_ref(7,:) = -rn_ltemp*dsigma_ll(7,:)
 
 
 
@@ -934,6 +957,18 @@ implicit none
         dvref_p_l(1) = rtemp*vref_p*ds_p_l(1)
         dvref_p_l(2) = rtemp*vref_p*ds_p_l(2)
         dvref_p_l(7) = rtemp*vref_p*ds_p_l(7)
+
+    ! Reference energy
+    rn_ltemp = exp( -pars_l%kappa * s_l_ref)
+    rtemp = -12 * pars_l%V0 * pars_l%kappa
+    vref_l_ref = 12 * pars_l%V0 * sum(rn_ltemp)
+    ! Derivative with respect to l
+        dvref_l_l_ref(1) = rtemp*sum(rn_ltemp*ds_l_l_ref(1,:))
+!        dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
+        dvref_l_l_ref(5) = vref_l/pars_l%V0
+        dvref_l_l_ref(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l_ref)
+        dvref_l_l_ref(7) = rtemp*sum(rn_ltemp*ds_l_l_ref(7,:))
+
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -973,35 +1008,60 @@ implicit none
         dEcoh_p(7) = sum(pars_l%lambda*rn_ltemp*ds_l_p(7,:))&
                     +rtemp*pars_p%lambda*ds_p_p(7)
 
+    ! Reference energy
+    Ecoh_ref = sum( (1 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1 ) &
+          * pars_l%E0
+
+    rn_ltemp=-pars_l%E0*pars_l%lambda*s_l_ref*exp(-pars_l%lambda*s_l_ref)
+        ! Derivative with respect to l
+        dEcoh_ref(1) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(1,:))
+
+        !dEcoh_l(2) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(2,:))
+
+        dEcoh_ref(3) = sum( (1 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1 )
+        dEcoh_ref(4) = sum(s_l_ref*rn_ltemp)
+        dEcoh_ref(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(7,:))
 
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
+! Reference energy
+     E_ref = Ecoh - V_ll + 0.5 * vref_l
+    ! Derivative with respect to l
+    dE_ref(1) = dEcoh_ref(1) + 0.5*dvref_l_l_ref(1)
+!    dE_ref(2) = dEcoh_ref(2) - 0.5*dvref_l_l_ref(2)
+    dE_ref(3) = dEcoh_ref(3)
+    dE_ref(4) = dEcoh_ref(4)
+    dE_ref(5) = dV_ll(5) + 0.5*dvref_l_l_ref(5)
+    dE_ref(6) = dV_ll(6) + 0.5*dvref_l_l_ref(6)
+    dE_ref(7) = dEcoh_ref(7) + dV_ll(7) + 0.5*dvref_l_l_ref(7)
 
-    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)-Eref
+! Overall energy
+    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)-E_ref
 
     ! Derivative with respect to l
-    denergy_l(1) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))-dEref_l(1)
-    denergy_l(2) = dEcoh_l(2) &
-                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))-dEref_l(2)
-    denergy_l(3) = dEcoh_l(3)-dEref_l(3)
-    denergy_l(4) = dEcoh_l(4)-dEref_l(4)
-    denergy_l(5) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5)) -dEref_l(5)
-    denergy_l(6) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))-dEref_l(6)
-    denergy_l(7) = dEcoh_l(7) + dV_ll(7) &
-                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))-dEref_l(7)
+    denergy(8) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))-dE_ref(1)
+    denergy(9) = dEcoh_l(2) &
+                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))-dE_ref(2)
+    denergy(10) = dEcoh_l(3)!-dEref_l(3)
+    denergy(11) = dEcoh_l(4)!-dEref_l(4)
+    denergy(12) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5)) -dE_ref(5)
+    denergy(13) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))-dE_ref(6)
+    denergy(14) = dEcoh_l(7) + dV_ll(7) &
+                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))-dE_ref(7)
 
     ! Derivative with respect to p (no correction by dEref since those do not
     ! contain any p-contribution)
-    denergy_p(1) = dEcoh_p(1) + 0.5*(dvref_l_p(1)+dvref_p_p(1))
-    denergy_p(2) = dEcoh_p(2) &
+    denergy(1) = dEcoh_p(1) + 0.5*(dvref_l_p(1)+dvref_p_p(1))
+    denergy(2) = dEcoh_p(2) &
                    - 0.5*(-dV_pl_p(2)+dV_lp_p(2)-dvref_l_p(2)-dvref_p_p(2))
-    denergy_p(3) = dEcoh_p(3)
-    denergy_p(4) = dEcoh_p(4)
-    denergy_p(5) = 0.5*(dV_pl_p(5) + dvref_p_p(5))
-    denergy_p(6) = 0.5*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
-    denergy_p(7) = dEcoh_p(7) &
+    denergy(3) = dEcoh_p(3)
+    denergy(4) = dEcoh_p(4)
+    denergy(5) = 0.5*(dV_pl_p(5) + dvref_p_p(5))
+    denergy(6) = 0.5*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
+    denergy(7) = dEcoh_p(7) &
                    - 0.5*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
-print*, Eref
+
+
 
 end subroutine emt_fit
 
@@ -1124,12 +1184,6 @@ implicit none
     dgamma2l = 0.
     dgamma2l(6) = - sum(r3temp*r3temp1) / beta
     dgamma2l(7) = sum(r3temp1)*pars_l%kappa
-
-print*, 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
-print *, 'emt_init', dgamma1l(7)
-print *, 'emt_init', dgamma2l(7)
-print*, a_lat
-print*, 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
@@ -1307,12 +1361,12 @@ subroutine emt_parms2array (emt_parms, array)
     real(8), dimension(7)   :: array
 
     array(1) = emt_parms%eta2
-    array(2) = emt_parms%kappa
-    array(3) = emt_parms%lambda
-    array(4) = emt_parms%E0
-    array(5) = emt_parms%n0
-    array(6) = emt_parms%s0
-    array(7) = emt_parms%V0
+    array(2) = emt_parms%n0
+    array(3) = emt_parms%E0
+    array(4) = emt_parms%lambda
+    array(5) = emt_parms%V0
+    array(6) = emt_parms%kappa
+    array(7) = emt_parms%s0
 end subroutine emt_parms2array
 
 subroutine array2emt_parms (array, emt_parms)
@@ -1320,12 +1374,12 @@ subroutine array2emt_parms (array, emt_parms)
     real(8), dimension(7)   :: array
 
     emt_parms%eta2   = array(1)
-    emt_parms%kappa  = array(2)
-    emt_parms%lambda = array(3)
-    emt_parms%E0     = array(4)
-    emt_parms%n0     = array(5)
-    emt_parms%s0     = array(6)
-    emt_parms%V0     = array(7)
+    emt_parms%n0     = array(2)
+    emt_parms%E0     = array(3)
+    emt_parms%lambda = array(4)
+    emt_parms%V0     = array(5)
+    emt_parms%kappa  = array(6)
+    emt_parms%s0     = array(7)
 end subroutine array2emt_parms
 
 
