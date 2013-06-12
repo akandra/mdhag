@@ -1,5 +1,7 @@
-subroutine model( F, YDAT, XDAT, RRR, I, JP )
+subroutine modelder( F, YDAT, XDAT, RRR, I, JP, denergy )
+!subroutine model( F, YDAT, XDAT, RRR, I, JP)
     use EMTparms_class
+    use emt_init_data
 
     implicit none
 
@@ -8,8 +10,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
     real(8)             :: F
-    real(8)             :: YDAT(1000)   !YDAT(N)
-    real(8)             :: XDAT(1000,3) !XDAT(N,M)
+    real(8)             :: YDAT(1000)   !YDAT(N) these are the energies
+    real(8)             :: XDAT(1000,3) !XDAT(N,M) these are the coordinates
     real(8)             :: RRR(1000)
     integer             :: I, JP
 
@@ -20,12 +22,21 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     real(8)             :: energy
     real(8)             :: r_part(3)
 
+!    real(8)             :: a_lat       ! doesn't need to be declared because common
+    real(8), dimension(14) :: denergy
+    real(8)             :: PX(20)
+    real(8)             :: E_ref
+
     logical, save       :: first_run=.true.
 
 
     COMMON /BLK1/ B(20),P(20),RES,N,M,KK
     COMMON/ DJA1/ iteration
     COMMON/debug/ debug(5)
+
+    ! Just put the lattice constant here... perhaps we will find a better place to put it
+    ! later.
+
 
     if ((debug(3)) .and. first_run) then
         print *
@@ -43,7 +54,10 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     call array2emt_parms( B(8:14), lattice_parms )
     r_part=XDAT(i,:)
 
-    call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+
+        call emt_fit(a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy) ! Procedure without derivatives
+
 
     F   = energy
     RES = YDAT(I) - F
@@ -68,4 +82,4 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     1000 format(2i4, 2f6.2, 7f6.2 / 20x,7f6.2)
     1010 format(2i4,3f6.2,3E12.3,14f6.2)
 
-end subroutine MODEL
+end subroutine MODELDER

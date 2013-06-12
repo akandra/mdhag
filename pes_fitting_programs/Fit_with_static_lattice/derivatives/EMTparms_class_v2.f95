@@ -3,12 +3,12 @@ module EMTparms_class
     implicit none
     save
 
-    real(8), parameter                 :: sqrt_2  = 1.41421356237
-    real(8), private, parameter                 :: sqrt_3  = 1.73205080757
-    real(8), private, parameter                 :: isqrt_2 = 0.70710678118
-    real(8), private, parameter                 :: pi      = 3.14159265359
-    real(8), private, parameter                 :: beta    = 1.8093997906
-    real(8), private, parameter                 :: twelveth= 0.0833333333333333
+    real(8), parameter                 :: sqrt_2  = 1.41421356237d0
+    real(8), private, parameter                 :: sqrt_3  = 1.73205080757d0
+    real(8), private, parameter                 :: isqrt_2 = 0.70710678118d0
+    real(8), private, parameter                 :: pi      = 3.14159265359d0
+    real(8), private, parameter                 :: beta    = 1.8093997906d0
+    real(8), private, parameter                 :: twelveth= 0.0833333333333333d0
     integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
     ! storage for variables passed into emt_init that are needed by emt energy
@@ -115,21 +115,21 @@ implicit none
 
     rcut = a_lat * sqrt_3 * isqrt_2
     rr = 4 * rcut / (sqrt_3 + 2)
-    acut = 9.21024/(rr -rcut) ! ln(10000)
+    acut = 9.21024d0/(rr -rcut) ! ln(10000)
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
     rnnl(2) = rnnl(1) * sqrt_2
     rnnl(3) = rnnl(1) * sqrt_3
 
-    xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
+    xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
     r3temp = rnnl-betas0_l
-    igamma1l = 1.0 / sum(xl*exp(-pars_l%eta2 * r3temp))
-    igamma2l = 1.0 /sum(xl*exp(-kappadbeta_l * r3temp))
+    igamma1l = 1.0d0 / sum(xl*exp(-pars_l%eta2 * r3temp))
+    igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
 
 
 !------------------------------------------------------------------------------
@@ -204,7 +204,7 @@ implicit none
 ! These contributions have to be subtracted to account for the contributions
 ! that were included twice.
 
-    vref_l = 12 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
+    vref_l = 12.d0 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -222,7 +222,7 @@ implicit none
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
-   energy = Ecoh - V_ll + 0.5 * vref_l
+   energy = Ecoh - V_ll + 0.5d0 * vref_l
    Eref   = energy
 
 end subroutine demt_init
@@ -300,7 +300,7 @@ implicit none
 
 ! 'coupling' parameters between p and l
     chilp = pars_p%n0 / pars_l%n0
-    chipl = 1.0 / chilp
+    chipl = 1.0d0 / chilp
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
@@ -315,8 +315,8 @@ implicit none
 !    acut = 9.21024/(rr -rcut) ! ln(10000)
 
     rcut = a_lat * sqrt_3 * isqrt_2
-    rr = 4 * rcut / (sqrt_3 + 2)
-    acut = 9.21024/(rr -rcut) ! ln(10000)
+    rr = 4.0d0 * rcut / (sqrt_3 + 2.0d0)
+    acut = 9.21024d0/(rr -rcut) ! ln(10000)
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
@@ -326,19 +326,19 @@ implicit none
     rnnp(2) = rnnp(1) * sqrt_2
     rnnp(3) = rnnp(1) * sqrt_3
 
-    xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
-    xp = b * twelveth/ (1 + exp(acut*(rnnp-rcut)))
+    xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = b * twelveth/ (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
     r3temp = rnnl-betas0_l
-    igamma1l = 1.0 / sum(xl*exp(-pars_l%eta2 * r3temp))
-    igamma2l = 1.0 /sum(xl*exp(-kappadbeta_l * r3temp))
+    igamma1l = 1.0d0 / sum(xl*exp(-pars_l%eta2 * r3temp))
+    igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
 
     r3temp = rnnp-betas0_p
-    igamma1p = 1.0 / sum(xp*exp(-pars_p%eta2 * r3temp))
-    igamma2p = 1.0 / sum(xp*exp(-kappadbeta_p * r3temp))
+    igamma1p = 1.0d0 / sum(xp*exp(-pars_p%eta2 * r3temp))
+    igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
 
 
 !------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ implicit none
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
-            theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+            theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -412,7 +412,7 @@ implicit none
 
     !----------------------------THETA PARTICLE--------------------------------
 
-        theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+        theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
 
 
     !-------------------------------MIXED SIGMA--------------------------------
@@ -460,8 +460,8 @@ implicit none
 ! These contributions have to be substracted to account for the contributions
 ! that were included twice.
 
-    vref_l = 12 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
-    vref_p = 12 * pars_p%V0 * exp( -pars_p%kappa * s_p)
+    vref_l = 12.0d0 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
+    vref_p = 12.0d0 * pars_p%V0 * exp( -pars_p%kappa * s_p)
 
 
 
@@ -475,9 +475,9 @@ implicit none
 ! Calculates and sums the contributions to the cohesive energy for both lattice
 ! and particle.
 
-    Ecoh = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 ) &
+    Ecoh = sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.d0 ) &
           * pars_l%E0 &
-          + (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
+          + (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
 
 
@@ -486,7 +486,7 @@ implicit none
 
 !    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p) - Eref
 
-    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)-Eref
+    energy = Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)-Eref
 
 end subroutine emt
 
@@ -615,8 +615,8 @@ implicit none
 
 ! 'coupling' parameters between p and l
 ! derivatives: (1) derivative over nop, (2) over nol
-    dchilp(1) = 1.0 / pars_l%n0         ! d chilp / d nop
-    dchipl(2) = 1.0 / pars_p%n0         ! d chipl / d nol
+    dchilp(1) = 1.0d0 / pars_l%n0         ! d chilp / d nop
+    dchipl(2) = 1.0d0 / pars_p%n0         ! d chipl / d nol
 
     chilp = pars_p%n0 * dchilp(1)
     chipl = pars_l%n0 * dchipl(2)
@@ -633,8 +633,8 @@ implicit none
 !            cut-off should be defined via lattice constant _AND_ changeable.
 
     rcut = a_lat * sqrt_3 * isqrt_2
-    rr = 4 * rcut / (sqrt_3 + 2)
-    acut = 9.21024/(rr -rcut) ! ln(10000)
+    rr = 4.0d0 * rcut / (sqrt_3 + 2.0d0)
+    acut = 9.21024d0/(rr -rcut) ! ln(10000)
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
@@ -644,8 +644,8 @@ implicit none
     rnnp(2) = rnnp(1) * sqrt_2
     rnnp(3) = rnnp(1) * sqrt_3
 
-    xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
-    xp = b * twelveth/ (1 + exp(acut*(rnnp-rcut)))
+    xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = b * twelveth/ (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -655,14 +655,14 @@ implicit none
     r3temp = rnnl - betas0_l
 
     r3temp1 = xl*exp(- pars_l%eta2*r3temp)
-    igamma1l = 1.0 / sum(r3temp1)
-    dgamma1l = 0.
+    igamma1l = 1.0d0 / sum(r3temp1)
+    dgamma1l = 0.d0
     dgamma1l(1) = - sum(r3temp*r3temp1)
     dgamma1l(7) = sum(r3temp1)*pars_l%eta2*beta
 
 
     r3temp1 = xl*exp(-kappadbeta_l * r3temp)
-    igamma2l = 1.0 / sum(r3temp1)
+    igamma2l = 1.0d0 / sum(r3temp1)
     dgamma2l = 0.
     dgamma2l(6) = - sum(r3temp*r3temp1) / beta
     dgamma2l(7) = sum(r3temp1)*pars_l%kappa
@@ -671,14 +671,14 @@ implicit none
     r3temp = rnnp-betas0_p
 
     r3temp1 = xp*exp(- pars_p%eta2*r3temp)
-    igamma1p = 1.0 / sum(r3temp1)
+    igamma1p = 1.0d0 / sum(r3temp1)
     dgamma1p = 0.
     dgamma1p(1) = - sum(r3temp*r3temp1)
     dgamma1p(7) = sum(r3temp1)*pars_p%eta2*beta
 
 
     r3temp1 = xp*exp(-kappadbeta_p * r3temp)
-    igamma2p = 1.0 / sum(r3temp1)
+    igamma2p = 1.0d0 / sum(r3temp1)
     dgamma2p = 0.
     dgamma2p(6) = - sum(r3temp*r3temp1) / beta
     dgamma2p(7) = sum(r3temp1)*pars_p%kappa
@@ -744,7 +744,7 @@ implicit none
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
-            theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+            theta = 1.0d0 / (1 + exp( acut * (r - rcut) ) )
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -797,7 +797,7 @@ implicit none
 
     !----------------------------THETA PARTICLE--------------------------------
 
-        theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+        theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
 
 
     !-------------------------------MIXED SIGMA--------------------------------
@@ -896,7 +896,7 @@ implicit none
             / ( beta * pars_l%eta2)
     s_l_ref = -log( sigma_ll*twelveth )/( beta*pars_l%eta2)
 
-    rn_ltemp = 1.0/(rn_ltemp*pars_l%eta2*beta)
+    rn_ltemp = 1.0d0/(rn_ltemp*pars_l%eta2*beta)
         ! Derivative with respect to l
         ds_l_l(1,:) = -s_l/pars_l%eta2 &
                       - (dsigma_ll(1,:)+chilp*dsigma_lp_l(1,:))*rn_ltemp
@@ -907,7 +907,7 @@ implicit none
         ds_l_p(2,:) = -sigma_lp*rn_ltemp*dchilp(1)
         ds_l_p(7,:) = -rn_ltemp*chilp*dsigma_lp_p(7,:)
 
-    rtemp=1.0/(beta*pars_p%eta2)
+    rtemp=1.0d0/(beta*pars_p%eta2)
     s_p  = -log( sigma_pl * chipl * twelveth) *rtemp
         ! Derivative with respect to l
         ds_p_l(1) = - rtemp /sigma_pl*dsigma_pl_l(1)
@@ -919,7 +919,7 @@ implicit none
         ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
 
     ! Derivatives for reference energy:
-    rn_ltemp = 1.0/(sigma_ll*pars_l%eta2*beta)
+    rn_ltemp = 1.0d0/(sigma_ll*pars_l%eta2*beta)
         ! Derivative with respect to l
         ds_l_l_ref(1,:) = -s_l/pars_l%eta2 &
                       - dsigma_ll(1,:)*rn_ltemp
@@ -932,13 +932,13 @@ implicit none
 ! that were included twice.
 
     rn_ltemp = exp( -pars_l%kappa * s_l)
-    rtemp = -12 * pars_l%V0 * pars_l%kappa
-    vref_l = 12 * pars_l%V0 * sum(rn_ltemp)
+    rtemp = -12.0d0 * pars_l%V0 * pars_l%kappa
+    vref_l = 12.0d0 * pars_l%V0 * sum(rn_ltemp)
     ! Derivative with respect to l
         dvref_l_l(1) = rtemp*sum(rn_ltemp*ds_l_l(1,:))
         dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
         dvref_l_l(5) = vref_l/pars_l%V0
-        dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
+        dvref_l_l(6) = - 12.0d0 * pars_l%V0 * sum(rn_ltemp *s_l)
         dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
         ! Derivative with respect to p
         dvref_l_p(1) = rtemp*sum(rn_ltemp*ds_l_p(1,:))
@@ -946,7 +946,7 @@ implicit none
         dvref_l_p(7) = rtemp*sum(rn_ltemp*ds_l_p(7,:))
 
     rtemp = -pars_p%kappa
-    vref_p = 12 * pars_p%V0 * exp( -pars_p%kappa * s_p)
+    vref_p = 12.0d0 * pars_p%V0 * exp( -pars_p%kappa * s_p)
         ! Derivative with respect to p
         dvref_p_p(1) = rtemp*vref_p*ds_p_p(1)
         dvref_p_p(2) = rtemp*vref_p*ds_p_p(2)
@@ -960,13 +960,13 @@ implicit none
 
     ! Reference energy
     rn_ltemp = exp( -pars_l%kappa * s_l_ref)
-    rtemp = -12 * pars_l%V0 * pars_l%kappa
-    vref_l_ref = 12 * pars_l%V0 * sum(rn_ltemp)
+    rtemp = -12.0d0 * pars_l%V0 * pars_l%kappa
+    vref_l_ref = 12.0d0 * pars_l%V0 * sum(rn_ltemp)
     ! Derivative with respect to l
         dvref_l_l_ref(1) = rtemp*sum(rn_ltemp*ds_l_l_ref(1,:))
 !        dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
         dvref_l_l_ref(5) = vref_l/pars_l%V0
-        dvref_l_l_ref(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l_ref)
+        dvref_l_l_ref(6) = - 12.0d0 * pars_l%V0 * sum(rn_ltemp *s_l_ref)
         dvref_l_l_ref(7) = rtemp*sum(rn_ltemp*ds_l_l_ref(7,:))
 
 
@@ -980,9 +980,9 @@ implicit none
 ! Calculates and sums the contributions to the cohesive energy for both lattice
 ! and particle.
 
-    Ecoh = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 ) &
+    Ecoh = sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0 ) &
           * pars_l%E0 &
-          + (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
+          + (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
 
     rn_ltemp=-pars_l%E0*pars_l%lambda*s_l*exp(-pars_l%lambda*s_l)
@@ -992,7 +992,7 @@ implicit none
                     +pars_p%lambda*rtemp*ds_p_l(1)
         dEcoh_l(2) = sum(pars_l%lambda*rn_ltemp*ds_l_l(2,:))&
                     +pars_p%lambda*rtemp*ds_p_l(2)
-        dEcoh_l(3) = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 )
+        dEcoh_l(3) = sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0 )
         dEcoh_l(4) = sum(s_l*rn_ltemp)
         dEcoh_l(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l(7,:))&
                     +pars_p%lambda*rtemp*ds_p_l(7)
@@ -1003,13 +1003,13 @@ implicit none
                     +pars_p%lambda*rtemp*ds_p_p(1)
         dEcoh_p(2) = sum(pars_l%lambda*rn_ltemp*ds_l_p(2,:))&
                     +pars_p%lambda*rtemp*ds_p_p(2)
-        dEcoh_p(3) = (1 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)
+        dEcoh_p(3) = (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)
         dEcoh_p(4) = s_p*rtemp
         dEcoh_p(7) = sum(pars_l%lambda*rn_ltemp*ds_l_p(7,:))&
                     +rtemp*pars_p%lambda*ds_p_p(7)
 
     ! Reference energy
-    Ecoh_ref = sum( (1 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1 ) &
+    Ecoh_ref = sum( (1.0d0 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1.0d0 ) &
           * pars_l%E0
 
     rn_ltemp=-pars_l%E0*pars_l%lambda*s_l_ref*exp(-pars_l%lambda*s_l_ref)
@@ -1018,48 +1018,51 @@ implicit none
 
         !dEcoh_l(2) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(2,:))
 
-        dEcoh_ref(3) = sum( (1 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1 )
+        dEcoh_ref(3) = sum( (1.0d0 + pars_l%lambda*s_l_ref) * exp(-pars_l%lambda * s_l_ref)-1.0d0 )
         dEcoh_ref(4) = sum(s_l_ref*rn_ltemp)
         dEcoh_ref(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(7,:))
 
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 ! Reference energy
-     E_ref = Ecoh - V_ll + 0.5 * vref_l
+     E_ref = Ecoh - V_ll + 0.5d0 * vref_l
     ! Derivative with respect to l
-    dE_ref(1) = dEcoh_ref(1) + 0.5*dvref_l_l_ref(1)
+    dE_ref(1) = dEcoh_ref(1) + 0.5d0*dvref_l_l_ref(1)
 !    dE_ref(2) = dEcoh_ref(2) - 0.5*dvref_l_l_ref(2)
     dE_ref(3) = dEcoh_ref(3)
     dE_ref(4) = dEcoh_ref(4)
-    dE_ref(5) = dV_ll(5) + 0.5*dvref_l_l_ref(5)
-    dE_ref(6) = dV_ll(6) + 0.5*dvref_l_l_ref(6)
-    dE_ref(7) = dEcoh_ref(7) + dV_ll(7) + 0.5*dvref_l_l_ref(7)
+    dE_ref(5) = dV_ll(5) + 0.5d0*dvref_l_l_ref(5)
+    dE_ref(6) = dV_ll(6) + 0.5d0*dvref_l_l_ref(6)
+    dE_ref(7) = dEcoh_ref(7) + dV_ll(7) + 0.5d0*dvref_l_l_ref(7)
 
 ! Overall energy
-    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p)-E_ref
+    energy = Ecoh - V_ll - 0.5d0* ( V_lp + V_pl - vref_l - vref_p)-E_ref
 
     ! Derivative with respect to l
-    denergy(8) = dEcoh_l(1) + 0.5*( dvref_l_l(1)+dvref_p_l(1))-dE_ref(1)
+    denergy(8) = dEcoh_l(1) + 0.5d0*( dvref_l_l(1)+dvref_p_l(1))-dE_ref(1)
     denergy(9) = dEcoh_l(2) &
-                   - 0.5*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))-dE_ref(2)
+                   - 0.5d0*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))&
+                   - dE_ref(2)
     denergy(10) = dEcoh_l(3)!-dEref_l(3)
     denergy(11) = dEcoh_l(4)!-dEref_l(4)
-    denergy(12) = dV_ll(5) + 0.5*(dvref_l_l(5)+dV_lp_l(5)) -dE_ref(5)
-    denergy(13) = dV_ll(6) + 0.5*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))-dE_ref(6)
+    denergy(12) = dV_ll(5) + 0.5d0*(dvref_l_l(5)+dV_lp_l(5)) -dE_ref(5)
+    denergy(13) = dV_ll(6) + 0.5d0*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))&
+                  -dE_ref(6)
     denergy(14) = dEcoh_l(7) + dV_ll(7) &
-                   - 0.5*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))-dE_ref(7)
+                   - 0.5d0*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))&
+                   -dE_ref(7)
 
     ! Derivative with respect to p (no correction by dEref since those do not
     ! contain any p-contribution)
-    denergy(1) = dEcoh_p(1) + 0.5*(dvref_l_p(1)+dvref_p_p(1))
+    denergy(1) = dEcoh_p(1) + 0.5d0*(dvref_l_p(1)+dvref_p_p(1))
     denergy(2) = dEcoh_p(2) &
-                   - 0.5*(-dV_pl_p(2)+dV_lp_p(2)-dvref_l_p(2)-dvref_p_p(2))
+                   - 0.5d0*(-dV_pl_p(2)+dV_lp_p(2)-dvref_l_p(2)-dvref_p_p(2))
     denergy(3) = dEcoh_p(3)
     denergy(4) = dEcoh_p(4)
-    denergy(5) = 0.5*(dV_pl_p(5) + dvref_p_p(5))
-    denergy(6) = 0.5*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
+    denergy(5) = 0.5d0*(dV_pl_p(5) + dvref_p_p(5))
+    denergy(6) = 0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy(7) = dEcoh_p(7) &
-                   - 0.5*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
+                   - 0.5d0*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
 
 
 
@@ -1155,32 +1158,32 @@ implicit none
 !    acut = 9.21024/(rr -rcut) ! ln(10000)
 
     rcut = a_lat * sqrt_3 * isqrt_2
-    rr = 4 * rcut / (sqrt_3 + 2)
-    acut = 9.21024/(rr -rcut) ! ln(10000)
+    rr = 4.0d0 * rcut / (sqrt_3 + 2.0d0)
+    acut = 9.21024d0/(rr -rcut) ! ln(10000)
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
     rnnl(2) = rnnl(1) * sqrt_2
     rnnl(3) = rnnl(1) * sqrt_3
 
-    xl = b * twelveth / (1 + exp(acut*(rnnl-rcut)))
+    xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
     r3temp = rnnl-betas0_l
-    igamma1l = 1.0 / sum(xl*exp(-pars_l%eta2 * r3temp))
-    igamma2l = 1.0 /sum(xl*exp(-kappadbeta_l * r3temp))
+    igamma1l = 1.0d0 / sum(xl*exp(-pars_l%eta2 * r3temp))
+    igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
 
     r3temp1 = xl*exp(- pars_l%eta2*r3temp)
-    igamma1l = 1.0 / sum(r3temp1)
+    igamma1l = 1.0d0 / sum(r3temp1)
     dgamma1l = 0.
     dgamma1l(1) = - sum(r3temp*r3temp1)
     dgamma1l(7) = sum(r3temp1)*pars_l%eta2*beta
 
 
     r3temp1 = xl*exp(-kappadbeta_l * r3temp)
-    igamma2l = 1.0 / sum(r3temp1)
+    igamma2l = 1.0d0 / sum(r3temp1)
     dgamma2l = 0.
     dgamma2l(6) = - sum(r3temp*r3temp1) / beta
     dgamma2l(7) = sum(r3temp1)*pars_l%kappa
@@ -1223,7 +1226,7 @@ implicit none
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
-            theta = 1.0 / (1 + exp( acut * (r - rcut) ) )
+            theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -1288,7 +1291,7 @@ implicit none
     rn_ltemp = sigma_ll
     s_l = -log( sigma_ll * twelveth ) &
             / ( beta * pars_l%eta2)
-    rn_ltemp = 1.0/(sigma_ll*pars_l%eta2*beta)
+    rn_ltemp = 1.0d0/(sigma_ll*pars_l%eta2*beta)
         ! Derivative with respect to l
         ds_l_l(1,:) = -s_l/pars_l%eta2 &
                       - dsigma_ll(1,:)*rn_ltemp
@@ -1300,13 +1303,13 @@ implicit none
 ! that were included twice.
 
     rn_ltemp = exp( -pars_l%kappa * s_l)
-    rtemp = -12 * pars_l%V0 * pars_l%kappa
-    vref_l = 12 * pars_l%V0 * sum(rn_ltemp)
+    rtemp = -12.0d0 * pars_l%V0 * pars_l%kappa
+    vref_l = 12.0d0 * pars_l%V0 * sum(rn_ltemp)
     ! Derivative with respect to l
         dvref_l_l(1) = rtemp*sum(rn_ltemp*ds_l_l(1,:))
 !        dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
         dvref_l_l(5) = vref_l/pars_l%V0
-        dvref_l_l(6) = - 12 * pars_l%V0 * sum(rn_ltemp *s_l)
+        dvref_l_l(6) = - 12.0d0 * pars_l%V0 * sum(rn_ltemp *s_l)
         dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
 
 
@@ -1320,7 +1323,7 @@ implicit none
 ! Calculates and sums the contributions to the cohesive energy for both lattice
 ! and particle.
 
-    Ecoh = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 ) &
+    Ecoh = sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0 ) &
           * pars_l%E0
 
     rn_ltemp=-pars_l%E0*pars_l%lambda*s_l*exp(-pars_l%lambda*s_l)
@@ -1329,7 +1332,7 @@ implicit none
 
         !dEcoh_l(2) = sum(pars_l%lambda*rn_ltemp*ds_l_l(2,:))
 
-        dEcoh_l(3) = sum( (1 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1 )
+        dEcoh_l(3) = sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0)
         dEcoh_l(4) = sum(s_l*rn_ltemp)
         dEcoh_l(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l(7,:))
 
@@ -1337,17 +1340,17 @@ implicit none
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
-   energy = Ecoh - V_ll + 0.5 * vref_l
+   energy = Ecoh - V_ll + 0.5d0 * vref_l
    Eref   = energy
 
     ! Derivative with respect to l
-    dEref_l(1) = dEcoh_l(1) + 0.5*dvref_l_l(1)
+    dEref_l(1) = dEcoh_l(1) + 0.5d0*dvref_l_l(1)
 !    dEref_l(2) = dEcoh_l(2) - 0.5*dvref_l_l(2)
     dEref_l(3) = dEcoh_l(3)
     dEref_l(4) = dEcoh_l(4)
-    dEref_l(5) = dV_ll(5) + 0.5*dvref_l_l(5)
-    dEref_l(6) = dV_ll(6) + 0.5*dvref_l_l(6)
-    dEref_l(7) = dEcoh_l(7) + dV_ll(7) + 0.5*dvref_l_l(7)
+    dEref_l(5) = dV_ll(5) + 0.5d0*dvref_l_l(5)
+    dEref_l(6) = dV_ll(6) + 0.5d0*dvref_l_l(6)
+    dEref_l(7) = dEcoh_l(7) + dV_ll(7) + 0.5d0*dvref_l_l(7)
 
 
 

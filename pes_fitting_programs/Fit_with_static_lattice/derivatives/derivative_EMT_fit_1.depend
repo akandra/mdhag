@@ -1,13 +1,15 @@
 # depslib dependency file v1.0
-1370883701 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/nllsq.dbl.f
+1371049373 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/nllsq.dbl.f
 
 1370603925 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/open_file.f95
 
-1370879860 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/EMTparms_class_v2.f95
+1370938878 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/EMTparms_class_v2.f95
 
 1370603925 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/emt_init.f95
 
-1370883534 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/model.f95
+1371046279 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/model.f95
 
-1370874015 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/EMT_fit_1.f95
+1371049861 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/EMT_fit_1.f95
+
+1371044261 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/derivatives/modelder.f95
 

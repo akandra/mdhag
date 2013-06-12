@@ -296,14 +296,14 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
 
-    IB = (/3,10,12,7,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
     IP = 5 ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 10
+    max_iterations = 30
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -314,14 +314,14 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     NARRAY(8) = max_iterations ! maximum number of iterations
     !*********************** ARRAY ***************************
     ! variable default
-    ARRAY(1) = 0.1 ! AL .1
-    ARRAY(2) = 0.00001 ! DELTA - FOR DERIVATIVES .00001
-    ARRAY(3) = 0.00005 ! E - CONVERGENCE CRITERION .00005
-    ARRAY(4) = 4.0 ! FF 4.0
-    ARRAY(5) =45.0 ! GAMCR - CRITICAL ANGLE 45.
-    ARRAY(6) = 2.0 ! T 2.
-    ARRAY(7) = 0.001 ! TAU .001
-    ARRAY(8) = 1E-31 ! ZETA - CRITERION FOR 1E-31
+    ARRAY(1) = 0.1d0 ! AL .1
+    ARRAY(2) = 0.00001d0 ! DELTA - FOR DERIVATIVES .00001
+    ARRAY(3) = 0.00005d0 ! E - CONVERGENCE CRITERION .00005
+    ARRAY(4) = 4.0d0 ! FF 4.0
+    ARRAY(5) =45.0d0 ! GAMCR - CRITICAL ANGLE 45.
+    ARRAY(6) = 2.0d0 ! T 2.
+    ARRAY(7) = 0.001d0 ! TAU .001
+    ARRAY(8) = 1d-31 ! ZETA - CRITERION FOR 1E-31
                         ! SINGULAR MATRIX
     ARRAY=0 ! use default values
 

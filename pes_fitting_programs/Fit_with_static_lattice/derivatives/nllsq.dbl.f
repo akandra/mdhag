@@ -120,6 +120,8 @@ C label not used   26   IF(IFP.EQ.(-1))GO TO 100
       LJ=LJ+1
 C     BEGIN LJTH ITERATION
       CALLXNEWAZ(Y,X,RES)
+!      print*, P
+!      stop
  1311 IF(AL.LT..1E-07) GO TO 131
       AL=AL/10.
  131  CALLXSCALX
@@ -269,8 +271,7 @@ C     GET MATRIX FROM STORAGE
       DO460I=1,N
 C      RESIDUAL ARRAY OPTION SATISFIED HERE
       J=4
-      CALLMODEL(F,Y,X,RES,I,J, P)
-C      CALLMODEL(F,Y,X,RES,1,J)
+      CALL MODEL(F,Y,X,RES,I,J)
   460  WRITE(IK,2031)I,X(I),Y(I),F,RE
 C     ONE PARAMETER SUPPORT PLANE COMPUTATIONS
 461      FNKW=N-K+IP
@@ -312,12 +313,10 @@ C     RETURNING PARAMETERS WITH NO OUTPUT
  601  BB(J)=B(J)
 C      RESIDUAL ARRAY OPTION WITH NO OUTPUT
  602  J=4
-      CALLMODEL(F,Y,X,RES,1,J, P)
-C      CALLMODEL(F,Y,X,RES,1,J)
+      CALLMODEL(F,Y,X,RES,1,J)
       GOTO(599,599,599,604),J
  604  DO605I=2,N
- 605  CALLMODEL(F,Y,X,RES,I,J, P)
-C 605  CALLMODEL(F,Y,X,RES,1,J)
+ 605  CALLMODEL(F,Y,X,RES,I,J)
       IF(IFP.GE.0)WRITE(IK,2090)
       RETURN
  2000 FORMAT(100H XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -365,8 +364,6 @@ CNEWA         NEWA - CALCULATES PTP MATRIX, A, AND GRADIENT VECTOR, G.
 C**********************************************************************
 C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
-C Changed lines 384 to 404. old lines commented out with !
-C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
       DIMENSION Y(50),X(50),RES(50)
@@ -382,10 +379,8 @@ C**********************************************************************
  1    A(J,I)=0.
       DO50II=1,N
 C     LOOK FOR PARTIALS
-!     J=2
-      J=1
-!      CALLMODEL(F,Y,X,RES,II,J)
-      CALLMODEL(F,Y,X,RES,II,J,P)
+      J=2
+      CALLMODEL(F,Y,X,RES,II,J)
       RD=RE
       DO30JJ=1,K
 C     CHECK FOR OMITTED PARAMETERS
@@ -395,9 +390,9 @@ C     COMPUTE PARTIALS IF NECESSARY
 ! 20   AB=B(JJ)
 !      B(JJ)=AB+DELTA*AB
 !      J=1
- 20   J=2
-!      CALLMODEL(FDEL,Y,X,RES,II,J)
-      CALLMODEL(FDEL,Y,X,RES,II,J,P(1:14))
+   20 J=1
+      CALLMODELDER(FDEL,Y,X,RES,II,J,P)
+      J=2
       RE=RD
 !      P(JJ)=(FDEL-F)/(DELTA*AB)
 !      B(JJ)=AB
@@ -406,7 +401,8 @@ C     COMPUTE PARTIALS IF NECESSARY
       IF(JJ.EQ.IB(I)) GO TO 29
  26   CONTINUE
       GOTO10
-  29  P(JJ)=0.
+  29  P(JJ)=0.0d0
+!      print*, JJ, IB(I)
 C     USING PARTIALS AT ITH DATA POINT
    30 G(JJ)=G(JJ)+RE*P(JJ)
       DO 40 I=1,K
@@ -765,8 +761,7 @@ C**********************************************************************
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N
-      CALLMODEL(F,Y,X,RES,I,1,P)
-C      CALLMODEL(F,Y,X,RES,1,J)
+      CALL MODEL(F,Y,X,RES,I,1)
    10 PHI=PHI+RE*RE
       RETURN
       END
