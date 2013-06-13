@@ -382,29 +382,63 @@ C     LOOK FOR PARTIALS
       J=2
       CALLMODEL(F,Y,X,RES,II,J)
       RD=RE
-      DO30JJ=1,K
+!     call module for energy and derivatives
+!      J=2
+!      Call modelder(F,Y,X,RES,II,J,P)
+!      RE=RD
+!      do JJ = 1,K
+!        do I = 1,IP
+!            if(JJ .EQ. IB(I)) then
+!                P(JJ)=0.0d0
+!            end if
+!        end do
+!      G(JJ) = G(JJ)+RE*P(JJ)
+!      end do
+      call modelder(F,Y,X,RES,II,J,P)
+      do JJ = 1, K
+        do I=1,IP
+            if(JJ.EQ.IB(I)) then
+                P(JJ)=0.0d0
+                print*, JJ, IB(I)
+            end if
+        end do
+        J=2
+        RE=RD
+        Goto30
+!
+!      DO30JJ=1,K
 C     CHECK FOR OMITTED PARAMETERS
-      IF(IP.GT.0)GOTO25
-   10 GO TO(20,30,20),J
+!      IF(IP.GT.0)GOTO25
+!   10 GO TO(20,30,20),J
 C     COMPUTE PARTIALS IF NECESSARY
 ! 20   AB=B(JJ)
 !      B(JJ)=AB+DELTA*AB
 !      J=1
-   20 J=1
-      CALLMODELDER(FDEL,Y,X,RES,II,J,P)
-      J=2
-      RE=RD
+!   20 J=1
+!      CALLMODEL(FDEL,Y,X,RES,II,J)
+!      call modelder(F,Y,X,RES,II,J,P)
+!      print*, 'bla'
+!      J=2
+!      RE=RD
 !      P(JJ)=(FDEL-F)/(DELTA*AB)
 !      B(JJ)=AB
-      GOTO30
-   25 DO 26 I=1,IP
-      IF(JJ.EQ.IB(I)) GO TO 29
- 26   CONTINUE
-      GOTO10
-  29  P(JJ)=0.0d0
+!      GOTO30
+!   25 DO 26 I=1,IP
+!   25 do I=1,IP
+!      if(JJ.EQ.IB(I)) then
+!        P(JJ)=0.0d0
+!      end if
+!      end do
+!      IF(JJ.EQ.IB(I)) GO TO 29
+! 26   CONTINUE
+!      GOTO10
+!  29  P(JJ)=0.0d0
 !      print*, JJ, IB(I)
 C     USING PARTIALS AT ITH DATA POINT
    30 G(JJ)=G(JJ)+RE*P(JJ)
+      end do
+      print*, P
+!      stop
       DO 40 I=1,K
       DO 40 J=I,K
    40 A(I,J)=A(I,J)+P(I)*P(J)

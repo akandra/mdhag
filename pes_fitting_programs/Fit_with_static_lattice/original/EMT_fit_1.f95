@@ -280,14 +280,14 @@ program EMT_fit_1
     ! s0        6  13   x   x     shouldn't change
     ! V0        7  14       x     shouldn't be <0
 
-    IB    = (/6,13,14,12,11,1,2,3,4,7,8,9,10,0/) ! indicies of parameters held constant
+    IB    = (/1,2,3,4,5,6,7,8,9,10,11,12,13,0/) ! indicies of parameters held constant
     IP    = 13                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms          = 14
-    max_iterations  = 10
+    max_iterations  = 5
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters
