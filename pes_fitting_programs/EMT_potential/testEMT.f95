@@ -87,7 +87,7 @@ program testAtomClass
 !
                             read(9,*) loc(i), r_part(1), r_part(2), r_part(3)
 
-                            call emt_der_r(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
+!                            call emt_der_r(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy)
                     call emt_fit(cell, a_lat, n_lat0_at, r0_lat, r_part, particle_pars, lattice_pars, energy, denergy_l, denergy_p)
 !
 !                        print *, r_part(1), r_part(2), r_part(3)

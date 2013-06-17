@@ -17,6 +17,7 @@ module EMTparms_class
     real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
     real(8), private                :: Eref         ! reference energy
     real(8)                         :: a_lat        ! global variable for the lattice constant
+    real(8), allocatable            :: r_lat(:,:)
     real(8), dimension(7)           :: dEref_l      ! derivatives of the reference energy
 
     type EMTparms
@@ -597,11 +598,17 @@ implicit none
 
 ! variables which were caused by making compatible with nllsq model
 ! Here, at present, the gold atoms are allocated to the positions of the
-! reference gold atoms
-    real(8), allocatable :: r_lat(:,:)
-    allocate(r_lat(3,n_l))
+! reference gold atoms  -- you wish!
+!    real(8), allocatable :: r_lat(:,:)
+!    allocate(r_lat(3,n_l))
 
-
+    if (.not. allocated(r_lat)) then
+        allocate(r_lat(3,n_l))
+!        print *, 'allocated r0_lat for', n_l, 'atoms'
+    else
+!        print *, 'r_lat is all ready allocated'
+    end if
+    r_lat = r0_lat
 
 !______________________________________________________________________________
 
@@ -623,6 +630,7 @@ implicit none
 
     dchipl(1) = - chipl * dchipl(2)     ! d chipl / d nop
     dchilp(2) = - chilp * dchilp(1)     ! d chipl / d nol
+
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
@@ -682,6 +690,7 @@ implicit none
     dgamma2p = 0.
     dgamma2p(6) = - sum(r3temp*r3temp1) / beta
     dgamma2p(7) = sum(r3temp1)*pars_p%kappa
+
 
 
 !------------------------------------------------------------------------------
@@ -862,30 +871,31 @@ implicit none
     V_ll = V_ll * pars_l%V0 * igamma2l
         dV_ll(5) = - V_ll/pars_l%V0
         dV_ll(6) = (dV_ll(6) * pars_l%V0/beta + V_ll*dgamma2l(6)) * igamma2l
-        dV_ll(7) = (dV_ll(7) * pars_l%V0 + V_ll*dgamma2l(7)) * igamma2l
+        dV_ll(7) = -(dV_ll(7) * pars_l%V0 + V_ll*dgamma2l(7)) * igamma2l
 
     V_lp = V_lp *chilp * pars_l%V0 * igamma2l
         ! Derivative with respect to l
-        dV_lp_l(2) = - V_lp/pars_l%n0
+        dV_lp_l(2) = V_lp/pars_l%n0
         dV_lp_l(5) = - V_lp/pars_l%V0
-        dV_lp_l(7) = -V_lp*igamma2l             ! this one is temporary
+        dV_lp_l(7) = V_lp*igamma2l             ! this one is temporary
         dV_lp_l(6) = dV_lp_l(7)*dgamma2l(6)
         dV_lp_l(7) = dV_lp_l(7)*dgamma2l(7)
         ! Derivative with respect to p
-        dV_lp_p(2) = V_lp/pars_p%n0
+        dV_lp_p(2) = -V_lp/pars_p%n0
         dV_lp_p(6) = dV_lp_p(6)*igamma2l*chilp * pars_l%V0 / beta
-        dV_lp_p(7) = dV_lp_p(7)*igamma2l*chilp * pars_l%V0
+        dV_lp_p(7) = -dV_lp_p(7)*igamma2l*chilp * pars_l%V0
 
     V_pl = V_pl * pars_p%V0 * igamma2p * chipl
         ! Derivative with respect to l
         dV_pl_l(2) = - V_pl/pars_l%n0
         dV_pl_l(6) = dV_pl_l(6)*igamma2p*pars_p%V0*chipl/beta
-        dV_pl_l(7) = dV_pl_l(7)*igamma2p*chipl * pars_p%V0
+        dV_pl_l(7) = -dV_pl_l(7)*igamma2p*chipl * pars_p%V0
         ! Derivative with respect to p
         dV_pl_p(2) = V_pl/pars_p%n0
         dV_pl_p(5) = - V_pl/pars_p%V0
         dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
-        dV_pl_p(7) = -V_pl*igamma2p*dgamma2p(7)
+        dV_pl_p(7) = V_pl*igamma2p*dgamma2p(7)
+
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 ! The neutral sphere radius is the radius in which the entire density of the
@@ -921,10 +931,17 @@ implicit none
     ! Derivatives for reference energy:
     rn_ltemp = 1.0d0/(sigma_ll*pars_l%eta2*beta)
         ! Derivative with respect to l
-        ds_l_l_ref(1,:) = -s_l/pars_l%eta2 &
+        ds_l_l_ref(1,:) = -s_l_ref/pars_l%eta2 &
                       - dsigma_ll(1,:)*rn_ltemp
         ds_l_l_ref(7,:) = -rn_ltemp*dsigma_ll(7,:)
 
+
+!print *, 'ds_l_l', ds_l_l(:,45)
+!print *, 'ds_l_p', ds_l_p(:,45)
+!print *, 'ds_p_l', ds_p_l
+!print *, 'ds_p_p', ds_p_p
+!print *, 'dsref', ds_l_l_ref(:,45)
+!stop
 
 
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
@@ -965,9 +982,9 @@ implicit none
     ! Derivative with respect to l
         dvref_l_l_ref(1) = rtemp*sum(rn_ltemp*ds_l_l_ref(1,:))
 !        dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
-        dvref_l_l_ref(5) = vref_l/pars_l%V0
+        dvref_l_l_ref(5) = vref_l_ref/pars_l%V0
         dvref_l_l_ref(6) = - 12.0d0 * pars_l%V0 * sum(rn_ltemp *s_l_ref)
-        dvref_l_l_ref(7) = rtemp*sum(rn_ltemp*ds_l_l_ref(7,:))
+        dvref_l_l_ref(7) = -rtemp*sum(rn_ltemp*ds_l_l_ref(7,:))
 
 
 !------------------------------------------------------------------------------
@@ -1022,6 +1039,7 @@ implicit none
         dEcoh_ref(4) = sum(s_l_ref*rn_ltemp)
         dEcoh_ref(7) = sum(pars_l%lambda*rn_ltemp*ds_l_l_ref(7,:))
 
+
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 ! Reference energy
@@ -1041,15 +1059,15 @@ implicit none
     ! Derivative with respect to l
     denergy(8) = dEcoh_l(1) + 0.5d0*( dvref_l_l(1)+dvref_p_l(1))-dE_ref(1)
     denergy(9) = dEcoh_l(2) &
-                   - 0.5d0*(-dV_pl_l(2)-dvref_p_l(2)+dV_lp_l(2)-dvref_l_l(2))&
+                    +0.5d0*(dV_pl_l(2)+dvref_p_l(2)+dV_lp_l(2)+dvref_l_l(2))&
                    - dE_ref(2)
-    denergy(10) = dEcoh_l(3)!-dEref_l(3)
-    denergy(11) = dEcoh_l(4)!-dEref_l(4)
+    denergy(10) = dEcoh_l(3)-dE_ref(3)
+    denergy(11) = dEcoh_l(4)-dE_ref(4)
     denergy(12) = dV_ll(5) + 0.5d0*(dvref_l_l(5)+dV_lp_l(5)) -dE_ref(5)
-    denergy(13) = dV_ll(6) + 0.5d0*( -dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))&
+    denergy(13) = dV_ll(6) + 0.5d0*( dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))&
                   -dE_ref(6)
     denergy(14) = dEcoh_l(7) + dV_ll(7) &
-                   - 0.5d0*(dV_lp_l(7)+dV_pl_l(7)-dvref_l_l(7)-dvref_p_l(7))&
+                   + 0.5d0*(dV_lp_l(7)+dV_pl_l(7)+dvref_l_l(7)+dvref_p_l(7))&
                    -dE_ref(7)
 
     ! Derivative with respect to p (no correction by dEref since those do not
@@ -1064,6 +1082,10 @@ implicit none
     denergy(7) = dEcoh_p(7) &
                    - 0.5d0*(dV_lp_p(7)+dV_pl_p(7)-dvref_l_p(7)-dvref_p_p(7))
 
+print*, 'dE_ref', dE_ref
+print *, 'denergy_l', denergy(8:14)
+print *, 'denergy_p', denergy(1:7)
+stop
 
 
 end subroutine emt_fit

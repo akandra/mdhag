@@ -126,9 +126,8 @@ program EMT_fit_1
 
 !    particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
 !    particle_nml_out = 'parameters_and_fit_results/f119_der.02.H.nml'
-
-!   lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
-!   lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
+!    lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
+!    lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
@@ -295,8 +294,8 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/1,2,3,4,5,6,7,8,9,10,11,12,13,0/) ! indicies of parameters held constant
-    IP = 13 ! number of parameters held constant
+    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 5 ! number of parameters held constant
 
 !    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
 !    IP = 5 ! number of parameters held constant
@@ -305,7 +304,7 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 5
+    max_iterations = 30
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

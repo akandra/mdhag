@@ -3,10 +3,15 @@ C                                                                   ***
 C      DOUBLE PRECISION VERSION OF NLLSQ                            ***
 C                                                                   ***
 C      Daniel Auerbach  2013-04-30                                  ***
+C      Svenja M. Janke  2013-06-13                                  ***
 C**********************************************************************
 C      Modified the nllsq.f single precision version as follows     ***
 C      IMPLICIT REAL(8) (A-H,O-Z) added to all procedures           ***
 C                                                                   ***
+C                                                                   ***
+C**********************************************************************
+C      Modified the calculation of derivatives by entering model    ***
+C      that gets the derivatives from other procedure.              ***
 C                                                                   ***
 C**********************************************************************
 
@@ -380,20 +385,13 @@ C**********************************************************************
       DO50II=1,N
 C     LOOK FOR PARTIALS
       J=2
+! I'm not quite sure if the following call-model is needed, but for now, I'm
+! keeping it until I'm sure it's not relevant -- Svenja
       CALLMODEL(F,Y,X,RES,II,J)
       RD=RE
-!     call module for energy and derivatives
-!      J=2
-!      Call modelder(F,Y,X,RES,II,J,P)
-!      RE=RD
-!      do JJ = 1,K
-!        do I = 1,IP
-!            if(JJ .EQ. IB(I)) then
-!                P(JJ)=0.0d0
-!            end if
-!        end do
-!      G(JJ) = G(JJ)+RE*P(JJ)
-!      end do
+! here, the procedure was changed.
+! Now, another module modelder is called to calculate the derivatives.
+! This should reduce the calculation time considerably.
       call modelder(F,Y,X,RES,II,J,P)
       do JJ = 1, K
         do I=1,IP
@@ -405,36 +403,6 @@ C     LOOK FOR PARTIALS
         J=2
         RE=RD
         Goto30
-!
-!      DO30JJ=1,K
-C     CHECK FOR OMITTED PARAMETERS
-!      IF(IP.GT.0)GOTO25
-!   10 GO TO(20,30,20),J
-C     COMPUTE PARTIALS IF NECESSARY
-! 20   AB=B(JJ)
-!      B(JJ)=AB+DELTA*AB
-!      J=1
-!   20 J=1
-!      CALLMODEL(FDEL,Y,X,RES,II,J)
-!      call modelder(F,Y,X,RES,II,J,P)
-!      print*, 'bla'
-!      J=2
-!      RE=RD
-!      P(JJ)=(FDEL-F)/(DELTA*AB)
-!      B(JJ)=AB
-!      GOTO30
-!   25 DO 26 I=1,IP
-!   25 do I=1,IP
-!      if(JJ.EQ.IB(I)) then
-!        P(JJ)=0.0d0
-!      end if
-!      end do
-!      IF(JJ.EQ.IB(I)) GO TO 29
-! 26   CONTINUE
-!      GOTO10
-!  29  P(JJ)=0.0d0
-!      print*, JJ, IB(I)
-C     USING PARTIALS AT ITH DATA POINT
    30 G(JJ)=G(JJ)+RE*P(JJ)
       end do
       print*, P
