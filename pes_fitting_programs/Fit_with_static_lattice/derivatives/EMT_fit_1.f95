@@ -171,12 +171,18 @@ program EMT_fit_1
     end do readr0lat
     a_lat = nn0*sqrt_2
 
+    ! routine gets the gold positions set in case they differ from positions of reference
+    ! system
+    call gold_pos(r0_lat(1,:), r0_lat(2,:),r0_lat(3,:), n_lat0_at, r_lat)
+
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
     call emt_init(a_lat, cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
+
+
     !------------------------------------------------------------------------------------
     ! READ THE PARTICLE POSITIONS AND DFT ENERGIES
     !------------------------------------------------------------------------------------
