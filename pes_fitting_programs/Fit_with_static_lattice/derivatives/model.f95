@@ -27,13 +27,13 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     COMMON/ DJA1/ iteration
     COMMON/debug/ debug(5)
 
-    if ((debug(3)) .and. first_run) then
+    if (debug(3) .and. first_run) then
         print *
         print '((a))', 'FIRST RUN OF MODEL'
         print '((a),4i5)', '  i jp n m=', i, jp, n, m
-        print '((a),4f10.5)', '  xi,yi=   ', xdat(i,1), xdat(i,2), xdat(i,3), ydat(i)
-        print '((a),3I10)',   '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
-        print '((a),3I10)',   '  loc(x2))=', loc(xdat(2,1)), loc(xdat(2,2)), loc(xdat(2,3))
+        print '((a),4f20.5)', '  xi,yi=   ', xdat(i,1), xdat(i,2), xdat(i,3), ydat(i)
+        print '((a),3I20)',   '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
+        print '((a),3I20)',   '  loc(x2))=', loc(xdat(2,1)), loc(xdat(2,2)), loc(xdat(2,3))
         print *
         write(7,*) 'it i jp    x       y      z       DFT     EMT    RES'
         !pause 'first run of model';
@@ -48,9 +48,11 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     F   = energy
     RES = YDAT(I) - F
 
+
     !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
     if ( jp.eq.2 .and. ((mod(i,10)==0) .or. (i==N))) then
         write(*,1000) iteration, i, YDAT(i), F, B(1:14)
+        stop
     end if
 
     if (debug(4).and.JP==2) then
@@ -61,7 +63,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     ! filetered out above IF (JP.EQ.4) RRR(I) = F
 
     if(jp .eq. 2) jp=3
-    if(jp .eq. 4) rrr(i)=f
+    if(jp .eq. 4) rrr(i)=F
     first_run=.false.
     RETURN
 

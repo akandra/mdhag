@@ -72,7 +72,7 @@ C**********************************************************************
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
       COMMON/DJA1/LJ
-      DIMENSION Y(50),X(50),RES(50)
+      DIMENSION Y(1000),X(3000),RES(1000)
       DIMENSIONBB(20),IBB(20)
       DIMENSIONNARRAY(8),ARRAY(8)
       DIMENSION CONST(8),SCONST(8)
@@ -124,7 +124,7 @@ C label not used   26   IF(IFP.EQ.(-1))GO TO 100
  130  IF(LJ.GE.KITER)GOTO404
       LJ=LJ+1
 C     BEGIN LJTH ITERATION
-      CALLXNEWAZ(Y,X,RES)
+      CALL XNEWAZ(Y,X,RES)
 !      print*, P
 !      stop
  1311 IF(AL.LT..1E-07) GO TO 131
@@ -181,7 +181,7 @@ C     BEGIN INTERMEDIATE OUTPUT ROUTINE
       WRITE(IK,2002)LJ,PHI,AL,(B(J),J=1,K)
       WRITE(IK,2003)GAMMA,XL,(DB(J),J=1,K)
       IF(INTP.EQ.1)GOTO130
-      CALLXNEWAZ(Y,X,RES)
+      CALL XNEWAZ(Y,X,RES)
 C     STORE MATRIX
       DO205I=1,K
       II=I+NPMAX
@@ -245,7 +245,7 @@ C     BEGIN FINAL  PRINTOUT ROUTINE
  406  BB(J)=B(J)
       WRITE(IK,2002)LJ,PHI,AL,(B(J),J=1,K)
       WRITE(IK,2003)GAMMA,XL,(DB(J),J=1,K)
-      CALLXNEWAZ(Y,X,RES)
+      CALL XNEWAZ(Y,X,RES)
       IF(IFP.LE.1)GOTO430
       DO410I=1,K
       II=I+NPMAX
@@ -371,7 +371,7 @@ C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(50),X(50),RES(50)
+      DIMENSION Y(1000),X(3000),RES(1000)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       COMMON/BLK2/A(40,20),SA(20),K2,IK,NPMAX
       COMMON/BLK3/BS(20),DB(20),G(20),K3
@@ -380,14 +380,12 @@ C**********************************************************************
       DO1J=1,K
       G(J)=0.
       P(J)=0.
-      DO1I=1,K
+      DO 1 I=1,K
  1    A(J,I)=0.
-      DO50II=1,N
+      DO 50 II=1,N
 C     LOOK FOR PARTIALS
       J=2
-! I'm not quite sure if the following call-model is needed, but for now, I'm
-! keeping it until I'm sure it's not relevant -- Svenja
-      CALLMODEL(F,Y,X,RES,II,J)
+      CALL MODEL(F,Y,X,RES,II,J)
       RD=RE
 ! here, the procedure was changed.
 ! Now, another module modelder is called to calculate the derivatives.
@@ -672,7 +670,7 @@ C**********************************************************************
       COMMON/BLK3/BS(20),DB(20),G(20),K3
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
-      DIMENSION Y(50),X(50),RES(50)
+      DIMENSION Y(1000),X(3000),RES(1000)
       LOGICAL NOLO
       DO580J=1,K
       NOLO=.FALSE.
@@ -744,7 +742,7 @@ CMMGR       MICROFILM PLOTTING - RESIDUALS FROM NLLSQ
       SUBROUTINE MMGR(X,RES,N,NDIM,J,GAR)
 
 C**********************************************************************
-C     Change impliit type of from REAL to REAL(8)                   ***
+C     Change implicit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
@@ -755,11 +753,11 @@ C**********************************************************************
       SUBROUTINE SUMSQ(PHI,Y,X,RES)
 
 C**********************************************************************
-C     Change impliit type of from REAL to REAL(8)                   ***
+C     Change implicit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(50),X(50),RES(50)
+      DIMENSION Y(1000),X(3000),RES(1000)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N

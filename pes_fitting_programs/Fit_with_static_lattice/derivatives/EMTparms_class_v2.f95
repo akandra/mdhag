@@ -37,24 +37,22 @@ module EMTparms_class
 contains
 
 
-subroutine gold_pos(r1, r2, r3, n_l, r_lat)
+subroutine gold_pos(r1, n_l, r_lat)
 !
 ! Purpose:
 !         Declare the global variable r_lat that contains the gold positions.
 
     integer, intent(in)                 :: n_l  ! Length of the gold-position array
-    real(8), dimension(n_l), intent(in) :: r1, r2, r3   ! Positions of Au atoms
+    real(8), dimension(:,:), intent(in) :: r1   ! Positions of Au atoms
     real(8), dimension(:,:), allocatable, intent(out):: r_lat! array for Au positions
 
     if (.not. allocated(r_lat)) then
         allocate(r_lat(3,n_l))
-        print *, 'allocated r0_lat for', n_l, 'atoms'
+        write(*,*) 'allocated r_lat for', n_l, 'atoms'
     else
-        print *, 'r0_lat is already allocated'
+        print *, 'r_lat is already allocated'
     end if
-    r_lat(1,:)=r1
-    r_lat(2,:)=r2
-    r_lat(3,:)=r3
+    r_lat=r1
 
 end subroutine gold_pos
 
@@ -108,8 +106,8 @@ implicit none
     cell   = cell_in
     n_l = n_l_in
     if (.not. allocated(r0_lat)) then
-        allocate(r0_lat(3,n_l))
-        print *, 'allocated r0_lat for', n_l, 'atoms'
+        allocate(r0_lat(3,n_l_in))
+        write(*,*) 'allocated r0_lat for', n_l_in, 'atoms'
     else
         print *, 'r0_lat is already allocated'
     end if
@@ -277,7 +275,7 @@ implicit none
     real(8), intent(in)                 :: a_lat
 !    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
 !    integer, intent(in)                 :: n_l      ! number of lattice atoms
-    real(8), dimension(3), intent (in)  :: r_part  ! position of the particle (note:
+    real(8), dimension(:), intent (in)  :: r_part  ! position of the particle (note:
                                                     ! only one position for reference)
 !    real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
@@ -309,8 +307,14 @@ implicit none
     real(8) :: rtemp                    ! temporary variable
 
     real(8) :: E_ref                    ! reference energy
+    real(8) :: Ecoh_ref                  !cohesive reference energy
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
+
+! For the reference energy
+    real(8)                 :: rn_ltemp(n_l), r3temp1(3), rtemp1
+    real(8), dimension(n_l) :: s_l_ref
+    real(8)                 :: vref_l_ref
 
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
@@ -477,6 +481,8 @@ implicit none
             / ( beta * pars_l%eta2)
     s_p  = -log( sigma_pl * chipl * twelveth) / ( beta * pars_p%eta2)
 
+    s_l_ref = -log( sigma_ll*twelveth )/( beta*pars_l%eta2)
+
 
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be substracted to account for the contributions
@@ -485,7 +491,8 @@ implicit none
     vref_l = 12.0d0 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
     vref_p = 12.0d0 * pars_p%V0 * exp( -pars_p%kappa * s_p)
 
-
+    ! Reference energy
+    vref_l_ref = 12.0d0 * pars_l%V0 * sum(exp( -pars_l%kappa * s_l_ref))
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -501,6 +508,9 @@ implicit none
           * pars_l%E0 &
           + (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)* pars_p%E0
 
+    ! Reference energy
+Ecoh_ref = sum((1.0d0 + pars_l%lambda*s_l_ref)*exp(-pars_l%lambda*s_l_ref)-1.0d0)&
+          * pars_l%E0
 
 
 !-------------------------------OVERALL ENERGY---------------------------------
@@ -508,8 +518,11 @@ implicit none
 
 !    energy = Ecoh - V_ll - 0.5 * ( V_lp + V_pl - vref_l - vref_p) - Eref
 
-    energy = Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)-Eref
+    E_ref = Ecoh_ref - V_ll + 0.5d0 * vref_l_ref
 
+    energy = Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)-E_ref
+!    print *, E_ref
+!stop
 end subroutine emt
 
 
@@ -616,20 +629,6 @@ implicit none
     real(8), dimension(7) :: dvref_l_l_ref
     real(8) :: Ecoh_ref, E_ref
     real(8), dimension(7) :: dEcoh_ref, dE_ref
-
-! variables which were caused by making compatible with nllsq model
-! Here, at present, the gold atoms are allocated to the positions of the
-! reference gold atoms  -- you wish!
-!    real(8), allocatable :: r_lat(:,:)
-!    allocate(r_lat(3,n_l))
-
-!    if (.not. allocated(r_lat)) then
-!        allocate(r_lat(3,n_l))
-!        print *, 'allocated r0_lat for', n_l, 'atoms'
-!    else
-!        print *, 'r_lat is all ready allocated'
-!    end if
-!    r_lat = r0_lat
 
 !______________________________________________________________________________
 
