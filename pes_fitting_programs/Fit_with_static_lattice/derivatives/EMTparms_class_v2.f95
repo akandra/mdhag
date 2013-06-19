@@ -313,7 +313,7 @@ implicit none
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
 
-! For the Derivatives
+! For the reference energy
     real(8)                 :: rn_ltemp(n_l), r3temp1(3), rtemp1
     real(8), dimension(n_l) :: s_l_ref
     real(8)                 :: vref_l_ref
