@@ -173,7 +173,8 @@ program EMT_fit_1
 
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
-    call gold_pos(r0_lat(1,:), r0_lat(2,:),r0_lat(3,:), n_lat0_at, r_lat)
+ !   call gold_pos(r0_lat(1,:), r0_lat(2,:),r0_lat(3,:), n_lat0_at, r_lat)
+    call gold_pos(r0_lat, n_lat0_at, r_lat)
 
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
@@ -181,7 +182,6 @@ program EMT_fit_1
     call emt_init(a_lat, cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
-
 
     !------------------------------------------------------------------------------------
     ! READ THE PARTICLE POSITIONS AND DFT ENERGIES
@@ -191,15 +191,14 @@ program EMT_fit_1
     call open_for_read (8, particle_position_and_DFT_energies_fname)
     i=1
     do
-read(8,*,iostat=ios)
+        read(8,*,iostat=ios)
         if(ios <0) exit
-i=i+1
+        i=i+1
     end do
 
-rewind(8)
+    rewind(8)
     npts = i-1
     print '((a),i4)','the number of particle positions and energies =',npts
-
 
     !------------------------------------------------------------------------------------
     ! NOW ALLOCATE ARRAYS TO STORE THE POINTS
@@ -218,17 +217,12 @@ rewind(8)
 
     do i=1, npts
         read(8,*) site(j), X(j,1), X(j,2), X(j,3), Y(j)
-     ! write(7,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
-        if ( (abs(Y(j))<=10) .and. (i<npts) ) j=j+1
+ !     write(*,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
+        if (abs(Y(j))<=e_max) j=j+1
     end do
 close(8)
 
-    npts=j
-
-    !write(7,'(//(a)/)') 'filtered data list'
-    !do i=1,npts
-    ! write(7,*)i,site(j), X(i,1), X(i,2), X(i,3), Y(i)
-    !end do
+    npts=j-1
 
     call open_for_write(10, fit_results_fname)
 
@@ -243,7 +237,7 @@ close(8)
     k = npts
 
     if(k>0) then
-write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
+        write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
         write(*,*) 'site X Y Z EMT DFT'
         Write(10,*) 'site X Y Z EMT DFT'
         sumsq = 0
@@ -275,7 +269,7 @@ write(*,*)
 
     !-----------CHECK WE GOT IT RIGHT -----------
     if (debug(1)) then
-write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
+        write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
         write(*,1000) 'particle_pars=',particle_pars
         write(*,1010) 'B(1:7) =',B(1:7)
         write(*,1000) 'lattice_pars =',lattice_pars
@@ -339,8 +333,8 @@ write(*,'(/(a))')'CHECK CONVERSION SUBROUTINE emt_parms2array'
 print '(//(a))', 'BEFORE CALL TO NLLSQ'
         print '((a),4f10.5)', ' x1,y1= ', X(1,1), X(1,2), X(1,3), Y(1)
         print '((a),4f10.5)', ' x2,y2= ', X(2,1), X(2,2), X(2,3), Y(2)
-        print '((a),3I10)', ' loc(x1))=', loc(x(1,1)), loc(x(1,2)), loc(x(1,3))
-        print '((a),3I10)', ' loc(x2))=', loc(x(2,1)), loc(x(2,2)), loc(x(2,3))
+        print '((a),3I20)', ' loc(x1))=', loc(x(1,1)), loc(x(1,2)), loc(x(1,3))
+        print '((a),3I20)', ' loc(x2))=', loc(x(2,1)), loc(x(2,2)), loc(x(2,3))
         print '((a),8i5)', ' NARRAY=',NARRAY
         print '((a),7f7.3/8x,7f7.3/)',' B=',B(1:14)
     end if

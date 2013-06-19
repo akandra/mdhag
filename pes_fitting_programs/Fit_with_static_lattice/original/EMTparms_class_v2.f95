@@ -357,7 +357,6 @@ implicit none
             r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
             r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
             r =  sqrt(sum(r3temp**2))
-            print *, r
 
 
         !---------------------------THETA LATTICE------------------------------
@@ -392,7 +391,6 @@ implicit none
 
 
         end do
-        stop
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 

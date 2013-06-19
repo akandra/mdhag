@@ -380,12 +380,11 @@ C**********************************************************************
       DO1J=1,K
       G(J)=0.
       P(J)=0.
-      DO1I=1,K
+      DO 1 I=1,K
  1    A(J,I)=0.
-      DO50II=1,N
+      DO 50 II=1,N
 C     LOOK FOR PARTIALS
       J=2
-! The next line is still necessary to get RE.
       CALL MODEL(F,Y,X,RES,II,J)
       RD=RE
 ! here, the procedure was changed.
@@ -743,7 +742,7 @@ CMMGR       MICROFILM PLOTTING - RESIDUALS FROM NLLSQ
       SUBROUTINE MMGR(X,RES,N,NDIM,J,GAR)
 
 C**********************************************************************
-C     Change impliit type of from REAL to REAL(8)                   ***
+C     Change implicit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
@@ -754,7 +753,7 @@ C**********************************************************************
       SUBROUTINE SUMSQ(PHI,Y,X,RES)
 
 C**********************************************************************
-C     Change impliit type of from REAL to REAL(8)                   ***
+C     Change implicit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
