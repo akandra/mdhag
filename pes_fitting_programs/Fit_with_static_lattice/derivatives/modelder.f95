@@ -55,7 +55,7 @@ subroutine modelder( F, YDAT, XDAT, RRR, I, JP, denergy )
     r_part=XDAT(i,:)
 
 
-        call emt_fit(a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+    call emt_fit(a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
 !        call emt (a_lat, r_part, particle_parms, lattice_parms, energy) ! Procedure without derivatives
 
 
