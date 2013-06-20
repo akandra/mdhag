@@ -72,7 +72,7 @@ C**********************************************************************
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
       COMMON/DJA1/LJ
-      DIMENSION Y(1000),X(3000),RES(1000)
+      DIMENSION Y(1000),X(3000),RES(1000),PXP(20)
       DIMENSIONBB(20),IBB(20)
       DIMENSIONNARRAY(8),ARRAY(8)
       DIMENSION CONST(8),SCONST(8)
@@ -125,8 +125,6 @@ C label not used   26   IF(IFP.EQ.(-1))GO TO 100
       LJ=LJ+1
 C     BEGIN LJTH ITERATION
       CALL XNEWAZ(Y,X,RES)
-!      print*, P
-!      stop
  1311 IF(AL.LT..1E-07) GO TO 131
       AL=AL/10.
  131  CALL XSCALX
@@ -276,7 +274,7 @@ C     GET MATRIX FROM STORAGE
       DO460I=1,N
 C      RESIDUAL ARRAY OPTION SATISFIED HERE
       J=4
-      CALL MODEL(F,Y,X,RES,I,J)
+      CALL MODEL(F,Y,X,RES,I,J,PXP)
   460  WRITE(IK,2031)I,X(I),Y(I),F,RE
 C     ONE PARAMETER SUPPORT PLANE COMPUTATIONS
 461      FNKW=N-K+IP
@@ -318,10 +316,10 @@ C     RETURNING PARAMETERS WITH NO OUTPUT
  601  BB(J)=B(J)
 C      RESIDUAL ARRAY OPTION WITH NO OUTPUT
  602  J=4
-      CALL MODEL(F,Y,X,RES,1,J)
+      CALL MODEL(F,Y,X,RES,1,J,PXP)
       GOTO(599,599,599,604),J
  604  DO605I=2,N
- 605  CALL MODEL(F,Y,X,RES,I,J)
+ 605  CALL MODEL(F,Y,X,RES,I,J,PXP)
       IF(IFP.GE.0)WRITE(IK,2090)
       RETURN
  2000 FORMAT(100H XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -377,7 +375,7 @@ C**********************************************************************
       COMMON/BLK3/BS(20),DB(20),G(20),K3
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
-      DO1J=1,K
+      DO 1 J=1,K
       G(J)=0.
       P(J)=0.
       DO 1 I=1,K
@@ -385,25 +383,24 @@ C**********************************************************************
       DO 50 II=1,N
 C     LOOK FOR PARTIALS
       J=2
-      CALL MODEL(F,Y,X,RES,II,J)
-      RD=RE
+      CALL MODEL(F,Y,X,RES,II,J,P)
+!      RD=RE
 ! here, the procedure was changed.
 ! Now, another module modelder is called to calculate the derivatives.
 ! This should reduce the calculation time considerably.
-      call modelder(Fdel,Y,X,RES,II,J,P)
+!      call modelder(F,Y,X,RES,II,J,P)
       do JJ = 1, K
         do I=1,IP
             if(JJ.EQ.IB(I)) then
                 P(JJ)=0.0d0
-                print*, JJ, IB(I)
+!                print*, JJ, IB(I)
             end if
         end do
         J=2
-        RE=RD
-        Goto30
-   30 G(JJ)=G(JJ)+RE*P(JJ)
+!        RE=RD
+        G(JJ)=G(JJ)+RE*P(JJ)
       end do
-      print*, P
+!      print*, P
 !      stop
       DO 40 I=1,K
       DO 40 J=I,K
@@ -757,11 +754,11 @@ C     Change implicit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(1000),X(3000),RES(1000)
+      DIMENSION Y(1000),X(3000),RES(1000),PXP(20)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N
-      CALL MODEL(F,Y,X,RES,I,1)
+      CALL MODEL(F,Y,X,RES,I,1,PXP)
    10 PHI=PHI+RE*RE
       RETURN
       END

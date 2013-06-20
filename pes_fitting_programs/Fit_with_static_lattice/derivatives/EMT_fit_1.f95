@@ -295,9 +295,9 @@ write(*,*)
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
     IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 7 ! number of parameters held constant
+    IP = 5 ! number of parameters held constant
 
-!    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+!    IB = (/0,0,3,0,0,0,7,0,0,10,0,12,0,14/) ! don't do it this way!
 !    IP = 5 ! number of parameters held constant
 
     !--------------------------------------------------------------------------

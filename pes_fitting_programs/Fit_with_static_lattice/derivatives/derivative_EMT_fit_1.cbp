@@ -44,9 +44,6 @@
 		<Unit filename="model.f95">
 			<Option weight="1" />
 		</Unit>
-		<Unit filename="modelder.f95">
-			<Option weight="1" />
-		</Unit>
 		<Unit filename="nllsq.dbl.f">
 			<Option weight="0" />
 		</Unit>

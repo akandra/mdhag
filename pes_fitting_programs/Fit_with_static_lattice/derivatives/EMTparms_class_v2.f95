@@ -1057,7 +1057,7 @@ implicit none
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 ! Reference energy
-     E_ref = Ecoh - V_ll + 0.5d0 * vref_l
+     E_ref = Ecoh_ref - V_ll + 0.5d0 * vref_l_ref
     ! Derivative with respect to l
     dE_ref(1) = dEcoh_ref(1) + 0.5d0*dvref_l_l_ref(1)
 !    dE_ref(2) = dEcoh_ref(2) - 0.5*dvref_l_l_ref(2)
