@@ -52,7 +52,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP )
     !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
     if ( jp.eq.2 .and. ((mod(i,10)==0) .or. (i==N))) then
         write(*,1000) iteration, i, YDAT(i), F, B(1:14)
-        stop
     end if
 
     if (debug(4).and.JP==2) then
