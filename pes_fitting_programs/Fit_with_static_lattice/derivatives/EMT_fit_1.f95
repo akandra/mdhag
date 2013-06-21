@@ -79,11 +79,11 @@ program EMT_fit_1
     namelist / lattice_pars_list / lattice_pars ! Namelists to handle I/O of parameters
     namelist / particle_pars_list / particle_pars
 
-    integer :: n_lat0_at ! number of atoms in reference slab
+    integer :: n_l_in ! number of atoms in reference slab
     integer :: n_lay0 ! number of layers in reference slab
     real(8) :: nn0 ! next neighbour distance in reference slab
+    real(8), dimension(3) :: cell_in
 ! real(8) :: a_lat ! lattice constant
-    real(8), dimension(3) :: cell ! dimensions of the cell
     real(8), allocatable, dimension(:,:) :: r0_lat ! lattice positions for reference calc.
     !integer, allocatable, dimension(:) :: site ! impact site
     integer site(1000)
@@ -96,9 +96,11 @@ program EMT_fit_1
     integer :: ios ! io status
 
     ! for AIMD readin:
-    real(8),dimension(3,16)  :: r_l
+    real(8),dimension(:,:), allocatable  :: r_l
     real(8), dimension(3)   :: r_p
     integer :: time
+    integer :: rep
+    integer, dimension(3) :: cell_b
 
     ! file names
     character(len=100) :: lattice_configuration_fname
@@ -165,13 +167,13 @@ program EMT_fit_1
     ! READ LATTICE DEFINITION PARAMETERS
     !------------------------------------------------------------------------------------------------------------------
     call open_for_read (8, lattice_configuration_fname)
-    read(8,*) n_lat0_at
+    read(8,*) n_l_in
     read(8,*) n_lay0
     read(8,*) nn0
-    read(8,*) cell(1)
-    read(8,*) cell(2)
-    allocate(r0_lat(3,n_lat0_at)) ! allocate array to hold lattice coordinates
-    readr0lat: do i = 1, n_lat0_at
+    read(8,*) cell_in(1)
+    read(8,*) cell_in(2)
+    allocate(r0_lat(3,n_l_in)) ! allocate array to hold lattice coordinates
+    readr0lat: do i = 1, n_l_in
         read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
         !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
     end do readr0lat
@@ -179,19 +181,21 @@ program EMT_fit_1
 
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
- !   call gold_pos(r0_lat(1,:), r0_lat(2,:),r0_lat(3,:), n_lat0_at, r_lat)
-    call gold_pos(r0_lat, n_lat0_at, r_lat)
 
 
 ! Call AIMD
-    call l_p_position(time, r_l,r_p)
+    rep = 3
+    cell_b=(/2,2,4/)
+    call l_p_position(time, r_l,r_p, cell_b, rep)
+
+    call gold_pos(r0_lat, n_l_in, r_lat, cell)
 
 stop
 
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
-    call emt_init(a_lat, cell, n_lat0_at, r0_lat, particle_pars, lattice_pars, E_ref)
+    call emt_init(a_lat, cell_in, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
 

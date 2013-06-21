@@ -12,7 +12,7 @@ module EMTparms_class
     integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
     ! storage for variables passed into emt_init that are needed by emt energy
-    real(8), private                :: cell(3)      ! dimensions of cell in x,y and z
+    real(8)                         :: cell(3)      ! dimensions of cell in x,y and z
     integer                         :: n_l          ! number of lattice atoms
     real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
     real(8), private                :: Eref         ! reference energy
@@ -37,7 +37,7 @@ module EMTparms_class
 contains
 
 
-subroutine gold_pos(r1, n_l, r_lat)
+subroutine gold_pos(r1, n_l, r_lat,cell)
 !
 ! Purpose:
 !         Declare the global variable r_lat that contains the gold positions.
@@ -45,6 +45,7 @@ subroutine gold_pos(r1, n_l, r_lat)
     integer, intent(in)                 :: n_l  ! Length of the gold-position array
     real(8), dimension(:,:), intent(in) :: r1   ! Positions of Au atoms
     real(8), dimension(:,:), allocatable, intent(out):: r_lat! array for Au positions
+    real(8), dimension(3) :: cell ! size of cell
 
     if (.not. allocated(r_lat)) then
         allocate(r_lat(3,n_l))
@@ -103,7 +104,7 @@ implicit none
 
 
 !-----------------------Save inputs in module for use by emt ------------------
-    cell   = cell_in
+
     n_l = n_l_in
     if (.not. allocated(r0_lat)) then
         allocate(r0_lat(3,n_l_in))
@@ -170,8 +171,8 @@ implicit none
 
             r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
             r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
-            r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
-            r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
+            r3temp(1) = r3temp(1) - (cell_in(1)*ANINT(r3temp(1)/cell_in(1)))
+            r3temp(2) = r3temp(2) - (cell_in(2)*ANINT(r3temp(2)/cell_in(2)))
             r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
             r =  sqrt(sum(r3temp**2))
 
