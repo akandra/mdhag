@@ -80,7 +80,7 @@ program Demo_NLLSQ
     real(8)         :: F
 
 
-    debug=(/.true.,.false.,.false.,.false.,.false./)
+    debug=(/.false.,.false.,.false.,.false.,.false./)
     first=.true.
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
@@ -132,7 +132,7 @@ program Demo_NLLSQ
         x(i,1)=real(i)/100.
         x(i,2)=real(i)/1000.
     end do
-    ! 2 due loops used so that x is completel initialized before first call to model
+    ! 2 do loops used so that x is completely initialized before first call to model
     do i=1,npts
         call model(F, Y, X, RRR, I, 1)
         y(i)=F !+ noise(i)*0.1
@@ -150,7 +150,7 @@ program Demo_NLLSQ
         print '((a)//)', '-----------END MAIN AFTER DATA SETUP-----------'
     end if
 
-PAUSE 'before call to NLLSQ'
+! PAUSE 'before call to NLLSQ'
 
 
 

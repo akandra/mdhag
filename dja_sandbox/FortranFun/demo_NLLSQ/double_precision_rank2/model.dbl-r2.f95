@@ -1,3 +1,4 @@
+
 subroutine model( F, Y, X, RRR, I, JP )
     implicit none
 
@@ -12,18 +13,13 @@ subroutine model( F, Y, X, RRR, I, JP )
     common/BLK1/B(20),P(20),RES,N,M
     common/DJA1/ debug(5),first
 
-    if (JP.EQ.2) then
-        JP = 3
-        return
-    end if
-
     E = X(I,1)
     A = B(1)
     E0= B(2)
     W = B(3)
     Y0= B(4)
 
-    F = A * .5 * (erf((E-E0)/W)+1.0) + Y0 !+ X(I,2)
+    F = A * .5 * (erf((E-E0)/W)+1.0) + Y0 + X(I,2)
     RES= Y(I) - F
     IF (JP.EQ.4) RRR(I) = F
 
@@ -38,6 +34,9 @@ subroutine model( F, Y, X, RRR, I, JP )
     end if
 
     first=.false.
+
+    if (JP.EQ.2) JP = 3
+    if (JP.EQ.4) RRR(I)=F
 
     RETURN
 
