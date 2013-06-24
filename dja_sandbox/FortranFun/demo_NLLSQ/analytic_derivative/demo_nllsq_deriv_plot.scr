@@ -1,0 +1,5 @@
+set title "Demonstration Fit With Analytic Derivatives"
+set xlabel "independent variable, x"
+set ylabel "dependent variable, y"
+plot 'fort.11' using 2:3 title 'data', 'fort.11' using 2:4 title 'fit' with line
+pause -1 "Hit any key to continue"
