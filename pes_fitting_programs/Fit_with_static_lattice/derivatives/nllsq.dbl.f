@@ -3,15 +3,10 @@ C                                                                   ***
 C      DOUBLE PRECISION VERSION OF NLLSQ                            ***
 C                                                                   ***
 C      Daniel Auerbach  2013-04-30                                  ***
-C      Svenja M. Janke  2013-06-13                                  ***
 C**********************************************************************
 C      Modified the nllsq.f single precision version as follows     ***
 C      IMPLICIT REAL(8) (A-H,O-Z) added to all procedures           ***
 C                                                                   ***
-C                                                                   ***
-C**********************************************************************
-C      Modified the calculation of derivatives by entering model    ***
-C      that gets the derivatives from other procedure.              ***
 C                                                                   ***
 C**********************************************************************
 
@@ -72,7 +67,7 @@ C**********************************************************************
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
       COMMON/DJA1/LJ
-      DIMENSION Y(1000),X(3000),RES(1000),PXP(20)
+      DIMENSION Y(50),X(50),RES(50)
       DIMENSIONBB(20),IBB(20)
       DIMENSIONNARRAY(8),ARRAY(8)
       DIMENSION CONST(8),SCONST(8)
@@ -124,17 +119,17 @@ C label not used   26   IF(IFP.EQ.(-1))GO TO 100
  130  IF(LJ.GE.KITER)GOTO404
       LJ=LJ+1
 C     BEGIN LJTH ITERATION
-      CALL XNEWAZ(Y,X,RES)
+      CALLXNEWAZ(Y,X,RES)
  1311 IF(AL.LT..1E-07) GO TO 131
       AL=AL/10.
- 131  CALL XSCALX
+ 131  CALLXSCALX
       PHIOLD=PHI
 C     STORE MATRIX
       DO132I=1,K
       II=I+NPMAX
       DO132J=1,K
  132  A(II,J)=A(I,J)
-      CALL XSOLVX
+      CALLXSOLVX
  135  DO140J=1,K
   140 B(J)=BS(J)+DB(J)
 C     COMPUTE GAMMA
@@ -168,7 +163,7 @@ C     GAMMA LAMBDA TEST
 C label not used 178  IF(AL-1.)190,403,403
       IF(AL-1.)190,403,403
   180 AL=AL*10.
-      CALL XSOLVX
+      CALLXSOLVX
       GOTO135
 C     EPSILON TEST
   190 CALL XEPTST(L)
@@ -179,7 +174,7 @@ C     BEGIN INTERMEDIATE OUTPUT ROUTINE
       WRITE(IK,2002)LJ,PHI,AL,(B(J),J=1,K)
       WRITE(IK,2003)GAMMA,XL,(DB(J),J=1,K)
       IF(INTP.EQ.1)GOTO130
-      CALL XNEWAZ(Y,X,RES)
+      CALLXNEWAZ(Y,X,RES)
 C     STORE MATRIX
       DO205I=1,K
       II=I+NPMAX
@@ -189,10 +184,10 @@ C     STORE MATRIX
       GO TO (207,130),MS
  207  IF(INTP.EQ.2)GOTO210
       WRITE(IK,2004)
-      CALL XPRT1X
- 210  CALL XSCALX
+      CALLXPRT1X
+ 210  CALLXSCALX
       WRITE(IK,2006)
-      CALL XPRT2X
+      CALLXPRT2X
 C     GET MATRIX FROM STORAGE
       DO220I=1,K
       II=I+NPMAX
@@ -205,7 +200,7 @@ C     GET MATRIX FROM STORAGE
       DB(J)=DB(J)/2.
   320 B(J)=BS(J)+DB(J)
 C     GAMMA EPSILON TEST
-      CALL XEPTST(L)
+      CALLXEPTST(L)
       GO TO (402,321),L
   321 CALL  SUMSQ(PHI,Y,X,RES)
       IF(PHIOLD.LT.PHI) GO TO 300
@@ -243,17 +238,17 @@ C     BEGIN FINAL  PRINTOUT ROUTINE
  406  BB(J)=B(J)
       WRITE(IK,2002)LJ,PHI,AL,(B(J),J=1,K)
       WRITE(IK,2003)GAMMA,XL,(DB(J),J=1,K)
-      CALL XNEWAZ(Y,X,RES)
+      CALLXNEWAZ(Y,X,RES)
       IF(IFP.LE.1)GOTO430
       DO410I=1,K
       II=I+NPMAX
       DO410J=1,K
   410 A(II,J)=A(I,J)
       WRITE(IK,2022)
-      CALL XPRT1X
-      CALL XSCALX
+      CALLXPRT1X
+      CALLXSCALX
       WRITE(IK,2023)
-      CALL XPRT2X
+      CALLXPRT2X
 C     GET MATRIX FROM STORAGE
       DO420I=1,K
       II=I+NPMAX
@@ -265,16 +260,16 @@ C     GET MATRIX FROM STORAGE
       GO TO 455
  440  IF(IFP.EQ.0)GOTO450
       WRITE(IK,2024)
-      CALL XPRT1X
- 450  CALL XSCALX
+      CALLXPRT1X
+ 450  CALLXSCALX
       WRITE(IK,2025)
-      CALL XPRT2X
+      CALLXPRT2X
   455 IF(IFP.EQ.0) GO TO 461
       WRITE(IK,2030)
       DO460I=1,N
 C      RESIDUAL ARRAY OPTION SATISFIED HERE
       J=4
-      CALL MODEL(F,Y,X,RES,I,J,PXP)
+      CALL MODEL(F,Y,X,RES,I,J)
   460  WRITE(IK,2031)I,X(I),Y(I),F,RE
 C     ONE PARAMETER SUPPORT PLANE COMPUTATIONS
 461      FNKW=N-K+IP
@@ -316,10 +311,10 @@ C     RETURNING PARAMETERS WITH NO OUTPUT
  601  BB(J)=B(J)
 C      RESIDUAL ARRAY OPTION WITH NO OUTPUT
  602  J=4
-      CALL MODEL(F,Y,X,RES,1,J,PXP)
+      CALLMODEL(F,Y,X,RES,1,J)
       GOTO(599,599,599,604),J
  604  DO605I=2,N
- 605  CALL MODEL(F,Y,X,RES,I,J,PXP)
+ 605  CALLMODEL(F,Y,X,RES,I,J)
       IF(IFP.GE.0)WRITE(IK,2090)
       RETURN
  2000 FORMAT(100H XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -369,39 +364,42 @@ C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(1000),X(3000),RES(1000)
+      DIMENSION Y(50),X(50),RES(50)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       COMMON/BLK2/A(40,20),SA(20),K2,IK,NPMAX
       COMMON/BLK3/BS(20),DB(20),G(20),K3
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
-      DO 1 J=1,K
+      DO1J=1,K
       G(J)=0.
       P(J)=0.
-      DO 1 I=1,K
+      DO1I=1,K
  1    A(J,I)=0.
-      DO 50 II=1,N
+      DO50II=1,N
 C     LOOK FOR PARTIALS
       J=2
-      CALL MODEL(F,Y,X,RES,II,J,P)
-!      RD=RE
-! here, the procedure was changed.
-! Now, another module modelder is called to calculate the derivatives.
-! This should reduce the calculation time considerably.
-!      call modelder(F,Y,X,RES,II,J,P)
-      do JJ = 1, K
-        do I=1,IP
-            if(JJ.EQ.IB(I)) then
-                P(JJ)=0.0d0
-!                print*, JJ, IB(I)
-            end if
-        end do
-        J=2
-!        RE=RD
-        G(JJ)=G(JJ)+RE*P(JJ)
-      end do
-!      print*, P
-!      stop
+      CALLMODEL(F,Y,X,RES,II,J)
+      RD=RE
+      DO30JJ=1,K
+C     CHECK FOR OMITTED PARAMETERS
+      IF(IP.GT.0)GOTO25
+   10 GO TO(20,30,20),J
+C     COMPUTE PARTIALS IF NECESSARY
+ 20   AB=B(JJ)
+      B(JJ)=AB+DELTA*AB
+      J=1
+      CALLMODEL(FDEL,Y,X,RES,II,J)
+      RE=RD
+      P(JJ)=(FDEL-F)/(DELTA*AB)
+      B(JJ)=AB
+      GOTO30
+   25 DO 26 I=1,IP
+      IF(JJ.EQ.IB(I)) GO TO 29
+ 26   CONTINUE
+      GOTO10
+  29  P(JJ)=0.
+C     USING PARTIALS AT ITH DATA POINT
+   30 G(JJ)=G(JJ)+RE*P(JJ)
       DO 40 I=1,K
       DO 40 J=I,K
    40 A(I,J)=A(I,J)+P(I)*P(J)
@@ -667,7 +665,7 @@ C**********************************************************************
       COMMON/BLK3/BS(20),DB(20),G(20),K3
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
-      DIMENSION Y(1000),X(3000),RES(1000)
+      DIMENSION Y(50),X(50),RES(50)
       LOGICAL NOLO
       DO580J=1,K
       NOLO=.FALSE.
@@ -683,17 +681,17 @@ C     CHECK FOR OMITTED PARAMETERS
  510  D=DDS
       DJ=SE*SA(J)
       B(J)=BS(J)+D*DJ
-      CALL SUMSQ(PH,Y,X,RES)
+      CALLSUMSQ(PH,Y,X,RES)
       IF(PH.LT.PHICR)GOTO530
  520  D=D/2.
       IF(ABS(D).LE..001)GOTO570
       B(J)=BS(J)+D*DJ
-      CALL SUMSQ(PPH,Y,X,RES)
+      CALLSUMSQ(PPH,Y,X,RES)
       IF(PPH-PHICR)540,540,520
  530  D=D+DDS
       IF(ABS(D).GE.5.0) GO TO 570
       B(J)=BS(J)+D*DJ
-      CALL SUMSQ(PPH,Y,X,RES)
+      CALLSUMSQ(PPH,Y,X,RES)
       IF(PPH.LT.PHICR)GOTO530
  540  Q=1.-D
       XK1=PHI/D+PH/Q-PPH/(D*Q )
@@ -703,12 +701,12 @@ C     CHECK FOR OMITTED PARAMETERS
       IF(DDS.GT.0.) GO TO 550
       B(J)=BS(J)-BC*DJ
       BL=B(J)
-      CALL SUMSQ(PL,Y,X,RES)
+      CALLSUMSQ(PL,Y,X,RES)
  548  DDS=1.
       GOTO510
   550 B(J)=BS(J)+BC*DJ
       BU=B(J)
-      CALL SUMSQ(PU,Y,X,RES)
+      CALLSUMSQ(PU,Y,X,RES)
       GOTO576
   570 IF(DDS.GT.0.) GO TO 571
       NOLO=.TRUE.
@@ -739,7 +737,7 @@ CMMGR       MICROFILM PLOTTING - RESIDUALS FROM NLLSQ
       SUBROUTINE MMGR(X,RES,N,NDIM,J,GAR)
 
 C**********************************************************************
-C     Change implicit type of from REAL to REAL(8)                   ***
+C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
@@ -750,15 +748,15 @@ C**********************************************************************
       SUBROUTINE SUMSQ(PHI,Y,X,RES)
 
 C**********************************************************************
-C     Change implicit type of from REAL to REAL(8)                   ***
+C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(1000),X(3000),RES(1000),PXP(20)
+      DIMENSION Y(50),X(50),RES(50)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N
-      CALL MODEL(F,Y,X,RES,I,1,PXP)
+      CALL MODEL(F,Y,X,RES,I,1)
    10 PHI=PHI+RE*RE
       RETURN
       END

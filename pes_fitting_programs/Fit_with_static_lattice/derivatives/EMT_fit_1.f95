@@ -35,7 +35,7 @@ program EMT_fit_1
 
     use EMTparms_class
     use open_file
-    use emt_init_data
+!    use emt_init_data
 
     implicit none
 
@@ -96,11 +96,11 @@ program EMT_fit_1
     integer :: ios ! io status
 
     ! for AIMD readin:
-    real(8),dimension(:,:,:), allocatable  :: r_l
-    real(8), dimension(:,:), allocatable   :: r_p
-    integer :: time
-    integer :: rep
-    integer, dimension(3) :: cell_b
+!    real(8),dimension(:,:,:), allocatable  :: r_l
+!    real(8), dimension(:,:), allocatable   :: r_p
+!    integer :: time
+!    integer :: rep
+!    integer, dimension(3) :: cell_b
 
     ! file names
     character(len=100) :: lattice_configuration_fname
@@ -130,20 +130,20 @@ program EMT_fit_1
 !   lattice_nml_out = 'parameters_and_fit_results\f119.02.Au.nml'
 
 ! These paths are for linux, they probably won't work under windows.
-   fit_results_fname = 'parameters_and_fit_results/f119_der.02.NLLSQ.out'
+!   fit_results_fname = 'parameters_and_fit_results/f119_der.02.NLLSQ.out'
 
-    particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
-    particle_nml_out = 'parameters_and_fit_results/f119_der.02.H.nml'
-    lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
-    lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
+!    particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
+!    particle_nml_out = 'parameters_and_fit_results/f119_der.02.H.nml'
+!    lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
+!    lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-!    fit_results_fname = 'parameters_and_fit_results/stroem_der.01.NLLSQ.out'
-!    particle_nml_in = 'parameters_and_fit_results/stroem.00.H.nml'
-!    particle_nml_out = 'parameters_and_fit_results/stroem_der.01.H.nml'
-!    lattice_nml_in = 'parameters_and_fit_results/stroem.00.Au.nml'
-!    lattice_nml_out = 'parameters_and_fit_results/stroem_der.01.Au.nml'
+    fit_results_fname = 'parameters_and_fit_results/stroem_der.01.NLLSQ.out'
+    particle_nml_in = 'parameters_and_fit_results/stroem.00.H.nml'
+    particle_nml_out = 'parameters_and_fit_results/stroem_der.01.H.nml'
+    lattice_nml_in = 'parameters_and_fit_results/stroem.00.Au.nml'
+    lattice_nml_out = 'parameters_and_fit_results/stroem_der.01.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -182,15 +182,14 @@ program EMT_fit_1
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
 
-
 ! Call AIMD
-    rep = 3
-    cell_b=(/2,2,4/)
-    call l_p_position(time, r_l,r_p, cell_b, rep)
+!    rep = 3
+!    cell_b=(/2,2,4/)
+!    call l_p_position(time, r_l,r_p, cell_b, rep)
 
-    call gold_pos(r0_lat, n_l_in, r_lat, cell)
+    call gold_pos(r0_lat, n_l_in, r_lat, cell_in)
+    cell = cell_in
 
-stop
 
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
@@ -236,7 +235,7 @@ stop
  !     write(*,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
         if (abs(Y(j))<=e_max) j=j+1
     end do
-close(8)
+    close(8)
 
     npts=j-1
 
@@ -273,6 +272,7 @@ write(*,*)
         write(10,*)
     end if
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
+
 !stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ

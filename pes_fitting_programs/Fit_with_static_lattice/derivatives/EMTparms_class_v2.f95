@@ -37,7 +37,7 @@ module EMTparms_class
 contains
 
 
-subroutine gold_pos(r1, n_l, r_lat,cell)
+subroutine gold_pos(r1, n_l, r_lat,cell_in)
 !
 ! Purpose:
 !         Declare the global variable r_lat that contains the gold positions.
@@ -45,7 +45,7 @@ subroutine gold_pos(r1, n_l, r_lat,cell)
     integer, intent(in)                 :: n_l  ! Length of the gold-position array
     real(8), dimension(:,:), intent(in) :: r1   ! Positions of Au atoms
     real(8), dimension(:,:), allocatable, intent(out):: r_lat! array for Au positions
-    real(8), dimension(3) :: cell ! size of cell
+    real(8), dimension(3) :: cell_in ! size of cell
 
     if (.not. allocated(r_lat)) then
         allocate(r_lat(3,n_l))
@@ -101,6 +101,7 @@ implicit none
     real(8) :: kappadbeta_l             ! beta * kappa for l and p
     real(8), dimension(3) :: r3temp     ! temporary array variable
     real(8) :: rtemp                    ! temporary variable
+
 
 
 !-----------------------Save inputs in module for use by emt ------------------
@@ -317,7 +318,6 @@ implicit none
     real(8), dimension(n_l) :: s_l_ref
     real(8)                 :: vref_l_ref
 
-
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 ! definition of a few values that appear frequently in calculation
     betas0_l = beta * pars_l%s0
@@ -437,6 +437,7 @@ implicit none
         r =  sqrt(sum(r3temp**2))
 
 
+
     !----------------------------THETA PARTICLE--------------------------------
 
         theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
@@ -522,8 +523,7 @@ Ecoh_ref = sum((1.0d0 + pars_l%lambda*s_l_ref)*exp(-pars_l%lambda*s_l_ref)-1.0d0
     E_ref = Ecoh_ref - V_ll + 0.5d0 * vref_l_ref
 
     energy = Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)-E_ref
-!    print *, E_ref
-!stop
+
 end subroutine emt
 
 
