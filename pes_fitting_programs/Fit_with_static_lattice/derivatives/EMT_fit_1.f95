@@ -96,8 +96,8 @@ program EMT_fit_1
     integer :: ios ! io status
 
     ! for AIMD readin:
-    real(8),dimension(:,:), allocatable  :: r_l
-    real(8), dimension(3)   :: r_p
+    real(8),dimension(:,:,:), allocatable  :: r_l
+    real(8), dimension(:,:), allocatable   :: r_p
     integer :: time
     integer :: rep
     integer, dimension(3) :: cell_b
