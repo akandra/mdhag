@@ -16,6 +16,8 @@ subroutine model( F, Y, X, RRR, I, JP )
     COMMON/BLK5/IB(20),IP
     common/DJA1/ debug(5),first
 
+   print *, i, n, x
+
     E = X(I)
     A = B(1)
     E0= B(2)

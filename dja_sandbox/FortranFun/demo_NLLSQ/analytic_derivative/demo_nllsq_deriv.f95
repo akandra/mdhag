@@ -139,6 +139,7 @@ program Demo_NLLSQ
     ! ---------------------------------------------------------------
     ! Set x, call model and save model value + noise in array y
     ! ---------------------------------------------------------------
+    N = npts
     do i=1,npts
         x(i)=real(i-1)/100
         call model(Y(i),Y,X,RRR,i,1)
