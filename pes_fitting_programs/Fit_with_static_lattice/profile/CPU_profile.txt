@@ -1,0 +1,234 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  Ks/call  Ks/call  name    
+ 99.99   2174.38  2174.38   178227     0.00     0.00  __emtparms_class_MOD_emt
+  0.00   2174.43     0.05       31     0.00     0.06  xnewaz_
+  0.00   2174.46     0.03   177744     0.00     0.00  model_
+  0.00   2174.48     0.02        1     0.00     0.00  __emtparms_class_MOD_emt_init
+  0.00   2174.49     0.01       56     0.00     0.01  sumsq_
+  0.00   2174.49     0.00   355490     0.00     0.00  __emtparms_class_MOD_array2emt_parms
+  0.00   2174.49     0.00       56     0.00     0.00  gjr_
+  0.00   2174.49     0.00       55     0.00     0.00  xsolvx_
+  0.00   2174.49     0.00       31     0.00     0.00  xscalx_
+  0.00   2174.49     0.00       30     0.00     0.00  xeptst_
+  0.00   2174.49     0.00        4     0.00     0.00  open_for_read_
+  0.00   2174.49     0.00        3     0.00     0.00  open_for_write_
+  0.00   2174.49     0.00        2     0.00     0.00  __emtparms_class_MOD_emt_parms2array
+  0.00   2174.49     0.00        1     0.00     2.17  MAIN__
+  0.00   2174.49     0.00        1     0.00     2.17  nllsq_
+  0.00   2174.49     0.00        1     0.00     0.00  open_for_overwrite_
+  0.00   2174.49     0.00        1     0.00     0.00  xprt1x_
+  0.00   2174.49     0.00        1     0.00     0.00  xprt2x_
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+ 
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this 
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) for 0.00% of 2174.49 seconds
+
+index % time    self  children    called     name
+                0.00 2174.49       1/1           main [2]
+[1]    100.0    0.00 2174.49       1         MAIN__ [1]
+                0.00 2168.58       1/1           nllsq_ [4]
+                5.89    0.00     483/178227      __emtparms_class_MOD_emt [3]
+                0.02    0.00       1/1           __emtparms_class_MOD_emt_init [8]
+                0.00    0.00       4/4           open_for_read_ [13]
+                0.00    0.00       3/3           open_for_write_ [14]
+                0.00    0.00       2/2           __emtparms_class_MOD_emt_parms2array [27]
+                0.00    0.00       2/355490      __emtparms_class_MOD_array2emt_parms [26]
+                0.00    0.00       1/1           open_for_overwrite_ [15]
+-----------------------------------------------
+                                                 <spontaneous>
+[2]    100.0    0.00 2174.49                 main [2]
+                0.00 2174.49       1/1           MAIN__ [1]
+-----------------------------------------------
+                5.89    0.00     483/178227      MAIN__ [1]
+             2168.49    0.00  177744/178227      model_ [5]
+[3]    100.0 2174.38    0.00  178227         __emtparms_class_MOD_emt [3]
+-----------------------------------------------
+                0.00 2168.58       1/1           MAIN__ [1]
+[4]     99.7    0.00 2168.58       1         nllsq_ [4]
+                0.05 1826.74      31/31          xnewaz_ [6]
+                0.01  329.99      56/56          sumsq_ [7]
+                0.00   11.79     966/177744      model_ [5]
+                0.00    0.00      55/55          xsolvx_ [10]
+                0.00    0.00      31/31          xscalx_ [11]
+                0.00    0.00      30/30          xeptst_ [12]
+                0.00    0.00       1/56          gjr_ [9]
+                0.00    0.00       1/1           xprt1x_ [16]
+                0.00    0.00       1/1           xprt2x_ [17]
+-----------------------------------------------
+                0.00   11.79     966/177744      nllsq_ [4]
+                0.00  329.99   27048/177744      sumsq_ [7]
+                0.03 1826.71  149730/177744      xnewaz_ [6]
+[5]     99.7    0.03 2168.49  177744         model_ [5]
+             2168.49    0.00  177744/178227      __emtparms_class_MOD_emt [3]
+                0.00    0.00  355488/355490      __emtparms_class_MOD_array2emt_parms [26]
+-----------------------------------------------
+                0.05 1826.74      31/31          nllsq_ [4]
+[6]     84.0    0.05 1826.74      31         xnewaz_ [6]
+                0.03 1826.71  149730/177744      model_ [5]
+-----------------------------------------------
+                0.01  329.99      56/56          nllsq_ [4]
+[7]     15.2    0.01  329.99      56         sumsq_ [7]
+                0.00  329.99   27048/177744      model_ [5]
+-----------------------------------------------
+                0.02    0.00       1/1           MAIN__ [1]
+[8]      0.0    0.02    0.00       1         __emtparms_class_MOD_emt_init [8]
+-----------------------------------------------
+                0.00    0.00       1/56          nllsq_ [4]
+                0.00    0.00      55/56          xsolvx_ [10]
+[9]      0.0    0.00    0.00      56         gjr_ [9]
+-----------------------------------------------
+                0.00    0.00      55/55          nllsq_ [4]
+[10]     0.0    0.00    0.00      55         xsolvx_ [10]
+                0.00    0.00      55/56          gjr_ [9]
+-----------------------------------------------
+                0.00    0.00      31/31          nllsq_ [4]
+[11]     0.0    0.00    0.00      31         xscalx_ [11]
+-----------------------------------------------
+                0.00    0.00      30/30          nllsq_ [4]
+[12]     0.0    0.00    0.00      30         xeptst_ [12]
+-----------------------------------------------
+                0.00    0.00       4/4           MAIN__ [1]
+[13]     0.0    0.00    0.00       4         open_for_read_ [13]
+-----------------------------------------------
+                0.00    0.00       3/3           MAIN__ [1]
+[14]     0.0    0.00    0.00       3         open_for_write_ [14]
+-----------------------------------------------
+                0.00    0.00       1/1           MAIN__ [1]
+[15]     0.0    0.00    0.00       1         open_for_overwrite_ [15]
+-----------------------------------------------
+                0.00    0.00       1/1           nllsq_ [4]
+[16]     0.0    0.00    0.00       1         xprt1x_ [16]
+-----------------------------------------------
+                0.00    0.00       1/1           nllsq_ [4]
+[17]     0.0    0.00    0.00       1         xprt2x_ [17]
+-----------------------------------------------
+                0.00    0.00       2/355490      MAIN__ [1]
+                0.00    0.00  355488/355490      model_ [5]
+[26]     0.0    0.00    0.00  355490         __emtparms_class_MOD_array2emt_parms [26]
+-----------------------------------------------
+                0.00    0.00       2/2           MAIN__ [1]
+[27]     0.0    0.00    0.00       2         __emtparms_class_MOD_emt_parms2array [27]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+
+Index by function name
+
+   [1] MAIN__                  [5] model_                 [12] xeptst_
+  [26] __emtparms_class_MOD_array2emt_parms [4] nllsq_     [6] xnewaz_
+   [3] __emtparms_class_MOD_emt [15] open_for_overwrite_  [16] xprt1x_
+   [8] __emtparms_class_MOD_emt_init [13] open_for_read_  [17] xprt2x_
+  [27] __emtparms_class_MOD_emt_parms2array [14] open_for_write_ [11] xscalx_
+   [9] gjr_                    [7] sumsq_                 [10] xsolvx_

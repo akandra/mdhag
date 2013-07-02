@@ -1,0 +1,5 @@
+Binary must be compiled on Tesla M2050 via 
+
+pgfortran -Mcuda -Minfo -Mbounds EMT_fit_1.f95 EMTparms_class_vGPU.f95 model.f95 nllsq.dbl.f open_file.f95 /usr/lib64/libstdc++.so.6 -o EMT_fit_1
+
+Module 'cuda50' must be in module list, otherwise type 'module add cuda50'.
