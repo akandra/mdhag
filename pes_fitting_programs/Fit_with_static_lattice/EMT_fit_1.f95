@@ -34,7 +34,6 @@ program EMT_fit_1
 
     use EMTparms_class
     use open_file
-
     implicit none
 
 
@@ -287,7 +286,7 @@ program EMT_fit_1
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms          = 14
-    max_iterations  = 30
+    max_iterations  = 10
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters
