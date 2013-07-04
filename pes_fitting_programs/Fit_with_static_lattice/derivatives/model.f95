@@ -1,5 +1,6 @@
 subroutine model( F, YDAT, XDAT, RRR, I, JP)
     use EMTparms_class
+    use emt_init_data
 
     implicit none
 
@@ -9,7 +10,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
     real(8)             :: F
     real(8)             :: YDAT(1000)   !YDAT(N)
-    real(8)             :: XDAT(1000,3) !XDAT(N,M)
+    real(8)             :: XDAT(1000,3,1000) !XDAT(N,M)
     real(8)             :: RRR(1000)
     integer             :: I, JP,ij
 
@@ -24,6 +25,11 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
     logical, save       :: first_run=.true.
 
+    real(8), dimension(:,:,:), allocatable :: r_l
+    real(8), dimension(:,:), allocatable   :: r_p
+    real(8), dimension(:,:), allocatable   :: denergy1
+    integer :: q
+
 
     COMMON /BLK1/ B(20),P(20),RES,N,M,KK
     COMMON/ DJA1/ iteration
@@ -34,9 +40,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         print *
         print '((a))', 'FIRST RUN OF MODEL'
         print '((a),4i5)', '  i jp n m=', i, jp, n, m
-        print '((a),4f20.5)', '  xi,yi=   ', xdat(i,1), xdat(i,2), xdat(i,3), ydat(i)
-        print '((a),3I20)',   '  loc(xi))=', loc(xdat(i,1)), loc(xdat(i,2)), loc(xdat(i,3))
-        print '((a),3I20)',   '  loc(x2))=', loc(xdat(2,1)), loc(xdat(2,2)), loc(xdat(2,3))
+        print '((a),4f20.5)', '  xi,yi=   ', xdat(i,1,-1), xdat(i,2,-1), xdat(i,3,-1), ydat(i)
+        print '((a),3I20)',   '  loc(xi))=', loc(xdat(i,1,-1)), loc(xdat(i,2,-1)), loc(xdat(i,3,-1))
+        print '((a),3I20)',   '  loc(x2))=', loc(xdat(2,1,-1)), loc(xdat(2,2,-1)), loc(xdat(2,3,-1))
         print *
         write(7,*) 'it i jp    x       y      z       DFT     EMT    RES'
         !pause 'first run of model';
@@ -44,21 +50,35 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
     call array2emt_parms( B(1:7 ), particle_parms)
     call array2emt_parms( B(8:14), lattice_parms )
-    r_part=XDAT(i,:)
+!    r_part=XDAT(i,:)
 
+    allocate(r_l(time,3,n_l+1))
+    allocate(r_p(time,3))
+    allocate(denergy1(time,14))
+
+! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
-        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+
+        r_l(I,:,:)=XDAT(I,:,1:n_l)
+        r_p(I,:)=XDAT(I,:,n_l+1)
+        call emt(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
+
         F   = energy
         RES = YDAT(I) - F
 
+
     case(2)
-        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
-! don't forget to hold parameters fast
+!        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+        r_l(I,:,:)=XDAT(I,:,1:n_l)
+        r_p(I,:)=XDAT(I,:,n_l+1)
+        call emt_fit(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
+
+
         F   = energy
         RES = YDAT(I) - F
         P(1:14) = denergy
-
 
         do ij=1,IP
             P(IB(ij)) = 0.0
@@ -71,12 +91,12 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         end if
 
         if (debug(4)) then
-            write(7,1010) iteration,i, xdat(i,:),YDAT(i), F, RES, B(1:14)
+            write(7,1010) iteration,i, xdat(i,:,-1),YDAT(i), F, RES, B(1:14)
         end if
 
 
     case(4)
-        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
         F   = energy
         RRR(I) = F
 
@@ -147,9 +167,11 @@ subroutine MODEL2606old( F, YDAT, XDAT, RRR, I, JP, denergy )
 
     select case(jp)
     case(2)
-        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+!        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+        F   = energy
+        RES = YDAT(I) - F
     case(1)
-        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
     end select
 
     F   = energy

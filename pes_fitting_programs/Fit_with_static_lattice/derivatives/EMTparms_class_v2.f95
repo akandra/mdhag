@@ -13,7 +13,7 @@ module EMTparms_class
 
     ! storage for variables passed into emt_init that are needed by emt energy
     real(8)                         :: cell(3)      ! dimensions of cell in x,y and z
-    integer                         :: n_l          ! number of lattice atoms
+!    integer                         :: n_l0          ! number of lattice atoms
     real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
     real(8), private                :: Eref         ! reference energy
     real(8)                         :: a_lat        ! global variable for the lattice constant
@@ -37,19 +37,19 @@ module EMTparms_class
 contains
 
 
-subroutine gold_pos(r1, n_l, r_lat,cell_in)
+subroutine gold_pos(r1, n_l0, r_lat, cell_in)
 !
 ! Purpose:
 !         Declare the global variable r_lat that contains the gold positions.
 
-    integer, intent(in)                 :: n_l  ! Length of the gold-position array
+    integer, intent(in)                 :: n_l0  ! Length of the gold-position array
     real(8), dimension(:,:), intent(in) :: r1   ! Positions of Au atoms
     real(8), dimension(:,:), allocatable, intent(out):: r_lat! array for Au positions
     real(8), dimension(3) :: cell_in ! size of cell
 
     if (.not. allocated(r_lat)) then
-        allocate(r_lat(3,n_l))
-        write(*,*) 'allocated r_lat for', n_l, 'atoms'
+        allocate(r_lat(3,n_l0))
+        write(*,*) 'allocated r_lat for', n_l0, 'atoms'
     else
         print *, 'r_lat is already allocated'
     end if
@@ -106,7 +106,6 @@ implicit none
 
 !-----------------------Save inputs in module for use by emt ------------------
 
-    n_l = n_l_in
     if (.not. allocated(r0_lat)) then
         allocate(r0_lat(3,n_l_in))
         write(*,*) 'allocated r0_lat for', n_l_in, 'atoms'
@@ -164,17 +163,18 @@ implicit none
     sigma_ll = 0
     V_ll = 0
 
-    do i = 1, n_l
-        do j = i+1, n_l
+    do i = 1, n_l_in
+        do j = i+1, n_l_in
 
         !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
         ! Because we want them.
 
             r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
             r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
+            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
             r3temp(1) = r3temp(1) - (cell_in(1)*ANINT(r3temp(1)/cell_in(1)))
             r3temp(2) = r3temp(2) - (cell_in(2)*ANINT(r3temp(2)/cell_in(2)))
-            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
+            r3temp(3) = r3temp(3) - (cell_in(3)*ANINT(r3temp(3)/cell_in(3)))
             r =  sqrt(sum(r3temp**2))
 
 
@@ -253,7 +253,7 @@ end subroutine emt_init
 
 
 !subroutine emt (cell, n_l, r0_lat, r_part, pars_p, pars_l, energy)
-subroutine emt (a_lat, r_part, pars_p, pars_l, energy)
+subroutine emt (a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy)
 !
 ! Purpose:
 !       emt calculates the energy according to the effective medium theory.
@@ -275,11 +275,11 @@ implicit none
 ! declare variables and parameters that are passed down from the program
 
     real(8), intent(in)                 :: a_lat
-!    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
-!    integer, intent(in)                 :: n_l      ! number of lattice atoms
+    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
+    integer, intent(in)                 :: n_l      ! number of lattice atoms
     real(8), dimension(:), intent (in)  :: r_part  ! position of the particle (note:
                                                     ! only one position for reference)
-!    real(8), dimension(:,:), intent(in) :: r0_lat   ! positions of lattice atoms
+    real(8), dimension(:,:), intent(in) :: r_lat   ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
     real(8), intent(out)                :: energy ! calc. reference energy
@@ -386,11 +386,12 @@ implicit none
         !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
         ! Because we want them.
 
-            r3temp(1) = r0_lat(1,i)-r0_lat(1,j)
-            r3temp(2) = r0_lat(2,i)-r0_lat(2,j)
+            r3temp(1) = r_lat(1,i)-r_lat(1,j)
+            r3temp(2) = r_lat(2,i)-r_lat(2,j)
+            r3temp(3) = r_lat(3,i)-r_lat(3,j)
             r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
             r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-            r3temp(3) = r0_lat(3,i)-r0_lat(3,j)
+            r3temp(3) = r3temp(3) - (cell(3)*ANINT(r3temp(3)/cell(3)))
             r =  sqrt(sum(r3temp**2))
 
 
@@ -429,11 +430,12 @@ implicit none
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
-        r3temp(1) = r0_lat(1,i)-r_part(1)
-        r3temp(2) = r0_lat(2,i)-r_part(2)
+        r3temp(1) = r_lat(1,i)-r_part(1)
+        r3temp(2) = r_lat(2,i)-r_part(2)
+        r3temp(3) = r_lat(3,i)-r_part(3)
         r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
         r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-        r3temp(3) = r0_lat(3,i)-r_part(3)
+        r3temp(3) = r3temp(3) - (cell(3)*ANINT(r3temp(3)/cell(3)))
         r =  sqrt(sum(r3temp**2))
 
 
@@ -527,7 +529,7 @@ Ecoh_ref = sum((1.0d0 + pars_l%lambda*s_l_ref)*exp(-pars_l%lambda*s_l_ref)-1.0d0
 end subroutine emt
 
 
-subroutine emt_fit (a_lat, r_part, pars_p, pars_l, energy, denergy)
+subroutine emt_fit (a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy, denergy)
 !subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy, denergy_l, denergy_p)
 !
 ! Purpose:
@@ -561,11 +563,11 @@ implicit none
 
 ! declare variables and parameters that are passed down from the program
 
-!    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
+    real(8), dimension(3), intent(in)   :: cell     ! dimensions of cell in x,y and z
     real(8), intent(in)                 :: a_lat   ! lattice constant of lattice
-!    integer, intent(in)                 :: n_l      ! number of lattice atoms
+    integer, intent(in)                 :: n_l      ! number of lattice atoms
     real(8), dimension(3), intent (in)  :: r_part   ! positions of the particle
-!    real(8), dimension(:,:), intent(in) :: r_lat    ! positions of lattice atoms
+    real(8), dimension(:,:), intent(in) :: r_lat    ! positions of lattice atoms
     type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
     type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
     real(8), intent(out)                :: energy   ! calc. reference energy
@@ -633,7 +635,6 @@ implicit none
 
 !______________________________________________________________________________
 
-
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 ! definition of a few values that appear frequently in calculation
     betas0_l = beta * pars_l%s0
@@ -664,6 +665,7 @@ implicit none
     rcut = a_lat * sqrt_3 * isqrt_2
     rr = 4.0d0 * rcut / (sqrt_3 + 2.0d0)
     acut = 9.21024d0/(rr -rcut) ! ln(10000)
+
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
@@ -762,9 +764,10 @@ implicit none
 
             r3temp(1) = r_lat(1,i)-r_lat(1,j)
             r3temp(2) = r_lat(2,i)-r_lat(2,j)
+            r3temp(3) = r_lat(3,i)-r_lat(3,j)
             r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
             r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-            r3temp(3) = r_lat(3,i)-r_lat(3,j)
+            r3temp(3) = r3temp(3) - (cell(3)*ANINT(r3temp(3)/cell(3)))
             r =  sqrt(sum(r3temp**2))
 
 
@@ -775,6 +778,7 @@ implicit none
         ! cut-off to zero.
 
             theta = 1.0d0 / (1 + exp( acut * (r - rcut) ) )
+
 
 
         !----------------------------SIGMA LATTICE-----------------------------
@@ -820,10 +824,12 @@ implicit none
 
         r3temp(1) = r_lat(1,i)-r_part(1)
         r3temp(2) = r_lat(2,i)-r_part(2)
+        r3temp(3) = r_lat(3,i)-r_part(3)
         r3temp(1) = r3temp(1) - (cell(1)*ANINT(r3temp(1)/cell(1)))
         r3temp(2) = r3temp(2) - (cell(2)*ANINT(r3temp(2)/cell(2)))
-        r3temp(3) = r_lat(3,i)-r_part(3)
+        r3temp(3) = r3temp(3) - (cell(3)*ANINT(r3temp(3)/cell(3)))
         r =  sqrt(sum(r3temp**2))
+
 
     !----------------------------THETA PARTICLE--------------------------------
 

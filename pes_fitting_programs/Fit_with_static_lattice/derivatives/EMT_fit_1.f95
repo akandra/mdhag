@@ -35,7 +35,7 @@ program EMT_fit_1
 
     use EMTparms_class
     use open_file
-!    use emt_init_data
+    use emt_init_data
 
     implicit none
 
@@ -58,7 +58,7 @@ program EMT_fit_1
     ! At entry, B's are initial guesses for parameters
     ! On exit, B's are the results of the fit.
     !real(8), allocatable :: RRR(:) ! Array used optionally for communication with MODEL
-    real(8) :: X(1000,3),Y(1000),RRR(1000)
+    real(8) :: X(1000,3,1000),Y(1000),RRR(1000)
     integer, dimension(8) :: NARRAY ! Integer array of control parameters
     real, dimension(8) :: ARRAY = 0 ! Array of statistical parameters. Use 0.0 to get default values.
     integer, dimension(14) :: IB = 0 ! Integer Array containing the subscripts of parameters to be held constant.
@@ -83,9 +83,9 @@ program EMT_fit_1
     integer :: n_lay0 ! number of layers in reference slab
     real(8) :: nn0 ! next neighbour distance in reference slab
     real(8), dimension(3) :: cell_in
-! real(8) :: a_lat ! lattice constant
+
     real(8), allocatable, dimension(:,:) :: r0_lat ! lattice positions for reference calc.
-    !integer, allocatable, dimension(:) :: site ! impact site
+
     integer site(1000)
     real(8) :: energy ! energy output from emt subroutines
     real(8) :: e_ref ! reference energy with particle at infinity
@@ -95,12 +95,22 @@ program EMT_fit_1
     integer :: i,j,k ! loop indicies
     integer :: ios ! io status
 
-    ! for AIMD readin:
-!    real(8),dimension(:,:,:), allocatable  :: r_l
-!    real(8), dimension(:,:), allocatable   :: r_p
-!    integer :: time
-!    integer :: rep
-!    integer, dimension(3) :: cell_b
+! For AIMD readin
+!    integer                  :: time            ! number of different configurations
+    real(8), dimension(:,:,:), allocatable:: x_all      ! Position of all the atoms. Is the same as x(:)
+    real(8),allocatable, dimension(:)     :: E_all    ! energy from AIMD and DFT calc
+    integer                 :: rep      ! Repetitions of lattice (1,2,3) 2 should be sufficient.
+    integer, dimension(3):: cell_b  ! contains cell geometry (2x2x4)
+!    real(8), dimension(:,:), allocatable :: celli       ! extension of cell once it's expanded
+!    integer :: n_l ! number of gold atoms in extended slab
+    integer :: l_aimd ! number of aimd configurations in  all the configurations
+    integer :: control  ! controls which fraction of aimd-atoms is used (1-100)
+                        ! control = 200 : uses only frozen lattice DFT-points
+                        ! control = 201 : uses only aimd-points
+    real(8), dimension(:,:,:), allocatable :: r_l
+    real(8), dimension(:,:), allocatable :: r_p
+    integer :: q
+
 
     ! file names
     character(len=100) :: lattice_configuration_fname
@@ -172,48 +182,77 @@ program EMT_fit_1
     read(8,*) nn0
     read(8,*) cell_in(1)
     read(8,*) cell_in(2)
+    read(8,*) cell_in(3)
     allocate(r0_lat(3,n_l_in)) ! allocate array to hold lattice coordinates
     readr0lat: do i = 1, n_l_in
         read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
         !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
     end do readr0lat
     a_lat = nn0*sqrt_2
+    call gold_pos(r0_lat, n_l_in, r_lat, cell_in)
 
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
 
-! Call AIMD
-!    rep = 3
-!    cell_b=(/2,2,4/)
-!    call l_p_position(time, r_l,r_p, cell_b, rep)
+    !------------------------------------------------------------------------------------
+    !                   GET INFORMATION OF ATOMS THAT SHALL BE FITTED
+    !                   =============================================
+    !------------------------------------------------------------------------------------
+    !
+    ! Usage of input parameters:
+    ! =========================
+    ! rep = 1, 2 or 3   How many times shall the cell from DFT be reproduced.
+    !                   Recommendation: rep=2
+    ! cell_b (/2,2,4/)  DFT-cell-geometry
+    ! control =         1-100 : Fraction of AIMD points that go into fit
+    !                   200   : only DFT points
+    !                   201   : only AIMD points
 
-    call gold_pos(r0_lat, n_l_in, r_lat, cell_in)
-    cell = cell_in
+    rep = 2
+    cell_b=(/2,2,4/)
+    control=200
+
+
+    call l_p_position(a_lat, rep, cell_b, control, time, l_aimd, n_l, celli, x_all, E_all)
+    x(1:time,:,n_l+1)=x_all(1:time,:,n_l+1)
+    Y(1:time)=E_all
+
+
+!    cell = cell_in
 
 
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
+    print *, 'a_lat', a_lat
+    print *, 'cell_in', cell_in
+
     call emt_init(a_lat, cell_in, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
-    write(*,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
+    write(*,'(//(a),F15.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
+
+
+!_________________________________________________________________________________________
+! At present, this section has become obsolete. However, if we want the program to go back
+! to just fitting the hydrogen energies, this section needs to be commented back in.
+!_________________________________________________________________________________________
 
     !------------------------------------------------------------------------------------
     ! READ THE PARTICLE POSITIONS AND DFT ENERGIES
     !------------------------------------------------------------------------------------
     ! FIRST FIND THE NUMBER OF POINTS BY READING TO EOF
     !------------------------------------------------------------------------------------
-    call open_for_read (8, particle_position_and_DFT_energies_fname)
-    i=1
-    do
-        read(8,*,iostat=ios)
-        if(ios <0) exit
-        i=i+1
-    end do
+!    call open_for_read (8, particle_position_and_DFT_energies_fname)
+!    i=1
+!    do
+!        read(8,*,iostat=ios)
+!        if(ios <0) exit
+!        i=i+1
+!    end do
 
-    rewind(8)
-    npts = i-1
-    print '((a),i4)','the number of particle positions and energies =',npts
+!    rewind(8)
+!    npts = i-1
+!    print '((a),i4)','the number of particle positions and energies =',npts
 
     !------------------------------------------------------------------------------------
     ! NOW ALLOCATE ARRAYS TO STORE THE POINTS
@@ -227,17 +266,17 @@ program EMT_fit_1
     !------------------------------------------------------------------------------------
     ! READ IN POINTS, KEEPING ONLY POINTS WITH ENERGY < E_MAX
     !------------------------------------------------------------------------------------
-    j=1
-    e_max = 10 ! maximum energy to fit in eV
+!    j=1
+!    e_max = 10 ! maximum energy to fit in eV
 
-    do i=1, npts
-        read(8,*) site(j), X(j,1), X(j,2), X(j,3), Y(j)
+!    do i=1, npts
+!        read(8,*) site(j), X(j,1), X(j,2), X(j,3), Y(j)
  !     write(*,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
-        if (abs(Y(j))<=e_max) j=j+1
-    end do
-    close(8)
+!        if (abs(Y(j))<=e_max) j=j+1
+!    end do
+!    close(8)
 
-    npts=j-1
+!    npts=j-1
 
     call open_for_write(10, fit_results_fname)
 
@@ -249,28 +288,61 @@ program EMT_fit_1
     !------------------------------------------------------------------------------------------------------------------
     ! CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
     !------------------------------------------------------------------------------------------------------------------
-    k = npts
+
+    k = time
+    npts=time
 
     if(k>0) then
         write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
         write(*,*) 'site X Y Z EMT DFT'
         Write(10,*) 'site X Y Z EMT DFT'
         sumsq = 0
-        do i = 1, k
-            call emt(a_lat, X(i,:), particle_pars, lattice_pars, energy)
-            if(i<10) write( *,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
-            write(10,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
-            write(7, '(1X, I2, 4F16.10)') site(i), X(i,1), X(i,2), X(i,3), energy
+        allocate(r_l(time,3,n_l+1))
+        allocate(r_p(time,3))
+        do q=1,time
+            r_l(q,:,:)=x_all(q,:,1:n_l)
+            r_p(q,:)=x_all(q,:,n_l+1)
+            call emt(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
 
-            sumsq=sumsq+(energy-Y(i))**2
+            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy, Y(q)
+            write(10,'(1X, 5F15.10)')  X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy, Y(q)
+            write(7, '(1X, 4F16.10)')  X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy
+            sumsq=sumsq+(energy-Y(q))**2
         end do
-write(*,*)
+        write(*,*)
         write(10,*)
         write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
         write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
         write(*,*)
         write(10,*)
     end if
+
+
+
+! old routine for only particle-fit
+!    k = npts
+!    if(k>0) then
+!        write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
+!        write(*,*) 'site X Y Z EMT DFT'
+!        Write(10,*) 'site X Y Z EMT DFT'
+!        sumsq = 0
+!        do i = 1, k
+!            call emt(a_lat, X(i,:), particle_pars, lattice_pars, energy)
+!            if(i<10) write( *,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
+!            write(10,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
+!            write(7, '(1X, I2, 4F16.10)') site(i), X(i,1), X(i,2), X(i,3), energy
+
+!            sumsq=sumsq+(energy-Y(i))**2
+!        end do
+!        write(*,*)
+!        write(10,*)
+!        write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
+!        write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
+!        write(*,*)
+!        write(10,*)
+!    end if
+
+
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
 
 !stop
@@ -320,7 +392,7 @@ write(*,*)
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 1000
+    max_iterations = 5
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -347,10 +419,10 @@ write(*,*)
 
     if(debug(2)) then
 print '(//(a))', 'BEFORE CALL TO NLLSQ'
-        print '((a),4f10.5)', ' x1,y1= ', X(1,1), X(1,2), X(1,3), Y(1)
-        print '((a),4f10.5)', ' x2,y2= ', X(2,1), X(2,2), X(2,3), Y(2)
-        print '((a),3I20)', ' loc(x1))=', loc(x(1,1)), loc(x(1,2)), loc(x(1,3))
-        print '((a),3I20)', ' loc(x2))=', loc(x(2,1)), loc(x(2,2)), loc(x(2,3))
+        print '((a),4f10.5)', ' x1,y1= ', X(1,1,n_l+1), X(1,2,n_l+1), X(1,3,n_l+1), Y(1)
+        print '((a),4f10.5)', ' x2,y2= ', X(2,1,n_l+1), X(2,2,n_l+1), X(2,3,n_l+1), Y(2)
+        print '((a),3I20)', ' loc(x1))=', loc(x(1,1,n_l+1)), loc(x(1,2,n_l+1)), loc(x(1,3,n_l+1))
+        print '((a),3I20)', ' loc(x2))=', loc(x(2,1,n_l+1)), loc(x(2,2,n_l+1)), loc(x(2,3,n_l+1))
         print '((a),8i5)', ' NARRAY=',NARRAY
         print '((a),7f7.3/8x,7f7.3/)',' B=',B(1:14)
     end if

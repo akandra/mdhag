@@ -118,13 +118,13 @@ program EMT_fit_1
 !    lattice_nml_out                         = 'parameters_and_fit_results/f119.01.Au.nml'
 
 ! Strömqvist
-    fit_results_fname                       = 'parameters_and_fit_results/stroem.02.NLLSQ.out'
+    fit_results_fname                       = 'parameters_and_fit_results/stroem.04.NLLSQ.out'
 
     particle_nml_in                         = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out                        = 'parameters_and_fit_results/stroem.02.H.nml'
+    particle_nml_out                        = 'parameters_and_fit_results/stroem.04.H.nml'
 
     lattice_nml_in                          = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out                         = 'parameters_and_fit_results/stroem.02.Au.nml'
+    lattice_nml_out                         = 'parameters_and_fit_results/stroem.04.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -280,14 +280,14 @@ program EMT_fit_1
     ! s0        6  13   x   x     shouldn't change
     ! V0        7  14       x     shouldn't be <0
 
-    IB    = (/1,2,3,4,5,6,7,8,9,10,11,12,13,0/) ! indicies of parameters held constant
-    IP    = 13                                   ! number of parameters held constant
+    IB    = (/4,6,7,11,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP    = 5                                   ! number of parameters held constant
 
     !--------------------------------------------------------------------------
     !                  SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms          = 14
-    max_iterations  = 5
+    max_iterations  = 1000
     NARRAY(1) = npts            ! number of data points
     NARRAY(2) = 3               ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms          ! number of parameters
