@@ -9,87 +9,11 @@ module emt_init_data
 
 contains
 
-subroutine get_emt_derivative(a_lat, time, n_l, celli, x_all, pars_l, pars_p, energy, denergy)
-    !
-    ! Purpose:
-    !       ! Passes single configurations on to emt
-    !
-    !
-    implicit none
-
-    type(EMTparms)                      :: pars_p   ! parameters of particle
-    type(EMTparms)                      :: pars_l    ! parameters of lattice atoms
-
-    integer, intent(in)                 :: n_l
-    integer, intent(in)                 :: time
-    real(8), intent(in)                 ::  a_lat
-    real(8), dimension(:,:,:), allocatable, intent(in):: x_all
-    real(8),allocatable,dimension(:,:), intent(in)    :: celli
-    real(8), intent(out)                :: energy
-    real(8), dimension(14), intent(out) :: denergy
+! COMMENT:  To improve the performance, it is better to redefine arrays with coordinates in the way (coordinate, point)
+!           to escape the non-contiguous array problem by passing a deferred-array to a subroutine
 
 
-
-    !other variables
-    integer :: o,q,u
-    integer                 :: temp
-    real(8), dimension(:,:,:), allocatable:: r_l      ! Position of lattice atoms
-    real(8), dimension(:,:),allocatable   :: r_p        ! Position of particle
-
-
-    allocate(r_l(time,3,n_l+1))
-    allocate(r_p(time,3))
-
-    do q=1,time
-        r_l(q,:,:)=x_all(q,:,1:n_l)
-        r_p(q,:)=x_all(q,:,n_l+1)
-        call emt_fit(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, pars_p, pars_l, energy, denergy)
-    end do
-
-
-end subroutine get_emt_derivative
-
-
-subroutine get_emt(a_lat, time, n_l, celli, x_all, pars_l, pars_p, energy)
-    !
-    ! Purpose:
-    !       ! Passes single configurations on to emt
-    !
-    !
-    implicit none
-
-    type(EMTparms)                      :: pars_p   ! parameters of particle
-    type(EMTparms)                      :: pars_l    ! parameters of lattice atoms
-
-    integer, intent(in)                 :: n_l
-    integer, intent(in)                 :: time
-    real(8), intent(in)                 ::  a_lat
-    real(8), dimension(:,:,:), allocatable, intent(in):: x_all
-    real(8),allocatable,dimension(:,:), intent(in)    :: celli
-    real(8), intent(out)                :: energy
-
-
-
-    !other variables
-    integer :: o,q,u
-    integer                 :: temp
-    real(8), dimension(:,:,:), allocatable:: r_l      ! Position of lattice atoms
-    real(8), dimension(:,:),allocatable   :: r_p        ! Position of particle
-
-
-    allocate(r_l(time,3,n_l+1))
-    allocate(r_p(time,3))
-
-    do q=1,time
-        r_l(q,:,:)=x_all(q,:,1:n_l)
-        r_p(q,:)=x_all(q,:,n_l+1)
-        call emt(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, pars_p, pars_l, energy)
-    end do
-
-end subroutine get_emt
-
-
-subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, x_all, E_all)
+subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
 !
 ! Purpose:
 !           Reads in the gold and hydrogen positions from AIMD
@@ -110,6 +34,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     integer, intent(out)                :: n_l, l_aimd  ! number of l atoms, number of aimd contributions
     real(8), dimension(:,:,:), allocatable, intent(out) :: x_all
     integer , intent(in)                        :: control
+    real(8), intent(in) :: e_aimd_max
 
 ! other variables
     character(len=35)   :: position_of_l_and_p, fix_position
@@ -134,11 +59,11 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     real(8),allocatable,dimension(:)                 :: E_dft1, E_dft, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'traj005/XDATCAR_ACC_fsv_005.dat'
-    energy_l_and_p = 'traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    energy_l_and_p =      'data/traj005/analyse_005.out'
 
-    fix_position = 'DFT_aimd_form2x2x4.dat'
-    fix_energy = 'hau111_plot.E.dat'
+    fix_position = 'data/DFT_aimd_form2x2x4.dat'
+    fix_energy = 'data/hau111_plot.E.dat'
 
 !------------------------------------------------------------------------------
 !                       READ IN GEOMETRIES AND ENERGIES
@@ -203,17 +128,21 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     rewind(17)
     time = i
 
-    j=1
     allocate(E_dft1(time))
     allocate(chaos(time))
     E_dft1=0.0
     chaos= 0
 
     read(17,'(A)') empty
-    do i=1,time-2
+    read(17,*) temp, temp, E_dft1(1)
+    j=2
+    chaos(1) = 1
+
+
+    do i=2,time-2
         read(17,*) temp, temp, E_dft1(j)
         temp = E_dft1(j-1)-E_dft1(j)
-        if (abs(temp) .gt. 0.05) then   ! Throws out energies where energies changes too little
+        if (abs(temp) >= e_aimd_max) then   ! Throws out energies where energies changes too little
             j = j+1
             chaos(i) = 1
         end if
@@ -236,11 +165,12 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     read(18,'(28X,f13.10,//)') c33
 
 ! correction because aimd a=4.205, not 4.201
-    isqrt_2=0.7071067812d0
-    c12=-a_lat*isqrt_2*cell_in(1)/2
-    c11=a_lat*isqrt_2*cell_in(1)
-    c22=a_lat*sqrt(3.)*isqrt_2*cell_in(1)/2
-    c33=(cell_in(3)-1)*a_lat/sqrt(3.)+13
+!    isqrt_2=0.7071067812d0
+!    c12=-a_lat*isqrt_2*cell_in(1)/2
+!    c11=a_lat*isqrt_2*cell_in(1)
+!    c22=a_lat*sqrt(3.)*isqrt_2*cell_in(1)/2
+!    c33=(cell_in(3)-1)*a_lat/sqrt(3.)+13
+
 
 
 ! read AIMD geometries in
@@ -261,6 +191,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
 ! Throw those geometries out between which the energy changes little
     allocate(aimd_cor_l(ende2,3,16))
     allocate(aimd_cor_p(ende2,3))
+    aimd_cor_l=0.0d0
+    aimd_cor_p=0.0d0
     j = 0
     do i = 1, ende
         if (chaos(i) == 1) then
@@ -326,7 +258,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
         allocate(read_l(ende2,3,16))
         allocate(d_p(ende2,3))
         allocate(E_all(time))
-        read_l=0
+        read_l=0.0
         d_p=0
         read_l = aimd_cor_l
         d_p = aimd_cor_p
@@ -358,8 +290,10 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
         n = temp*8 + temp
     elseif (rep==2) then
         n = temp*(8 + 16) + temp
-    else
+    elseif (rep==3) then
         n = temp*(8 + 16 + 24) + temp
+    elseif (rep==0) then
+        n= temp
     end if
 
     n_l=n
@@ -367,6 +301,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     allocate(d_l(ende,3,n))
     d_l=0.d0
 
+if (rep>0) then
 ! Translation of the entire story
     do q=1, ende
         ! Set the running parameters
@@ -667,6 +602,11 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
         end if
 
     end do
+end if
+    if (rep==0) then
+        d_l = read_l
+
+    end if
 
 ! allocate important arrays
     allocate(r_l(ende,3,n))
@@ -711,14 +651,13 @@ subroutine l_p_position(a_lat, rep, cell_in, control, time, l_aimd, n_l, celli, 
     celli=cell_max-cell_min
     celli(:,3)=c33
     ! Write the overall array that contains both H and Au positions
+
     k=n+1
     allocate(x_all(ende,3,k))
-    do q=1,ende
-        x_all(q,:,1:n) = r_l(q,:,1:n)
-        x_all(q,:,k) = r_p(q,:)
-    end do
-!
-!    write(*,'(3f10.5)') x_all(ende,:,:)
+
+    x_all(:,:,1)=r_p
+    x_all(:,:,2:k)=r_l
+
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!

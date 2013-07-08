@@ -110,6 +110,7 @@ program EMT_fit_1
     real(8), dimension(:,:,:), allocatable :: r_l
     real(8), dimension(:,:), allocatable :: r_p
     integer :: q
+    real(8) :: e_aimd_max
 
 
     ! file names
@@ -124,11 +125,11 @@ program EMT_fit_1
     logical debug
     common /debug/debug(5)
     debug=(/.false., .false., .false., .true., .false./)
-    call open_for_overwrite(7,'fit_debug.out')
+    call open_for_overwrite(7,'data/fit_debug.out')
 
 
-    lattice_configuration_fname = 'ref_conf_Au111a.dat'
-    particle_position_and_DFT_energies_fname= 'hau111_plot.E.dat'
+    lattice_configuration_fname = 'data/ref_conf_Au111a.dat'
+    particle_position_and_DFT_energies_fname= 'data/hau111_plot.E.dat'
 
 ! These paths are for windows, they don't work under linux
 !   fit_results_fname = 'parameters_and_fit_results\f119.02.NLLSQ.out'
@@ -149,11 +150,11 @@ program EMT_fit_1
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'parameters_and_fit_results/stroem_der.01.NLLSQ.out'
-    particle_nml_in = 'parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out = 'parameters_and_fit_results/stroem_der.01.H.nml'
-    lattice_nml_in = 'parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out = 'parameters_and_fit_results/stroem_der.01.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.01.NLLSQ.out'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml'
+    particle_nml_out = 'data/parameters_and_fit_results/stroem_der.01.H.nml'
+    lattice_nml_in = 'data/parameters_and_fit_results/stroem.00.Au.nml'
+    lattice_nml_out = 'data/parameters_and_fit_results/stroem_der.01.Au.nml'
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -211,10 +212,11 @@ program EMT_fit_1
     rep = 2
     cell_b=(/2,2,4/)
     control=200
+    e_aimd_max=0.05
 
 
-    call l_p_position(a_lat, rep, cell_b, control, time, l_aimd, n_l, celli, x_all, E_all)
-    x(1:time,:,n_l+1)=x_all(1:time,:,n_l+1)
+    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
+    X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
     Y(1:time)=E_all
 
 
@@ -297,16 +299,16 @@ program EMT_fit_1
         write(*,*) 'site X Y Z EMT DFT'
         Write(10,*) 'site X Y Z EMT DFT'
         sumsq = 0
-        allocate(r_l(time,3,n_l+1))
+        allocate(r_l(time,3,n_l))
         allocate(r_p(time,3))
         do q=1,time
-            r_l(q,:,:)=x_all(q,:,1:n_l)
-            r_p(q,:)=x_all(q,:,n_l+1)
+            r_l(q,:,:)=x_all(q,:,2:n_l+1)
+            r_p(q,:)=x_all(q,:,1)
             call emt(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
 
-            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy, Y(q)
-            write(10,'(1X, 5F15.10)')  X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy, Y(q)
-            write(7, '(1X, 4F16.10)')  X(q,1,n_l+1), X(q,2,n_l+1), X(q,3,n_l+1), energy
+            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy, Y(q)
+            write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy, Y(q)
+            write(7, '(1X, 4F16.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy
             sumsq=sumsq+(energy-Y(q))**2
         end do
         write(*,*)
@@ -419,10 +421,10 @@ program EMT_fit_1
 
     if(debug(2)) then
 print '(//(a))', 'BEFORE CALL TO NLLSQ'
-        print '((a),4f10.5)', ' x1,y1= ', X(1,1,n_l+1), X(1,2,n_l+1), X(1,3,n_l+1), Y(1)
-        print '((a),4f10.5)', ' x2,y2= ', X(2,1,n_l+1), X(2,2,n_l+1), X(2,3,n_l+1), Y(2)
-        print '((a),3I20)', ' loc(x1))=', loc(x(1,1,n_l+1)), loc(x(1,2,n_l+1)), loc(x(1,3,n_l+1))
-        print '((a),3I20)', ' loc(x2))=', loc(x(2,1,n_l+1)), loc(x(2,2,n_l+1)), loc(x(2,3,n_l+1))
+        print '((a),4f10.5)', ' x1,y1= ', X(1,1,1), X(1,2,1), X(1,3,1), Y(1)
+        print '((a),4f10.5)', ' x2,y2= ', X(2,1,1), X(2,2,1), X(2,3,1), Y(2)
+        print '((a),3I20)', ' loc(x1))=', loc(x(1,1,1)), loc(x(1,2,1)), loc(x(1,3,1))
+        print '((a),3I20)', ' loc(x2))=', loc(x(2,1,1)), loc(x(2,2,1)), loc(x(2,3,1))
         print '((a),8i5)', ' NARRAY=',NARRAY
         print '((a),7f7.3/8x,7f7.3/)',' B=',B(1:14)
     end if

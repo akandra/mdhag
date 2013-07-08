@@ -21,7 +21,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: iteration
     real(8)             :: energy
     real(8), dimension(14):: denergy
-    real(8)             :: r_part(3)
+!    real(8)             :: r_part(3)
 
     logical, save       :: first_run=.true.
 
@@ -40,9 +40,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         print *
         print '((a))', 'FIRST RUN OF MODEL'
         print '((a),4i5)', '  i jp n m=', i, jp, n, m
-        print '((a),4f20.5)', '  xi,yi=   ', xdat(i,1,-1), xdat(i,2,-1), xdat(i,3,-1), ydat(i)
-        print '((a),3I20)',   '  loc(xi))=', loc(xdat(i,1,-1)), loc(xdat(i,2,-1)), loc(xdat(i,3,-1))
-        print '((a),3I20)',   '  loc(x2))=', loc(xdat(2,1,-1)), loc(xdat(2,2,-1)), loc(xdat(2,3,-1))
+        print '((a),4f20.5)', '  xi,yi=   ', xdat(i,1,1), xdat(i,2,1), xdat(i,3,1), ydat(i)
+        print '((a),3I20)',   '  loc(xi))=', loc(xdat(i,1,1)), loc(xdat(i,2,1)), loc(xdat(i,3,1))
+        print '((a),3I20)',   '  loc(x2))=', loc(xdat(2,1,1)), loc(xdat(2,2,1)), loc(xdat(2,3,1))
         print *
         write(7,*) 'it i jp    x       y      z       DFT     EMT    RES'
         !pause 'first run of model';
@@ -52,7 +52,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     call array2emt_parms( B(8:14), lattice_parms )
 !    r_part=XDAT(i,:)
 
-    allocate(r_l(time,3,n_l+1))
+    allocate(r_l(time,3,n_l))
     allocate(r_p(time,3))
     allocate(denergy1(time,14))
 
@@ -61,8 +61,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     case(1)
 !        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
 
-        r_l(I,:,:)=XDAT(I,:,1:n_l)
-        r_p(I,:)=XDAT(I,:,n_l+1)
+        r_l(I,:,:)=XDAT(I,:,2:n_l+1)
+        r_p(I,:)=XDAT(I,:,1)
         call emt(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
 
         F   = energy
@@ -71,8 +71,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
     case(2)
 !        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
-        r_l(I,:,:)=XDAT(I,:,1:n_l)
-        r_p(I,:)=XDAT(I,:,n_l+1)
+        r_l(I,:,:)=XDAT(I,:,2:n_l+1)
+        r_p(I,:)=XDAT(I,:,1)
         call emt_fit(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
 
 
@@ -91,7 +91,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         end if
 
         if (debug(4)) then
-            write(7,1010) iteration,i, xdat(i,:,-1),YDAT(i), F, RES, B(1:14)
+            write(7,1010) iteration,i, xdat(i,:,1),YDAT(i), F, RES, B(1:14)
         end if
 
 

@@ -12,7 +12,7 @@ module EMTparms_class
     integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
     ! storage for variables passed into emt_init that are needed by emt energy
-    real(8)                         :: cell(3)      ! dimensions of cell in x,y and z
+!    real(8)                         :: cell(3)      ! dimensions of cell in x,y and z
 !    integer                         :: n_l0          ! number of lattice atoms
     real(8), private,allocatable    :: r0_lat(:,:)  ! positions of lattice atoms
     real(8), private                :: Eref         ! reference energy
@@ -329,6 +329,7 @@ implicit none
     chilp = pars_p%n0 / pars_l%n0
     chipl = 1.0d0 / chilp
 
+
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
 !                                  =======
@@ -366,7 +367,6 @@ implicit none
     r3temp = rnnp-betas0_p
     igamma1p = 1.0d0 / sum(xp*exp(-pars_p%eta2 * r3temp))
     igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
-
 
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
@@ -526,6 +526,7 @@ Ecoh_ref = sum((1.0d0 + pars_l%lambda*s_l_ref)*exp(-pars_l%lambda*s_l_ref)-1.0d0
 
     energy = Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)-E_ref
 
+
 end subroutine emt
 
 
@@ -653,7 +654,6 @@ implicit none
     dchipl(1) = - chipl * dchipl(2)     ! d chipl / d nop
     dchilp(2) = - chilp * dchilp(1)     ! d chipl / d nol
 
-
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
 !                                  =======
@@ -771,7 +771,6 @@ implicit none
             r =  sqrt(sum(r3temp**2))
 
 
-
         !---------------------------THETA LATTICE------------------------------
         ! Theta enforces the cut-off together with gamma (see above). This
         ! function enacts cutoff by reducing contributions of atoms outside the
@@ -868,7 +867,6 @@ implicit none
 
 
     end do
-
 
 !-------------------------------CUT-OFF ENACTION-------------------------------
 ! Don't forget the gamma!
@@ -1102,7 +1100,6 @@ implicit none
     denergy(6) = 0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy(7) = dEcoh_p(7) &
                    + 0.5d0*(dV_lp_p(7)+dV_pl_p(7)+dvref_l_p(7)+dvref_p_p(7))
-
 
 end subroutine emt_fit
 
