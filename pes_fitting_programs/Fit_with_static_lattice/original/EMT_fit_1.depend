@@ -1,0 +1,47 @@
+# depslib dependency file v1.0
+1367877073 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\model.f95
+
+1367181946 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emtparms_class.f95
+
+1367849298 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\open_file.f95
+
+1367148928 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq.f
+
+1367927675 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emt_fit_1.f95
+
+1367262353 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq_dp.f
+
+1367271061 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\emtparms_class_v2.f95
+
+1367457459 source:c:\dja\github\mdhag\pes_fitting_programs\fit_with_static_lattice\nllsq.dbl.f
+
+1370532527 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/open_file.f95
+
+1370532527 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/EMTparms_class_v2.f95
+
+1370532527 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/nllsq.dbl.f
+
+1370532527 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/model.f95
+
+1370532527 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/EMT_fit_1.f95
+
+1372337547 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/EMTparms_class_v2.f95
+
+1372337547 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/nllsq.dbl.f
+
+1372337547 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/open_file.f95
+
+1372337547 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/model.f95
+
+1371054315 source:/home/sjanke/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/EMT_fit_1.f95
+
+1370863330 source:/home/MPG-BPC/akandra/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/nllsq.dbl.f
+
+1370863330 source:/home/MPG-BPC/akandra/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/open_file.f95
+
+1371652018 source:/home/MPG-BPC/akandra/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/EMTparms_class_v2.f95
+
+1370863330 source:/home/MPG-BPC/akandra/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/model.f95
+
+1371639990 source:/home/MPG-BPC/akandra/git/mdhag/pes_fitting_programs/Fit_with_static_lattice/original/EMT_fit_1.f95
+
