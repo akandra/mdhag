@@ -205,7 +205,7 @@ program EMT_fit_1
 
     rep = 1
     cell_b=(/2,2,4/)
-    control=3
+    control=200
     e_aimd_max=0.01
 
 

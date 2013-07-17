@@ -22,7 +22,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     real(8)             :: energy,  E_dref
     real(8), dimension(14):: denergy
     real(8), dimension(7) ::dE_ref
-!    real(8)             :: r_part(3)
+    real(8)             :: Enew,dEnew(14)
 
     logical, save       :: first_run=.true.
 
@@ -71,8 +71,10 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 !        call emt_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
 ! Get emt init implemented here and get it out of energy.
         energy= energy-Eref
+
         F   = energy
         RES = YDAT(I) - F
+
 
 
 
@@ -84,16 +86,21 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         call emt_fit(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
         energy=energy-E_dref
 !        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
+
         F   = energy
         RES = YDAT(I) - F
         denergy(8:14) = denergy(8:14)-dE_ref
         P(1:14)=denergy
+        dEnew=denergy
 
 
         do ij=1,IP
             P(IB(ij)) = 0.0d0
         end do
         !print *, 'der', P(1:7)
+
+        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
+        print *, denergy-dEnew
 
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 
