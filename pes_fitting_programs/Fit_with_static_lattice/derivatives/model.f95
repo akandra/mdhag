@@ -91,16 +91,12 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         RES = YDAT(I) - F
         denergy(8:14) = denergy(8:14)-dE_ref
         P(1:14)=denergy
-        dEnew=denergy
 
 
         do ij=1,IP
             P(IB(ij)) = 0.0d0
         end do
         !print *, 'der', P(1:7)
-
-        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
-        print *, denergy-dEnew
 
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 
