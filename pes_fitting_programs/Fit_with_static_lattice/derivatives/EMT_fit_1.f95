@@ -84,7 +84,7 @@ program EMT_fit_1
     real(8) :: nn0 ! next neighbour distance in reference slab
     real(8), dimension(3) :: cell_in
 
-    real(8), allocatable, dimension(:,:) :: r0_lat ! lattice positions for reference calc.
+    real(8), allocatable, dimension(:,:) :: r1 ! lattice positions for reference calc.
 
     integer site(1000)
     real(8) :: energy ! energy output from emt subroutines
@@ -131,30 +131,24 @@ program EMT_fit_1
     lattice_configuration_fname = 'data/ref_conf_Au111a.dat'
     particle_position_and_DFT_energies_fname= 'data/hau111_plot.E.dat'
 
-! These paths are for windows, they don't work under linux
-!   fit_results_fname = 'parameters_and_fit_results\f119.02.NLLSQ.out'
-
-!   particle_nml_in = 'parameters_and_fit_results\f119.00.H.nml'
-!   particle_nml_out = 'parameters_and_fit_results\f119.02.H.nml'
-
-!   lattice_nml_in = 'parameters_and_fit_results\f119.00.Au.nml'
-!   lattice_nml_out = 'parameters_and_fit_results\f119.02.Au.nml'
 
 ! These paths are for linux, they probably won't work under windows.
-!   fit_results_fname = 'parameters_and_fit_results/f119_der.02.NLLSQ.out'
+!   fit_results_fname = 'data/parameters_and_fit_results/f119_der.02.NLLSQ.out'
 
-!    particle_nml_in = 'parameters_and_fit_results/f119.00.H.nml'
-!    particle_nml_out = 'parameters_and_fit_results/f119_der.02.H.nml'
-!    lattice_nml_in = 'parameters_and_fit_results/f119.00.Au.nml'
-!    lattice_nml_out = 'parameters_and_fit_results/f119_der.02.Au.nml'
+!    particle_nml_in = 'data/parameters_and_fit_results/f119.00.H.nml'
+!    particle_nml_out = 'data/parameters_and_fit_results/f119_der.02.H.nml'
+!    lattice_nml_in = 'data/parameters_and_fit_results/f119.00.Au.nml'
+!    lattice_nml_out = 'data/parameters_and_fit_results/f119_der.02.Au.nml'
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.01.NLLSQ.out'
-    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml'
-    particle_nml_out = 'data/parameters_and_fit_results/stroem_der.01.H.nml'
-    lattice_nml_in = 'data/parameters_and_fit_results/stroem.00.Au.nml'
-    lattice_nml_out = 'data/parameters_and_fit_results/stroem_der.01.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.35.NLLSQ.out'
+    particle_nml_out = 'data/parameters_and_fit_results/stroem_der.35.H.nml'
+    lattice_nml_out = 'data/parameters_and_fit_results/stroem_der.35.Au.nml'
+
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.35.H.nml' !stroem.00.H.nml'
+    lattice_nml_in = 'data/parameters_and_fit_results/stroem_der.35.Au.nml' !stroem.00.Au.nml'
+
 
 
     TITLE = 'EMT NLLSQ Test'
@@ -181,16 +175,16 @@ program EMT_fit_1
     read(8,*) n_l_in
     read(8,*) n_lay0
     read(8,*) nn0
-    read(8,*) cell_in(1)
-    read(8,*) cell_in(2)
-    read(8,*) cell_in(3)
-    allocate(r0_lat(3,n_l_in)) ! allocate array to hold lattice coordinates
+    read(8,*) cell_0(1)
+    read(8,*) cell_0(2)
+    read(8,*) cell_0(3)
+    allocate(r1(3,n_l_in)) ! allocate array to hold lattice coordinates
     readr0lat: do i = 1, n_l_in
-        read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
-        !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
+        read(8,*) r1(1,i), r1(2,i), r1(3,i)
+        !write(7,*)r1(1,i), r1(2,i), r1(3,i)
     end do readr0lat
     a_lat = nn0*sqrt_2
-    call gold_pos(r0_lat, n_l_in, r_lat, cell_in)
+    call gold_pos(r1, n_l_in, r0_lat, cell_0)
 
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
@@ -209,27 +203,28 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 2
+    rep = 1
     cell_b=(/2,2,4/)
-    control=200
-    e_aimd_max=0.05
+    control=3
+    e_aimd_max=0.01
 
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
     X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
     Y(1:time)=E_all
+    print *, 'l_aimd', l_aimd
+!   stop
+!
 
-
-!    cell = cell_in
 
 
     !------------------------------------------------------------------------------------
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
     print *, 'a_lat', a_lat
-    print *, 'cell_in', cell_in
+    print *, 'cell_0', cell_0
 
-    call emt_init(a_lat, cell_in, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
+    call emt_init(a_lat, cell_0, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F15.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
 
@@ -301,15 +296,19 @@ program EMT_fit_1
         sumsq = 0
         allocate(r_l(time,3,n_l))
         allocate(r_p(time,3))
+        r_l(1,:,:)=x_all(1,:,2:n_l+1)
+        r_p(1,:)=x_all(1,:,1)
+        call emt_init(a_lat, celli(1,:), n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
+
         do q=1,time
             r_l(q,:,:)=x_all(q,:,2:n_l+1)
             r_p(q,:)=x_all(q,:,1)
             call emt(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
 
-            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy, Y(q)
-            write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy, Y(q)
-            write(7, '(1X, 4F16.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy
-            sumsq=sumsq+(energy-Y(q))**2
+            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
+            write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
+            write(7, '(1X, 4F16.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref
+            sumsq=sumsq+(energy-E_ref-Y(q))**2
         end do
         write(*,*)
         write(10,*)
@@ -318,7 +317,6 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-
 
 
 ! old routine for only particle-fit
@@ -384,7 +382,7 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IB = (/3,7, 10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
     IP = 5 ! number of parameters held constant
 
 !    IB = (/0,0,3,0,0,0,7,0,0,10,0,12,0,14/) ! don't do it this way!
@@ -394,7 +392,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 5
+    max_iterations = 200
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

@@ -19,8 +19,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: N, M, KK
 
     integer             :: iteration
-    real(8)             :: energy
+    real(8)             :: energy,  E_dref
     real(8), dimension(14):: denergy
+    real(8), dimension(7) ::dE_ref
 !    real(8)             :: r_part(3)
 
     logical, save       :: first_run=.true.
@@ -28,6 +29,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     real(8), dimension(:,:,:), allocatable :: r_l
     real(8), dimension(:,:), allocatable   :: r_p
     real(8), dimension(:,:), allocatable   :: denergy1
+    real(8) :: Eref
     integer :: q
 
 
@@ -59,30 +61,39 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
-!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+
+        !call emt_init(a_lat,cell_0, n_l0, r0_lat, particle_parms,lattice_parms, Eref)
 
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
+        call emt_init(a_lat, celli(1,:), n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
         call emt(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
-
+!        call emt_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
+! Get emt init implemented here and get it out of energy.
+        energy= energy-Eref
         F   = energy
         RES = YDAT(I) - F
+
 
 
     case(2)
-!        call emt_fit (a_lat, r_part, particle_parms, lattice_parms, energy, denergy)
+!        call emt_fit_init(a_lat, cell_0, r0_lat,n_l0, particle_parms, lattice_parms, E_dref, dE_ref)
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
+        call emt_fit_init(a_lat, celli(1,:), XDAT(1,:,2:n_l+1), n_l, particle_parms, lattice_parms, E_dref, dE_ref)
         call emt_fit(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
-
-
+        energy=energy-E_dref
+!        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
         F   = energy
         RES = YDAT(I) - F
-        P(1:14) = denergy
+        denergy(8:14) = denergy(8:14)-dE_ref
+        P(1:14)=denergy
+
 
         do ij=1,IP
-            P(IB(ij)) = 0.0
+            P(IB(ij)) = 0.0d0
         end do
+        !print *, 'der', P(1:7)
 
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 

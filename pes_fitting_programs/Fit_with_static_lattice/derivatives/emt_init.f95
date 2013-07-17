@@ -59,8 +59,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8),allocatable,dimension(:)                 :: E_dft1, E_dft, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj833/XDATCAR_833.dat'
+    energy_l_and_p =      'data/traj833/analyse_833.out'
 
     fix_position = 'data/DFT_aimd_form2x2x4.dat'
     fix_energy = 'data/hau111_plot.E.dat'
@@ -82,6 +82,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     rewind(39)
     npts = i-1
 
+!    npts=10
     e_max=10.0
     E_fix=0.0
 
@@ -149,7 +150,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     end do
     close(17)
     ende2 = j-1
-    E_dft1=E_dft1+25.024789d0
+    E_dft1=E_dft1+25.019988
 
 ! Read in AIMD Energy
     allocate(E_dft(j))
@@ -187,6 +188,14 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
         read(18,*) aimd_p(j,:)
     end do
     close(18)
+
+! Trouble with periodic boundery conditions might be solved here
+!    do j = 1, ende
+!        if (aimd_l(j,1,2)>0.5 .and. aimd_l(j,2,2)>0.99 .and. aimd_l(j,3,2)>0.99) then
+!            aimd_l(j,2,2)=aimd_l(j,2,2) -1.0
+!        end if
+!    end do
+
 
 ! Throw those geometries out between which the energy changes little
     allocate(aimd_cor_l(ende2,3,16))

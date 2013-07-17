@@ -91,6 +91,8 @@ program EMT_fit_1
     integer                                 :: i,j,k             ! loop indicies
     integer                                 :: ios               ! io status
 
+    real(8) :: a_lat
+    real(8), dimension(14):: denergy
     ! file names
     character(len=100)   :: lattice_configuration_fname
     character(len=100)   :: particle_position_and_DFT_energies_fname
@@ -152,11 +154,14 @@ program EMT_fit_1
     read(8,*) nn0
     read(8,*) cell(1)
     read(8,*) cell(2)
+    cell(3)=20.2763
     allocate(r0_lat(3,n_lat0_at))           ! allocate array to hold lattice coordinates
     readr0lat: do i = 1, n_lat0_at
         read(8,*) r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
         !write(7,*)r0_lat(1,i), r0_lat(2,i), r0_lat(3,i)
     end do readr0lat
+    a_lat=nn0*sqrt(2.)
+
 
     !------------------------------------------------------------------------------------
     !          INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
@@ -242,7 +247,11 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-!stop
+
+    call emt_fit(a_lat,cell,X(1,:), r0_lat,n_lat0_at, particle_pars, lattice_pars, energy, denergy)
+
+
+stop
     !------------------------------------------------------------------------------------------------------------------
     !                       SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
