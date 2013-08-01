@@ -77,7 +77,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
 
 
-
     case(2)
 !        call emt_fit_init(a_lat, cell_0, r0_lat,n_l0, particle_parms, lattice_parms, E_dref, dE_ref)
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)

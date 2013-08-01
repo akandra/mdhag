@@ -153,8 +153,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     E_dft1=E_dft1+25.019988
 
 ! Read in AIMD Energy
-    allocate(E_dft(j))
-    do i=1,j
+    allocate(E_dft(ende2))
+    do i=1,ende2
         E_dft(i)=E_dft1(i)
     end do
 
@@ -189,12 +189,6 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     end do
     close(18)
 
-! Trouble with periodic boundery conditions might be solved here
-!    do j = 1, ende
-!        if (aimd_l(j,1,2)>0.5 .and. aimd_l(j,2,2)>0.99 .and. aimd_l(j,3,2)>0.99) then
-!            aimd_l(j,2,2)=aimd_l(j,2,2) -1.0
-!        end if
-!    end do
 
 
 ! Throw those geometries out between which the energy changes little
@@ -657,7 +651,21 @@ end if
         r_p(q,2) = c22*d_p(q,2)
         r_p(q,3) = c33*d_p(q,3)
     end do
-    celli=cell_max-cell_min
+!    celli=cell_max-cell_min
+!    print *, celli(1,:)
+    if (rep==1) then
+        celli(:,1) = 3.0d0*c11 - c12*3.0d0
+        celli(:,2) = 3.0d0*c22
+        celli(:,3)=c33
+    else if (rep==2) then
+        celli(:,1) = 5.0d0*c11 - c12*5.0d0
+        celli(:,2) = 5.0d0*c22
+        celli(:,3)=c33
+    end if
+
+!    print *, celli(1,:)
+
+
     celli(:,3)=c33
     ! Write the overall array that contains both H and Au positions
 
