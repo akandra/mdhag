@@ -205,13 +205,13 @@ program EMT_fit_1
 
     rep = 2
     cell_b=(/2,2,4/)
-    control=200
+    control=90
     e_aimd_max=0.00
 
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
     X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
-    Y(1:time)=E_all
+    Y(1:time)=E_all(1:time)
     print *, 'l_aimd', l_aimd
 
 !   stop
@@ -223,7 +223,6 @@ program EMT_fit_1
     ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
     !------------------------------------------------------------------------------------
     print *, 'a_lat', a_lat
-    print *, 'cell_0', cell_0
 
     call emt_init(a_lat, cell_0, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
     write(*,'(//(a),F15.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
