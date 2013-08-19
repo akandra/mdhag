@@ -50,7 +50,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8), dimension(:,:,:), allocatable :: aimd_l,  prae_read_l, read_l ! array of au after read in
     real(8), dimension(:,:),allocatable    :: aimd_p,  prae_d_p, d_p     ! array of h
     real(8), dimension(:,:,:), allocatable :: d_l     ! array after multiplying lattice image
-    real(8), dimension(:,:), allocatable :: fix_l ! array of au after read in
+    real(8), dimension(:,:), allocatable :: fix_l, dfix ! array of au after read in
     real(8), dimension(:,:),allocatable    :: fix_p     ! array of h
     real(8), dimension(:,:,:), allocatable:: r_l      ! Position of lattice atoms
     real(8), dimension(:,:),allocatable   :: r_p        ! Position of particle
@@ -59,8 +59,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj010/XDATCAR_010.dat'
+    energy_l_and_p =      'data/traj010/analyse_010.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/hau111_plot.E.dat'
@@ -126,13 +126,13 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     end do
 
     fix_l=matmul(d_matrix,fix_l)
+    fix_l=Nint(fix_l*10000)/10000.0d0
 
     do i=1,k
-        if (fix_l(1,i) < 0.0d0) fix_l(1,i)=fix_l(1,i)+1.0d0
-        if (fix_l(2,i) < 0.0d0) fix_l(2,i)=fix_l(2,i)+1.0d0
+!        if (fix_l(1,i) < 0.0d0) fix_l(1,i)=fix_l(1,i)+1.0d0
+!        if (fix_l(2,i) < 0.0d0) fix_l(2,i)=fix_l(2,i)+1.0d0
         if (fix_l(3,i) < 0.0d0) fix_l(3,i)=fix_l(3,i)+1.0d0
     end do
-
 
 !---------------------------READ IN AIMD GEOMETRIES----------------------------
 
@@ -166,6 +166,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 
     allocate(E_dft1(time))
     allocate(aimd_l(time,3,k))
+    allocate(dfix(3,k))
     allocate(aimd_p(time,3))
     aimd_p=0.0
     aimd_l=0.0
@@ -182,10 +183,23 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
         read(18,*) aimd_l(j,:,:)
         read(18,*) aimd_p(j,:)
         temp = E_dft1(j-1)-E_dft1(j)
+        dfix(1:2,:) = aimd_l(j,1:2,:) - fix_l(1:2,:)
+        do q=1,k
+                aimd_l(j,1,q)=aimd_l(j,1,q) - ANINT(dfix(1,q))
+                aimd_l(j,2,q)=aimd_l(j,2,q) - ANINT(dfix(2,q))
+        end do
         if (abs(temp) >= e_aimd_max) j = j+1
     end do
     close(17)
     close(18)
+
+
+! If AIMD has slanted cell in direct coordinates, we need to transform the cell
+! into rectangular cell so periodic boundary conditions will be happy :-)
+!    dfix = aimd_l(q,:,:) - fix_l
+
+
+
 
     ende2 = j-1
     E_dft1=E_dft1+25.019988
@@ -307,7 +321,7 @@ if (rep>0) then
         m = temp
 
         ! keep identiy
-        d_l(q,:,i:k) = read_l(q,:,l:k)
+        d_l(q,:,i:k) = read_l(q,:,l:j)
 
         ! in x
         i=i+m
@@ -613,16 +627,25 @@ end if
      end do
      r_p = matmul(d_p,transpose(c_matrix))
 
-    if (rep==1) then
-        empty3=matmul(c_matrix,(/3,3,1/))
-    else if (rep==2) then
-        empty3=matmul(c_matrix,(/5,5,1/))
-    else if (rep==3) then
-        empty3=matmul(c_matrix,(/7,7,1/))
-    end if
     do q=1,ende
-        celli(q,:)=empty3
+        celli(q,1)=c_matrix(1,1)*(0.5+rep)*cell_in(1)
+        celli(q,2)=c_matrix(2,2)*(0.5+rep)*cell_in(2)
+        celli(q,3)=c_matrix(3,3)
     end do
+
+!    open(888,file='rudolf.dat')
+!    write(888,'(3f10.5)') d_l(84,:,:)
+!    write(888,'(3f10.5)') d_l(85,:,:)
+!    write(*,*) 'aimd_p'
+!    write(*,'(3f10.5)') transpose(d_p(84:85,:))
+!    close(888)
+
+!    open(999,file='reindeer.dat')
+!    write(999,'(3f10.5)') r_l(84,:,:)
+!    write(999,'(3f10.5)') r_l(85,:,:)
+!    write(*,*) 'aimd_p'
+!    write(*,'(3f10.5)') transpose(r_p(84:85,:))
+!    close(999)
 
     ! Write the overall array that contains both H and Au positions
     k=n_l+1
@@ -634,8 +657,8 @@ end if
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!
-    deallocate(d_l, r_l, r_p, E_dft1, prae_E_dft)
-    deallocate(aimd_l, prae_read_l, read_l,  prae_d_p, d_p )
+    deallocate(d_l, r_l, r_p, E_dft1)
+    deallocate(aimd_l, read_l, d_p )
     deallocate(aimd_p)
     deallocate(E_fix,fix_l,fix_p )
 

@@ -142,12 +142,12 @@ program EMT_fit_1
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.76.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.76.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.76.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.88.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.88.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.88.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.00.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.80.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.80.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -205,7 +205,7 @@ program EMT_fit_1
 
     rep = 2
     cell_b=(/2,2,4/)
-    control=90
+    control=5
     e_aimd_max=0.00
 
 
@@ -382,8 +382,8 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,14,12,5,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 6 ! number of parameters held constant
+    IB = (/3,7,14,11,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 4 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
