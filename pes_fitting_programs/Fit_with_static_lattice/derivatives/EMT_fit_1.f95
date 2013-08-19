@@ -203,7 +203,7 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 2
+    rep = 1
     cell_b=(/2,2,4/)
     control=200
     e_aimd_max=0.00
@@ -214,7 +214,7 @@ program EMT_fit_1
     Y(1:time)=E_all
     print *, 'l_aimd', l_aimd
 
-!   stop
+   stop
 !
 
 
