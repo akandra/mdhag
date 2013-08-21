@@ -164,8 +164,8 @@ implicit none
 !------------------------------------------------------------------------------
 ! The values for the sums are set to zero.
 
-    sigma_ll = 0
-    V_ll = 0
+    sigma_ll = 0.0d0
+    V_ll = 0.0d0
 
     do i = 1, n_l0
         do j = i+1, n_l0
@@ -218,7 +218,7 @@ implicit none
 ! Don't forget the gamma!
 
     sigma_ll = sigma_ll * igamma1l
-    V_ll = V_ll * pars_l%V0 * igamma2l
+    V_ll = V_ll * pars_l%V0 * igamma2l  ! Muss V_ll nicht auch nochmal durch 2 geteilt werden?
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 ! The neutral sphere radius is the radius in which the entire density of the
@@ -1094,7 +1094,7 @@ implicit none
             rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
             V_ll = V_ll + rtemp
 
-            rtemp1 = rtemp*(r - betas0_l)
+            rtemp1 = rtemp*(r - betas0_l)  ! müsste das hier nicht r/beta-sol sein?
             dV_ll(6) = dV_ll(6) + rtemp1
 
             rtemp1 = rtemp*pars_l%kappa
@@ -1129,7 +1129,7 @@ implicit none
         rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
         sigma_pl = sigma_pl + rtemp
 
-        dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i)
+        dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i) !Where's the derivative with respect to so?
 
         dsigma_pl_l(1) = dsigma_pl_l(1) - (r - betas0_l)*rtemp
         dsigma_pl_l(7) = pars_l%eta2*beta*sigma_pl
@@ -1139,12 +1139,12 @@ implicit none
 
         rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
         V_lp= V_lp + rtemp
-        dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p)
+        dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p) ! muss hier nicht anders durch beta geteilt werden?
         dV_lp_p(7) = dV_lp_p(7) + rtemp*pars_p%kappa
 
         rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
         V_pl = V_pl + rtemp
-        dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l)
+        dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l) ! muss hier nicht anders durch beta geteilt werden?
         dV_pl_l(7) = dV_pl_l(7) + rtemp*pars_l%kappa
 
 
