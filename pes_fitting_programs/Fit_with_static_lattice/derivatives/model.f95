@@ -61,15 +61,14 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
-
         !call emt_init(a_lat,cell_0, n_l0, r0_lat, particle_parms,lattice_parms, Eref)
-
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
         call emt_init(a_lat, celli(1,:), n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
         call emt(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
 !        call emt_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
 ! Get emt init implemented here and get it out of energy.
+
         energy= energy-Eref
 
         F   = energy
@@ -78,6 +77,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
 
     case(2)
+!        I=3
+
 !        call emt_fit_init(a_lat, cell_0, r0_lat,n_l0, particle_parms, lattice_parms, E_dref, dE_ref)
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
@@ -91,12 +92,10 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         denergy(8:14) = denergy(8:14)-dE_ref
         P(1:14)=denergy
 
-
         do ij=1,IP
             P(IB(ij)) = 0.0d0
         end do
         !print *, 'der', P(1:7)
-
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 
         if ( ((mod(i,10)==0) .or. (i==N))) then
@@ -115,8 +114,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
     end select
 
-    F   = energy
-    RES = YDAT(I) - F
+!    F   = energy
+!    RES = YDAT(I) - F
 
 
     !write(*,1000) 'iter, i, jp, DFT EMT RES',iteration,i, JP, YDAT(i), F, RES
@@ -126,7 +125,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     first_run=.false.
     RETURN
 
-    1000 format(2i4, 2f6.2, 7f6.2 / 20x,7f6.2)
+    1000 format(2i4, 2f12.6, 7f6.2 / 20x,7f6.2)
     1010 format(2i4,3f6.2,3E12.3,14f6.2)
 
 end subroutine MODEL

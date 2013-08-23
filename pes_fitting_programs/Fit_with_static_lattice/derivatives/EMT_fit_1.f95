@@ -88,6 +88,7 @@ program EMT_fit_1
 
     integer site(1000)
     real(8) :: energy ! energy output from emt subroutines
+    real(8), dimension(7) :: denergy
     real(8) :: e_ref ! reference energy with particle at infinity
     real(8) :: e_max ! maximum DFT to use in the fit
     real(8) :: sumsq ! used to calculate rms error
@@ -146,8 +147,8 @@ program EMT_fit_1
     particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.88.H.nml'
     lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.88.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.80.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.80.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.00.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -203,10 +204,10 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 2
+    rep = 1
     cell_b=(/2,2,4/)
-    control=5
-    e_aimd_max=0.00
+    control=200
+    e_aimd_max=0.50
 
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
@@ -382,8 +383,8 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,14,11,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 4 ! number of parameters held constant
+    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 5 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------

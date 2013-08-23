@@ -773,7 +773,6 @@ implicit none
         ds_l_l_ref(7,:) = -rn_ltemp*dsigma_ll(7,:)
 
 
-
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be substracted to account for the contributions
 ! that were included twice.
@@ -787,6 +786,7 @@ implicit none
         dvref_l_l_ref(5) = vref_l_ref/pars_l%V0
         dvref_l_l_ref(6) = - 12.0d0 * pars_l%V0 * sum(rn_ltemp *s_l_ref)
         dvref_l_l_ref(7) = -rtemp*sum(rn_ltemp*ds_l_l_ref(7,:))
+
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -827,6 +827,7 @@ implicit none
     dE_ref(6) = dV_ll(6) + 0.5d0*dvref_l_l_ref(6)
     dE_ref(7) = dEcoh_ref(7) + dV_ll(7) + 0.5d0*dvref_l_l_ref(7)
     E_dref = E_ref
+
 
 end subroutine emt_fit_init
 
@@ -936,6 +937,10 @@ implicit none
     kappadbeta_p = pars_p%kappa / beta
 
 ! 'coupling' parameters between p and l
+! In the original paper by Jacobsen et al (SS 366(1996),394), chi also contains
+! exponential contributions. We conclude that those exponential contributions
+! can be multiplied into the various no and are thus part of the fitting
+! parameters.
 ! derivatives: (1) derivative over nop, (2) over nol
     dchilp(1) = 1.0d0 / pars_l%n0         ! d chilp / d nop
     dchipl(2) = 1.0d0 / pars_p%n0         ! d chipl / d nol
@@ -969,6 +974,7 @@ implicit none
 
     xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
     xp = b * twelveth/ (1.0d0 + exp(acut*(rnnp-rcut)))
+
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -1007,6 +1013,8 @@ implicit none
     dgamma2p(7) = sum(r3temp1)*pars_p%kappa
 
 
+
+
 !------------------------------------------------------------------------------
 !                          INDIVIDUAL CONTRIBUTIONS
 !                          ========================
@@ -1040,7 +1048,7 @@ implicit none
     dEcoh_p = 0
     denergy = 0
 
-    do i = 1, n_l
+    do i = 1,n_l
         do j = i+1, n_l
 
         !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
@@ -1054,13 +1062,14 @@ implicit none
             r3temp(3) = r3temp(3) - (cell(3)*ANINT(r3temp(3)/cell(3)))
             r =  sqrt(sum(r3temp**2))
 
-
         !---------------------------THETA LATTICE------------------------------
         ! Theta enforces the cut-off together with gamma (see above). This
         ! function enacts cutoff by reducing contributions of atoms outside the
         ! cut-off to zero.
 
             theta = 1.0d0 / (1 + exp( acut * (r - rcut) ) )
+
+
 
 
 
@@ -1118,7 +1127,6 @@ implicit none
 
         theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
 
-
     !-------------------------------MIXED SIGMA--------------------------------
     ! Contributions of both particle and lattice to neutral sphere radius
     ! To fully include the cut-off, we correct them later by gamma.
@@ -1129,7 +1137,7 @@ implicit none
         rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
         sigma_pl = sigma_pl + rtemp
 
-        dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i) !Where's the derivative with respect to so?
+        dsigma_lp_p(1,i) = -(r-betas0_p)*sigma_lp(i)
 
         dsigma_pl_l(1) = dsigma_pl_l(1) - (r - betas0_l)*rtemp
         dsigma_pl_l(7) = pars_l%eta2*beta*sigma_pl
@@ -1139,18 +1147,17 @@ implicit none
 
         rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
         V_lp= V_lp + rtemp
-        dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p) ! muss hier nicht anders durch beta geteilt werden?
+        dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p)
         dV_lp_p(7) = dV_lp_p(7) + rtemp*pars_p%kappa
 
         rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
         V_pl = V_pl + rtemp
-        dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l) ! muss hier nicht anders durch beta geteilt werden?
+        dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l)
         dV_pl_l(7) = dV_pl_l(7) + rtemp*pars_l%kappa
 
 
-
-
     end do
+
 
 !-------------------------------CUT-OFF ENACTION-------------------------------
 ! Don't forget the gamma!
@@ -1175,7 +1182,6 @@ implicit none
         ! Derivative with respect to p
         dsigma_pl_p(1) = - sigma_pl*igamma1p*dgamma1p(1)
         dsigma_pl_p(7) = - sigma_pl*igamma1p*dgamma1p(7)
-
 
 ! The pair potential and its derivatives
     V_ll = V_ll * pars_l%V0 * igamma2l
@@ -1205,6 +1211,7 @@ implicit none
         dV_pl_p(5) = - V_pl/pars_p%V0
         dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
         dV_pl_p(7) = V_pl*igamma2p*dgamma2p(7)
+
 
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
@@ -1238,6 +1245,7 @@ implicit none
         ds_p_p(7) = - rtemp/sigma_pl*dsigma_pl_p(7)
 
 
+
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be substracted to account for the contributions
 ! that were included twice.
@@ -1268,7 +1276,6 @@ implicit none
         dvref_p_l(1) = rtemp*vref_p*ds_p_l(1)
         dvref_p_l(2) = rtemp*vref_p*ds_p_l(2)
         dvref_p_l(7) = rtemp*vref_p*ds_p_l(7)
-
 
 !------------------------------------------------------------------------------
 !                           CALCULATING THE ENERGY
@@ -1308,6 +1315,7 @@ implicit none
         dEcoh_p(7) = sum(pars_l%lambda*rn_ltemp*ds_l_p(7,:))&
                     +rtemp*pars_p%lambda*ds_p_p(7)
 
+
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 ! Overall energy
@@ -1335,6 +1343,7 @@ implicit none
     denergy(6) = 0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy(7) = dEcoh_p(7) &
                    + 0.5d0*(dV_lp_p(7)+dV_pl_p(7)+dvref_l_p(7)+dvref_p_p(7))
+
 
 end subroutine emt_fit
 

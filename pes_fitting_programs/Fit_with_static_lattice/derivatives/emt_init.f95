@@ -40,7 +40,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 ! other variables
     character(len=35)   :: position_of_l_and_p, fix_position
     character(len=35)    :: energy_l_and_p, fix_energy
-    integer             :: i, j,k,u,l, m,n,q, ios, start, ende, ende2,o,npts
+    integer             :: i, j,k,u,l, m,n,q, ios, start, ende, ende2,o,npts,s
     real(8)             :: c11,c12,c22, c33
     real(8)             :: temp, e_max
     real(8)             :: isqrt_2
@@ -54,13 +54,14 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8), dimension(:,:),allocatable    :: fix_p     ! array of h
     real(8), dimension(:,:,:), allocatable:: r_l      ! Position of lattice atoms
     real(8), dimension(:,:),allocatable   :: r_p        ! Position of particle
+    integer                        :: orc_nl_eq       ! original size of the lattice
 
     real(8), dimension(:), allocatable   :: E_fix    ! energy of fixed lattice geometires
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj010/XDATCAR_010.dat'
-    energy_l_and_p =      'data/traj010/analyse_010.out'
+    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    energy_l_and_p =      'data/traj005/analyse_005.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/hau111_plot.E.dat'
@@ -111,7 +112,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     d_matrix(3,3) = 1.0d0/c_matrix(3,3)
     d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
 
-    read(38,*) k, emptys
+    read(38,*) k, orc_nl_eq, emptys
 
     allocate(fix_l(3,k))
     read(38,*) fix_l
@@ -120,9 +121,9 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     fix_p=matmul(fix_p,transpose(d_matrix))
 
     do i=1,npts
-        if (fix_p(i,1) < 0.0d0) fix_p(i,1)=fix_p(i,1)+1.0d0
-        if (fix_p(i,2) < 0.0d0) fix_p(i,2)=fix_p(i,2)+1.0d0
-        if (fix_p(i,3) < 0.0d0) fix_p(i,3)=fix_p(i,3)+1.0d0
+        if (fix_p(i,1) < -0.001d0) fix_p(i,1)=fix_p(i,1)+1.0d0
+        if (fix_p(i,2) < -0.001d0) fix_p(i,2)=fix_p(i,2)+1.0d0
+        if (fix_p(i,3) < -0.001d0) fix_p(i,3)=fix_p(i,3)+1.0d0
     end do
 
     fix_l=matmul(d_matrix,fix_l)
@@ -198,11 +199,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 ! into rectangular cell so periodic boundary conditions will be happy :-)
 !    dfix = aimd_l(q,:,:) - fix_l
 
-
-
-
     ende2 = j-1
-    E_dft1=E_dft1+25.019988
+    E_dft1=E_dft1+25.019988 ! energy per l-atom
 
 
 !------------------------------------------------------------------------------
@@ -640,8 +638,24 @@ end if
 !    write(*,'(3f10.5)') transpose(d_p(84:85,:))
 !    close(888)
 
-!    open(999,file='reindeer.dat')
-!    write(999,'(3f10.5)') r_l(84,:,:)
+!s=3
+!    open(999,file='aimdreindeer.dat')
+!    write(999,*) ende
+!    write(999,*) cell_in(3)
+!    write(999,'(f10.5)') a_lat/sqrt_2
+!    write(999,'(f10.5)') celli(1,1)
+!    write(999,'(f10.5)') celli(1,2)
+!    write(999,'(f10.5)') celli(1,3)
+!    write(999,*) '100'
+
+!    write(999,'(3f10.5)') r_p(s,:)
+!    do i=1,n
+!    if (r_l(s,3,i) > 0.1) then
+!        write(999,'(3f10.5)') r_l(s,1,i), r_l(s,2,i), r_l(s,3,i)-celli(s,3)
+!    else
+!        write(999,'(3f10.5)') r_l(s,:,i)
+!    end if
+!    end do
 !    write(999,'(3f10.5)') r_l(85,:,:)
 !    write(*,*) 'aimd_p'
 !    write(*,'(3f10.5)') transpose(r_p(84:85,:))
@@ -653,7 +667,6 @@ end if
 
     x_all(:,:,1)=r_p
     x_all(:,:,2:k)=r_l
-
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!
