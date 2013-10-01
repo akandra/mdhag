@@ -60,8 +60,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj817/XDATCAR_817.dat'
+    energy_l_and_p =      'data/traj817/analyse_817.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/hau111_plot.E.dat'
@@ -112,7 +112,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     d_matrix(3,3) = 1.0d0/c_matrix(3,3)
     d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
 
-    read(38,*) k, orc_nl_eq, emptys
+    read(38,*) k, emptys
 
     allocate(fix_l(3,k))
     read(38,*) fix_l
@@ -164,6 +164,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     rewind(17)
     time = i
     ende=time-2
+!    time=602
+!    ende=time-2
 
     allocate(E_dft1(time))
     allocate(aimd_l(time,3,k))
@@ -201,7 +203,6 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 
     ende2 = j-1
     E_dft1=E_dft1+25.019988 ! energy per l-atom
-
 
 !------------------------------------------------------------------------------
 !                   HOW MUCH AIMD CONTRIBUTION DO WE WANT?

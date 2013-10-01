@@ -143,12 +143,12 @@ program EMT_fit_1
 
 ! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.88.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.88.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.88.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.109.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.109.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.109.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.00.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.90.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.90.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -204,10 +204,10 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 1
+    rep = 2
     cell_b=(/2,2,4/)
-    control=200
-    e_aimd_max=0.50
+    control=3
+    e_aimd_max=0.00
 
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
@@ -230,58 +230,8 @@ program EMT_fit_1
     write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
 
 
-!_________________________________________________________________________________________
-! At present, this section has become obsolete. However, if we want the program to go back
-! to just fitting the hydrogen energies, this section needs to be commented back in.
-!_________________________________________________________________________________________
-
-    !------------------------------------------------------------------------------------
-    ! READ THE PARTICLE POSITIONS AND DFT ENERGIES
-    !------------------------------------------------------------------------------------
-    ! FIRST FIND THE NUMBER OF POINTS BY READING TO EOF
-    !------------------------------------------------------------------------------------
-!    call open_for_read (8, particle_position_and_DFT_energies_fname)
-!    i=1
-!    do
-!        read(8,*,iostat=ios)
-!        if(ios <0) exit
-!        i=i+1
-!    end do
-
-!    rewind(8)
-!    npts = i-1
-!    print '((a),i4)','the number of particle positions and energies =',npts
-
-    !------------------------------------------------------------------------------------
-    ! NOW ALLOCATE ARRAYS TO STORE THE POINTS
-    !------------------------------------------------------------------------------------
-    ! now allocate arrays needed by NLLSQ
-    !allocate(X(npts,3)) ! particle coordinates - indepenet variables
-    !allocate(Y(npts)) ! DFT energies - depenent variables
-    !allocate(RRR(npts)) ! Array for communication with subroutine model
-    !allocate(site(npts)) ! Impact site
-
-    !------------------------------------------------------------------------------------
-    ! READ IN POINTS, KEEPING ONLY POINTS WITH ENERGY < E_MAX
-    !------------------------------------------------------------------------------------
-!    j=1
-!    e_max = 10 ! maximum energy to fit in eV
-
-!    do i=1, npts
-!        read(8,*) site(j), X(j,1), X(j,2), X(j,3), Y(j)
- !     write(*,*)i,j,site(j), X(j,1), X(j,2), X(j,3), Y(j)
-!        if (abs(Y(j))<=e_max) j=j+1
-!    end do
-!    close(8)
-
-!    npts=j-1
 
     call open_for_write(10, fit_results_fname)
-
-
-    !*********************************************************************************
-    !npts = 50 !************************** FOR TESTING **************************
-    !*********************************************************************************
 
     !------------------------------------------------------------------------------------------------------------------
     ! CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
@@ -319,29 +269,6 @@ program EMT_fit_1
         write(10,*)
     end if
 
-
-! old routine for only particle-fit
-!    k = npts
-!    if(k>0) then
-!        write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
-!        write(*,*) 'site X Y Z EMT DFT'
-!        Write(10,*) 'site X Y Z EMT DFT'
-!        sumsq = 0
-!        do i = 1, k
-!            call emt(a_lat, X(i,:), particle_pars, lattice_pars, energy)
-!            if(i<10) write( *,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
-!            write(10,'(1X, I2, 5F15.10)') site(i), X(i,1), X(i,2), X(i,3), energy, Y(i)
-!            write(7, '(1X, I2, 4F16.10)') site(i), X(i,1), X(i,2), X(i,3), energy
-
-!            sumsq=sumsq+(energy-Y(i))**2
-!        end do
-!        write(*,*)
-!        write(10,*)
-!        write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
-!        write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
-!        write(*,*)
-!        write(10,*)
-!    end if
 
 
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
@@ -383,15 +310,15 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,12,14,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 5 ! number of parameters held constant
+    IB = (/3,7,10,14,6,5,4,3,2,1,0,0,0,0/) ! indicies of parameters held constant
+    IP = 10 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 150
+    max_iterations = 100
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

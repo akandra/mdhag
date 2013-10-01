@@ -125,7 +125,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     first_run=.false.
     RETURN
 
-    1000 format(2i4, 2f12.6, 7f6.2 / 20x,7f6.2)
+    1000 format(2i4, 2f6.3, 7f6.2 / 20x,7f6.2)
     1010 format(2i4,3f6.2,3E12.3,14f6.2)
 
 end subroutine MODEL
