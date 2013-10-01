@@ -5,15 +5,17 @@ module emt_init_data
 
     integer :: time
     integer :: n_l
-    real(8), allocatable, dimension(:,:) :: celli
+    real(8), dimension(3,6) :: celli
 
 contains
 
-! COMMENT:  To improve the performance, it is better to redefine arrays with coordinates in the way (coordinate, point)
-!           to escape the non-contiguous array problem by passing a deferred-array to a subroutine
+! COMMENT:  To improve the performance, it is better to redefine arrays with coordinates
+!           in the way (coordinate, point) to escape the non-contiguous array problem
+!           by passing a deferred-array to a subroutine
 
 
-subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
+subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n_l, &
+                                                                    celli, x_all, E_all)
 !
 ! Purpose:
 !           Reads in the gold and hydrogen positions from AIMD
@@ -31,7 +33,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     integer, dimension(3), intent(in)   :: cell_in  ! contains cell geometry (2x2x4)
     integer, intent(out)                  :: time        ! different configuration and energies
     real(8),allocatable,dimension(:), intent(out)                 :: E_all    ! DFT energy
-    real(8),allocatable,dimension(:,:), intent(out)               :: celli
+    real(8),dimension(3,6), intent(out)               :: celli
     integer, intent(out)                :: n_l, l_aimd  ! number of l atoms, number of aimd contributions
     real(8), dimension(:,:,:), allocatable, intent(out) :: x_all
     integer , intent(in)                        :: control
@@ -40,7 +42,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 ! other variables
     character(len=35)   :: position_of_l_and_p, fix_position
     character(len=35)    :: energy_l_and_p, fix_energy
-    integer             :: i, j,k,u,l, m,n,q, ios, start, ende, ende2,o,npts,s
+    integer             :: i, j,k,u,l, m,n,q, ios, start, ende, ende2,o,npts,s,r
     real(8)             :: c11,c12,c22, c33
     real(8)             :: temp, e_max
     real(8)             :: isqrt_2
@@ -100,13 +102,13 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     end do
     close(39)
 
-
 ! Read in the geometry of the fixed lattice
     call open_for_read(38,fix_position)
     read(38,*) emptys
     read(38,*) empty
     read(38,*) c_matrix
 
+    d_matrix = 0.0d0
     d_matrix(1,1) = 1.0d0/c_matrix(1,1)
     d_matrix(2,2) = 1.0d0/c_matrix(2,2)
     d_matrix(3,3) = 1.0d0/c_matrix(3,3)
@@ -118,6 +120,17 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     read(38,*) fix_l
 
     close(38)
+
+! Celli contains both c_ and d_matrix for pbc-procedure
+    celli=0.0d0
+    celli(1:2,1:2)=c_matrix(1:2,1:2)*(2*rep+1)
+    celli(3,3)=c_matrix(3,3)
+
+    celli(1:2,4:5)=d_matrix(1:2,1:2)/(2*rep+1)
+    celli(3,6)=d_matrix(3,3)
+
+
+
     fix_p=matmul(fix_p,transpose(d_matrix))
 
     do i=1,npts
@@ -132,7 +145,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     do i=1,k
 !        if (fix_l(1,i) < 0.0d0) fix_l(1,i)=fix_l(1,i)+1.0d0
 !        if (fix_l(2,i) < 0.0d0) fix_l(2,i)=fix_l(2,i)+1.0d0
-        if (fix_l(3,i) < 0.0d0) fix_l(3,i)=fix_l(3,i)+1.0d0
+        if (fix_l(3,i) < -0.0001d0) fix_l(3,i)=fix_l(3,i)+1.0d0
     end do
 
 !---------------------------READ IN AIMD GEOMETRIES----------------------------
@@ -155,14 +168,13 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 !    c33=(cell_in(3)-1)*a_lat/sqrt(3.)+13
 
 ! According to the energy file, we define our time steps
-    i = 0
+    time = 0
     do
         read(17,*,iostat=ios)
         if(ios <0) exit
-        i=i+1
+        time=time+1
     end do
     rewind(17)
-    time = i
     ende=time-2
 !    time=602
 !    ende=time-2
@@ -186,23 +198,22 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
         read(18,*) aimd_l(j,:,:)
         read(18,*) aimd_p(j,:)
         temp = E_dft1(j-1)-E_dft1(j)
-        dfix(1:2,:) = aimd_l(j,1:2,:) - fix_l(1:2,:)
-        do q=1,k
-                aimd_l(j,1,q)=aimd_l(j,1,q) - ANINT(dfix(1,q))
-                aimd_l(j,2,q)=aimd_l(j,2,q) - ANINT(dfix(2,q))
-        end do
         if (abs(temp) >= e_aimd_max) j = j+1
     end do
     close(17)
     close(18)
 
-
-! If AIMD has slanted cell in direct coordinates, we need to transform the cell
-! into rectangular cell so periodic boundary conditions will be happy :-)
-!    dfix = aimd_l(q,:,:) - fix_l
-
     ende2 = j-1
-    E_dft1=E_dft1+25.019988 ! energy per l-atom
+    ! Place AIMD-atoms close to corresponding equilibrium positions
+     do i=1,ende2
+        dfix = aimd_l(i,:,:) - fix_l
+        do q=1,k
+               aimd_l(i,1,q)=aimd_l(i,1,q) - ANINT(dfix(1,q))
+               aimd_l(i,2,q)=aimd_l(i,2,q) - ANINT(dfix(2,q))
+               aimd_l(i,3,q)=aimd_l(i,3,q) - ANINT(dfix(3,q))
+        end do
+    end do
+   E_dft1=E_dft1+25.019988 ! energy per l-atom
 
 !------------------------------------------------------------------------------
 !                   HOW MUCH AIMD CONTRIBUTION DO WE WANT?
@@ -294,374 +305,38 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 ! otherwise, rep = 1 would not make much sense.
 !
     temp=cell_in(1)*cell_in(2)*cell_in(3)
-    if (rep==1) then
-        n = temp*8 + temp
-    elseif (rep==2) then
-        n = temp*(8 + 16) + temp
-    elseif (rep==3) then
-        n = temp*(8 + 16 + 24) + temp
-    elseif (rep==0) then
-        n= temp
-    end if
+    n_l=temp*(2*rep+1)**2
 
-    n_l=n
 ! allocate arrays
-    allocate(d_l(ende,3,n))
+    allocate(d_l(ende,3,n_l))
     d_l=0.d0
 
-if (rep>0) then
 ! Translation of the entire story
     do q=1, ende
-        ! Set the running parameters
         i = 1
-        k = temp
-        l = 1
-        j = temp
-        m = temp
-
-        ! keep identiy
-        d_l(q,:,i:k) = read_l(q,:,l:j)
-
-        ! in x
-        i=i+m
-        k=k+m
-        d_l(q,1,i:k)=read_l(q,1,l:j)+1
-        d_l(q,2,i:k)= read_l(q,2,l:j)
-        d_l(q,3,i:k)= read_l(q,3,l:j)
-
-        i=i+m
-        k=k+m
-        d_l(q,1,i:k)=read_l(q,1,l:j)-1
-        d_l(q,2,i:k)= read_l(q,2,l:j)
-        d_l(q,3,i:k)= read_l(q,3,l:j)
-
-
-        ! in y
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,2,i:k)=read_l(q,2,l:j)+1
-
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,2,i:k)=read_l(q,2,l:j)-1
-
-
-        ! in x and y
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,1,i:k)=read_l(q,1,l:j)+1
-        d_l(q,2,i:k)=read_l(q,2,l:j)-1
-
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,1,i:k)=read_l(q,1,l:j)-1
-        d_l(q,2,i:k)=read_l(q,2,l:j)+1
-
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,1,i:k)=read_l(q,1,l:j)+1
-        d_l(q,2,i:k)=read_l(q,2,l:j)+1
-
-        i=i+m
-        k=k+m
-        d_l(q,:,i:k)=read_l(q,:,l:j)
-        d_l(q,1,i:k)=read_l(q,1,l:j)-1
-        d_l(q,2,i:k)=read_l(q,2,l:j)-1
-
-
-    ! Tranlation for rep=2
-        if (rep .gt. 1) then
-        ! in x
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-
-            ! in y
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-
-        ! in x and y
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+1
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-1
-
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-1
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+1
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+1
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+1
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-1
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-1
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-        end if
-
-! Translation for rep=3
-        if (rep .gt. 2) then
-        !a =3
-        ! in x
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-
-            ! in y
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-
-
-            ! in x and y
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-1
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+1
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-
-
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+1
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-1
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-
-
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+2
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+3
-            d_l(q,2,i:k)=read_l(q,2,l:j)+1
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+1
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)+2
-            d_l(q,2,i:k)=read_l(q,2,l:j)+3
-
-
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-2
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-3
-            d_l(q,2,i:k)=read_l(q,2,l:j)-1
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-1
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-
-            i=i+m
-            k=k+m
-            d_l(q,:,i:k)=read_l(q,:,l:j)
-            d_l(q,1,i:k)=read_l(q,1,l:j)-2
-            d_l(q,2,i:k)=read_l(q,2,l:j)-3
-
-        end if
-
+        do r =-rep, rep
+            do s=-rep, rep
+                ! Set the running parameters
+                d_l(q,1,i:i+temp-1) = read_l(q,1,:)+r
+                d_l(q,2,i:i+temp-1) = read_l(q,2,:)+s
+                d_l(q,3,i:i+temp-1) = read_l(q,3,:)
+                i = i+temp
+           end do
+        end do
     end do
-end if
-    if (rep==0) then
-        d_l = read_l
 
-    end if
 
 ! allocate important arrays
-    allocate(r_l(ende,3,n))
+    allocate(r_l(ende,3,n_l))
     allocate(r_p(ende,3))
-    allocate(celli(ende,3))
 
      do q=1,ende
             r_l(q,:,:) = matmul(c_matrix,d_l(q,:,:))
      end do
      r_p = matmul(d_p,transpose(c_matrix))
 
-    do q=1,ende
-        celli(q,1)=c_matrix(1,1)*(0.5+rep)*cell_in(1)
-        celli(q,2)=c_matrix(2,2)*(0.5+rep)*cell_in(2)
-        celli(q,3)=c_matrix(3,3)
-    end do
-
-!    open(888,file='rudolf.dat')
-!    write(888,'(3f10.5)') d_l(84,:,:)
-!    write(888,'(3f10.5)') d_l(85,:,:)
-!    write(*,*) 'aimd_p'
-!    write(*,'(3f10.5)') transpose(d_p(84:85,:))
-!    close(888)
-
-!s=3
-!    open(999,file='aimdreindeer.dat')
-!    write(999,*) ende
-!    write(999,*) cell_in(3)
-!    write(999,'(f10.5)') a_lat/sqrt_2
-!    write(999,'(f10.5)') celli(1,1)
-!    write(999,'(f10.5)') celli(1,2)
-!    write(999,'(f10.5)') celli(1,3)
-!    write(999,*) '100'
-
-!    write(999,'(3f10.5)') r_p(s,:)
-!    do i=1,n
-!    if (r_l(s,3,i) > 0.1) then
-!        write(999,'(3f10.5)') r_l(s,1,i), r_l(s,2,i), r_l(s,3,i)-celli(s,3)
-!    else
-!        write(999,'(3f10.5)') r_l(s,:,i)
-!    end if
-!    end do
-!    write(999,'(3f10.5)') r_l(85,:,:)
-!    write(*,*) 'aimd_p'
-!    write(*,'(3f10.5)') transpose(r_p(84:85,:))
-!    close(999)
-
+! Sascha, you have commented that you understand what we did here and that it s right.
+! Dont ask stupid questions, just ACCEPT it.
     ! Write the overall array that contains both H and Au positions
     k=n_l+1
     allocate(x_all(ende,3,k))

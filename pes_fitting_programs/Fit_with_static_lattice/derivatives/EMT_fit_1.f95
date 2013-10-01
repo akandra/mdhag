@@ -133,15 +133,6 @@ program EMT_fit_1
     particle_position_and_DFT_energies_fname= 'data/hau111_plot.E.dat'
 
 
-! These paths are for linux, they probably won't work under windows.
-!   fit_results_fname = 'data/parameters_and_fit_results/f119_der.02.NLLSQ.out'
-
-!    particle_nml_in = 'data/parameters_and_fit_results/f119.00.H.nml'
-!    particle_nml_out = 'data/parameters_and_fit_results/f119_der.02.H.nml'
-!    lattice_nml_in = 'data/parameters_and_fit_results/f119.00.Au.nml'
-!    lattice_nml_out = 'data/parameters_and_fit_results/f119_der.02.Au.nml'
-
-! Strömqvist
 ! Strömqvist parameters modified in so, so they'll give a good fit.
     fit_results_fname = 'data/parameters_and_fit_results/stroem_der.109.NLLSQ.out'
     particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.109.H.nml'
@@ -168,7 +159,6 @@ program EMT_fit_1
     write(7,nml=particle_pars_list)
 
 
-
     !------------------------------------------------------------------------------------------------------------------
     ! READ LATTICE DEFINITION PARAMETERS
     !------------------------------------------------------------------------------------------------------------------
@@ -185,7 +175,8 @@ program EMT_fit_1
         !write(7,*)r1(1,i), r1(2,i), r1(3,i)
     end do readr0lat
     a_lat = nn0*sqrt_2
-    call gold_pos(r1, n_l_in, r0_lat, cell_0)
+
+!    call gold_pos(r1, n_l_in, r0_lat, cell_0)
 
     ! routine gets the gold positions set in case they differ from positions of reference
     ! system
@@ -209,27 +200,13 @@ program EMT_fit_1
     control=3
     e_aimd_max=0.00
 
-
-    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, celli, x_all, E_all)
-    X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
-    Y(1:time)=E_all(1:time)
+    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, &
+                                                                celli, x_all, E_all)
     print *, 'l_aimd', l_aimd
 
-!   stop
-!
 
-
-
-    !------------------------------------------------------------------------------------
-    ! INITIALIZE EMT POTENTIAL SUBROUTINE AND CALCULATE REFERENCE ENERGY
-    !------------------------------------------------------------------------------------
-    print *, 'a_lat', a_lat
-
-    call emt_init(a_lat, cell_0, n_l_in, r0_lat, particle_pars, lattice_pars, E_ref)
-    write(*,'(//(a),F15.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
-    write(7,'(//(a),F9.5,(a)//)') 'the reference energy = ',E_ref, ' eV'
-
-
+    X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
+    Y(1:time)=E_all(1:time)
 
     call open_for_write(10, fit_results_fname)
 
@@ -249,12 +226,13 @@ program EMT_fit_1
         allocate(r_p(time,3))
         r_l(1,:,:)=x_all(1,:,2:n_l+1)
         r_p(1,:)=x_all(1,:,1)
-        call emt_init(a_lat, celli(1,:), n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
+        call emt_init(a_lat, celli, n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
+
 
         do q=1,time
             r_l(q,:,:)=x_all(q,:,2:n_l+1)
             r_p(q,:)=x_all(q,:,1)
-            call emt(a_lat, celli(q,:), r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
+            call emt(a_lat, celli, r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
 
             if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
             write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
@@ -268,8 +246,6 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-
-
 
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
 
@@ -362,6 +338,7 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     write (11,nml=particle_pars_list)
     write (12,nml=lattice_pars_list)
 
+    deallocate(r1)
 
     1000 format(2x,a15,2x,a2,7F7.3)
     1010 format(2x,a15,4x,7F7.3,/,19x,7f7.3)
