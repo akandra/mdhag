@@ -134,12 +134,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.109.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.109.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.109.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.112.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.112.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.112.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.90.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.90.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.110.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.110.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -195,7 +195,7 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 2
+    rep = 1
     cell_b=(/2,2,4/)
     control=3
     e_aimd_max=0.00
@@ -286,15 +286,15 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,14,6,5,4,3,2,1,0,0,0,0/) ! indicies of parameters held constant
-    IP = 10 ! number of parameters held constant
+    IB = (/3,7,10,14,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 5 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 100
+    max_iterations = 200
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

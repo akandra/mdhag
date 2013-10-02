@@ -24,6 +24,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 ! ====          ======          ===================
 ! 01.07.2013    S. M. Janke     original
 ! 05.08.2013    Sascha&Svenja   fix dft read in
+! 01.10.2013    Sascha&Svenja   modified celli
 !
     implicit none
 
@@ -203,7 +204,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     close(17)
     close(18)
 
-    ende2 = j-1
+    ende2 = j-3!1
     ! Place AIMD-atoms close to corresponding equilibrium positions
      do i=1,ende2
         dfix = aimd_l(i,:,:) - fix_l
