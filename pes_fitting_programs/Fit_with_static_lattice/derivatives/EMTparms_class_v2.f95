@@ -239,8 +239,6 @@ implicit none
 end subroutine emt_init
 
 
-
-!subroutine emt (cell, n_l, r0_lat, r_part, pars_p, pars_l, energy)
 subroutine emt (a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy)
 !
 ! Purpose:

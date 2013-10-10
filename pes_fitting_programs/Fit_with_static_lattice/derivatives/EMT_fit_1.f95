@@ -134,12 +134,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.112.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.112.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.112.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.127.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.127.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.127.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.110.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.110.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.119.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.119.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -195,10 +195,10 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 1
+    rep = 2
     cell_b=(/2,2,4/)
-    control=3
-    e_aimd_max=0.00
+    control=2
+    e_aimd_max=0.0
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, &
                                                                 celli, x_all, E_all)
@@ -294,7 +294,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 200
+    max_iterations = 100
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
