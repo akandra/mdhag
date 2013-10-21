@@ -74,7 +74,7 @@ implicit none
 
 ! For the reference energy
     real(8)                 :: rn_ltemp(spec_l%n), r3temp1(3), rtemp1
-    real(8), dimension(spec_l%n) :: f_lx, f_l , s_l_ref, pj_l
+    real(8), dimension(spec_l%n) :: f_lx, f_l , s_l_ref, p_l
     real(8)                 :: vref_l_ref
 
 ! Declaration for Morse Potential
@@ -84,7 +84,7 @@ implicit none
     real(8) :: gij, gip, gtemp, Qij, f_p
     real(8), dimension(3,spec_l%n*(spec_l%n-1)/2) :: nij, gij1
     real(8), dimension(3,spec_l%n) :: nip, force_l, dV_lp, dV_pl
-    real(8), dimension(3,spec_l%n) :: dvref_l, dvref_p, sij
+    real(8), dimension(3,spec_l%n) :: dvref_l, dvref_p
     real(8), dimension(3) ::force_p, gpi
 
 
@@ -164,7 +164,6 @@ select case (spec_l%pot)
         dV_pl=0.0d0
         dvref_l=0.0d0
         dvref_p=0.0d0
-        sij= 0.0d0
 
 
     case('morse')
@@ -230,11 +229,6 @@ end select
                 sigma_ll(j) = sigma_ll(j) + rtemp
 
                 gij = -gij * rtemp
-
-            ! First sequence to Reference energy for lattice. sij is that part
-            ! that depends on both indices.
-                sij(:,i) = sij(:,i) + gij * nij(:,k+j-i)
-                sij(:,j) = sij(:,j) - gij * nij(:,k+j-i)
 
             !-----------------------PAIR POTENTIAL LATTICE-------------------------
             ! For the lattice only.
@@ -316,7 +310,7 @@ end select
 
             rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )
             sigma_pl = sigma_pl + rtemp
-            gpi = gpi + (gtemp+pars_l) * rtemp * nip(:,i)
+            gpi = gpi + (gtemp+pars_l(1)) * rtemp * nip(:,i)
 
 
 
@@ -364,7 +358,6 @@ select case(spec_l%pot)
         s_l_exp = sigma_ll
         dV_lp=dV_lp*voldegamma2l*chilp
         dV_pl=dV_pl*vopdegamma2p*chipl
-        sij = sij * igamma1l
         force_l = force_l*voldegamma2l
 
 
@@ -401,9 +394,9 @@ select case(spec_l%pot)
     ! The neutral sphere radius is the radius in which the entire density of the
     ! atom is included
         s_l = -log( s_l_exp * twelfth ) / ( beta * pars_l(1))
-        s_l_exp=1.0d0 / (s_l_exp* beta * pars_l(1))
+        p_l=1.0d0 / (s_l_exp* beta * pars_l(1))
 
-        f_lx = s_l*s_l_exp
+        f_l = s_l*p_l
 
 
 
@@ -415,6 +408,7 @@ select case(spec_l%pot)
     rtemp = 12.0d0 * pars_l(5)
     vref_l =  rtemp * sum( s_l_exp )
     rtemp = -rtemp * pars_l(6)
+    p_l= p_l * s_l_exp * rtemp
 
     !------------------------------------------------------------------------------
     !                           CALCULATING THE ENERGY
@@ -434,13 +428,13 @@ select case(spec_l%pot)
     !-------------------------------CALCULATE Fi---------------------------------
 
     ! fi/f_l is the contribution to Ecoh_l that depends only on one index
-    ! pj_l is the contribution to the reference energy that depends on one index
-    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_lx
-    pj_l = f_lx * pars_l(6)
+    ! pj is the contribution to the reference energy that depends on one index
+    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_l - 0.50d0*p_l
 
     gij1 = gij1 * igamma1l
     nip = nip * igamma1l * chilp
     gpi = gpi * igamma1p * chipl * f_p
+
     k = 0
     do i= 1, spec_l%n
         do j = i+1, spec_l%n
@@ -448,9 +442,8 @@ select case(spec_l%pot)
             force_l(:,i) = force_l(:,i) + r3temp
             force_l(:,j) = force_l(:,j) - r3temp
 
-
         ! Summation over pairwise potentials
-!        force_l(:,i)= force_l(:,i) - 0.50d0 * (dV_lp(:,i) + dV_pl(:,i))
+        force_l(:,i)= force_l(:,i) - 0.50d0 * (dV_lp(:,i) + dV_pl(:,i))
 
         end do
         k=k+spec_l%n-i
@@ -465,6 +458,7 @@ select case(spec_l%pot)
     ! Summation over all contributions.
 
     energy = energy+Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
+    write(*,'(3e15.5)') force_l
 
 
 stop
