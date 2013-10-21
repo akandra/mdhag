@@ -21,7 +21,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: iteration
     real(8)             :: energy,  E_dref
     real(8), dimension(14):: denergy
-    real(8), dimension(7) ::dE_ref
+    real(8), dimension(14) ::dE_ref
+    !real(8), dimension(7) ::dE_ref
     real(8)             :: Enew,dEnew(14)
 
     logical, save       :: first_run=.true.
@@ -66,8 +67,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         r_p(I,:)=XDAT(I,:,1)
         call emt_init(a_lat, celli, n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
         call emt(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
-!        call emt_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
-! Get emt init implemented here and get it out of energy.
 
         energy= energy-Eref
 
@@ -90,7 +89,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
         F   = energy
         RES = YDAT(I) - F
-        denergy(8:14) = denergy(8:14)-dE_ref
+!        denergy(8:14) = denergy(8:14)-dE_ref
+!        P(1:14)=denergy
+        denergy = denergy-dE_ref
         P(1:14)=denergy
 
         do ij=1,IP

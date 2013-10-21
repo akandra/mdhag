@@ -63,8 +63,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj817/XDATCAR_817.dat'
-    energy_l_and_p =      'data/traj817/analyse_817.out'
+    position_of_l_and_p = 'data/traj825/XDATCAR_825.dat'
+    energy_l_and_p =      'data/traj825/analyse_825.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/hau111_plot.E.dat'
@@ -204,7 +204,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     close(17)
     close(18)
 
-    ende2 = j-3!1
+    ende2 = j-1
     ! Place AIMD-atoms close to corresponding equilibrium positions
      do i=1,ende2
         dfix = aimd_l(i,:,:) - fix_l

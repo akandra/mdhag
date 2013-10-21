@@ -50,7 +50,7 @@ implicit none
     real(8) :: rcut, rr, acut           ! values to calculate cut-off
     real(8) :: igamma1p, igamma2p       ! inverse gamma for particle
     real(8) :: igamma1l, igamma2l      ! inverse gamma for lattice atoms
-    real(8) :: voldgamma2l
+    real(8) :: voldegamma2l, vopdegamma2p
     real(8) :: theta                    ! variable for cut-off calculation
     real(8) :: chilp, chipl             ! mixing between lattice (l) and particle (p)
     real(8) :: sigma_pl                 ! mixed contribution to neutral sphere,
@@ -74,7 +74,7 @@ implicit none
 
 ! For the reference energy
     real(8)                 :: rn_ltemp(spec_l%n), r3temp1(3), rtemp1
-    real(8), dimension(spec_l%n) :: f_l , s_l_ref
+    real(8), dimension(spec_l%n) :: f_lx, f_l , s_l_ref, pj_l
     real(8)                 :: vref_l_ref
 
 ! Declaration for Morse Potential
@@ -82,8 +82,9 @@ implicit none
 
 ! Derivatives EMT
     real(8) :: gij, gip, gtemp, Qij, f_p
-    real(8), dimension(3,spec_l%n*(spec_l%n-1)/2) :: nij
-    real(8), dimension(3,spec_l%n) :: nip, force_l
+    real(8), dimension(3,spec_l%n*(spec_l%n-1)/2) :: nij, gij1
+    real(8), dimension(3,spec_l%n) :: nip, force_l, dV_lp, dV_pl
+    real(8), dimension(3,spec_l%n) :: dvref_l, dvref_p, sij
     real(8), dimension(3) ::force_p, gpi
 
 
@@ -124,7 +125,7 @@ select case (spec_l%pot)
         r3temp = rnnl-betas0_l
         igamma1l = 1.0d0 / sum(xl*exp(-pars_l(1) * r3temp))
         igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
-        voldgamma2l = pars_l(5)*igamma2l
+        voldegamma2l = pars_l(5)*igamma2l
     ! in case of alloy
 
         if (spec_p%pot == 'emt') then
@@ -143,7 +144,7 @@ select case (spec_l%pot)
             r3temp = rnnp-betas0_p
             igamma1p = 1.0d0 / sum(xp*exp(-pars_p(1) * r3temp))
             igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
-!            vopdgamma2p = pars_p(5)*igamma2p
+            vopdegamma2p = pars_p(5)*igamma2p
 
         end if
 
@@ -159,6 +160,12 @@ select case (spec_l%pot)
         gpi= 0.0d0
         force_l = 0.0d0
         force_p = 0.0d0
+        dV_lp=0.0d0
+        dV_pl=0.0d0
+        dvref_l=0.0d0
+        dvref_p=0.0d0
+        sij= 0.0d0
+
 
     case('morse')
         ! Hier gibt es nichts zu sehen. Bitte weitergehen.
@@ -189,9 +196,13 @@ end select
 
             r3temp=matmul(celli(1:3,1:3),r3temp)
 
+            ! Length of the vector rjk, e.i.: distance between atom j and k
             r =  sqrt(sum(r3temp**2))
+            ! drjk/dri; unit vector that points into the direkt of the vector
+            ! between j and k.
             r3temp = r3temp / r
             nij(:, k+j-i) = r3temp
+
 
             select case (spec_l%pot)
             case('emt')
@@ -220,6 +231,10 @@ end select
 
                 gij = -gij * rtemp
 
+            ! First sequence to Reference energy for lattice. sij is that part
+            ! that depends on both indices.
+                sij(:,i) = sij(:,i) + gij * nij(:,k+j-i)
+                sij(:,j) = sij(:,j) - gij * nij(:,k+j-i)
 
             !-----------------------PAIR POTENTIAL LATTICE-------------------------
             ! For the lattice only.
@@ -230,12 +245,17 @@ end select
                 rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
                 V_ll = V_ll + rtemp
 
-                Qij = Qij * rtemp *voldgamma2l
+            ! Since the derivative of V_ll is one of the additive parts to the
+            ! force, this derivative is written directly into the force
+            ! Multiplication with vol and igamma2l outside of loop
+                Qij = Qij * rtemp
                 force_l(:,i) = force_l(:,i) + Qij * nij(:,k+j-i)
                 force_l(:,j) = force_l(:,j) - Qij * nij(:,k+j-i)
 
 
-                nij(:,k+j-i)=nij(:,k+j-i)*gij
+
+            ! We need nij for the calculation of the reference energy.
+                gij1(:,k+j-i)=nij(:,k+j-i)*gij
 
             case('morse')
 
@@ -251,7 +271,10 @@ end select
             end select
 
         end do
+        ! Here, we perform operations that we need to either go back into the
+        ! previous loop (like advancing variable k)
         k=k+spec_l%n-i
+
 
     !-----------------PERIODIC BOUNDERY CONDITIONS PARTICLE--------------------
 
@@ -279,8 +302,7 @@ end select
 
             rtemp = exp( acut * (r - rcut) )
             theta = 1.0d0 / (1.0d0 + rtemp )
-            gip =   theta * acut * rtemp + pars_p(1)
-            gtemp =   theta * acut * rtemp + pars_l(1)
+            gtemp =   theta * acut * rtemp
 
 
         !-------------------------------MIXED SIGMA--------------------------------
@@ -290,11 +312,11 @@ end select
 
             rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )
             sigma_lp(i) = rtemp
-            gip = -gip * rtemp
+            gip = -(gtemp+pars_p(1)) * rtemp
 
             rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )
             sigma_pl = sigma_pl + rtemp
-            gpi = gpi + gtemp * rtemp * nip(:,i)
+            gpi = gpi + (gtemp+pars_l) * rtemp * nip(:,i)
 
 
 
@@ -303,8 +325,16 @@ end select
             rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
             V_lp= V_lp + rtemp
 
+            ! I'm not quite sure in this part. It might be a good idea to check the
+            ! derivatives
+            dV_lp(:,i) = (gtemp + kappadbeta_p)*rtemp*nip(:,i)
+
             rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
             V_pl = V_pl + rtemp
+            ! I think the sum has to be added with - since the indices in nip have
+            ! to be
+            dV_pl(:,i) = (gtemp+kappadbeta_l)*rtemp*nip(:,i)
+
 
             nip(:,i)=nip(:,i)*gip
 
@@ -330,10 +360,12 @@ select case(spec_l%pot)
     ! Don't forget the gamma!
 
         sigma_ll = sigma_ll * igamma1l
-        V_ll = V_ll * voldgamma2l
+        V_ll = V_ll * voldegamma2l
         s_l_exp = sigma_ll
-        write(*,'(3f10.5)') force_l
-        stop
+        dV_lp=dV_lp*voldegamma2l*chilp
+        dV_pl=dV_pl*vopdegamma2p*chipl
+        sij = sij * igamma1l
+        force_l = force_l*voldegamma2l
 
 
     if (spec_p%pot == 'emt') then
@@ -348,8 +380,6 @@ select case(spec_l%pot)
         V_pl = V_pl * rtemp
 
         s_l_exp = sigma_ll+ chilp * sigma_lp
-
-
 
         ! Neutral Sphere Radius (s.b.)
         s_p  = -log( sigma_pl * chipl * twelfth) / ( beta * pars_p(1))
@@ -373,7 +403,8 @@ select case(spec_l%pot)
         s_l = -log( s_l_exp * twelfth ) / ( beta * pars_l(1))
         s_l_exp=1.0d0 / (s_l_exp* beta * pars_l(1))
 
-        f_l = s_l*s_l_exp
+        f_lx = s_l*s_l_exp
+
 
 
    !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
@@ -402,17 +433,24 @@ select case(spec_l%pot)
 
     !-------------------------------CALCULATE Fi---------------------------------
 
-    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_l
+    ! fi/f_l is the contribution to Ecoh_l that depends only on one index
+    ! pj_l is the contribution to the reference energy that depends on one index
+    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_lx
+    pj_l = f_lx * pars_l(6)
 
-    nij = nij * igamma1l
+    gij1 = gij1 * igamma1l
     nip = nip * igamma1l * chilp
     gpi = gpi * igamma1p * chipl * f_p
     k = 0
     do i= 1, spec_l%n
         do j = i+1, spec_l%n
-            r3temp = nij(:,k+j-i)  * (f_l(i) + f_l(j))
+            r3temp = gij1(:,k+j-i)  * (f_l(i) + f_l(j))
             force_l(:,i) = force_l(:,i) + r3temp
             force_l(:,j) = force_l(:,j) - r3temp
+
+
+        ! Summation over pairwise potentials
+!        force_l(:,i)= force_l(:,i) - 0.50d0 * (dV_lp(:,i) + dV_pl(:,i))
 
         end do
         k=k+spec_l%n-i
@@ -422,7 +460,7 @@ select case(spec_l%pot)
         force_p      = force_p       - r3temp
    end do
 
-write(*,'(3e15.5)') gpi
+
     !-------------------------------OVERALL ENERGY---------------------------------
     ! Summation over all contributions.
 

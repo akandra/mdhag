@@ -134,12 +134,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.127.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.127.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.127.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.128.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.128.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.128.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.119.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.119.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.127.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.127.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -166,14 +166,6 @@ program EMT_fit_1
     read(8,*) n_l_in
     read(8,*) n_lay0
     read(8,*) nn0
-    read(8,*) cell_0(1)
-    read(8,*) cell_0(2)
-    read(8,*) cell_0(3)
-    allocate(r1(3,n_l_in)) ! allocate array to hold lattice coordinates
-    readr0lat: do i = 1, n_l_in
-        read(8,*) r1(1,i), r1(2,i), r1(3,i)
-        !write(7,*)r1(1,i), r1(2,i), r1(3,i)
-    end do readr0lat
     a_lat = nn0*sqrt_2
 
 !    call gold_pos(r1, n_l_in, r0_lat, cell_0)
@@ -197,8 +189,8 @@ program EMT_fit_1
 
     rep = 2
     cell_b=(/2,2,4/)
-    control=2
-    e_aimd_max=0.0
+    control=1
+    e_aimd_max=0.00
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, &
                                                                 celli, x_all, E_all)
@@ -234,9 +226,15 @@ program EMT_fit_1
             r_p(q,:)=x_all(q,:,1)
             call emt(a_lat, celli, r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
 
+
             if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
             write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
             write(7, '(1X, 4F16.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref
+            if (q > 483) then
+            !write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
+            write(*,'(f20.10)') energy/400
+
+            end if
             sumsq=sumsq+(energy-E_ref-Y(q))**2
         end do
         write(*,*)
@@ -246,7 +244,7 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-
+stop
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
 
 !stop
@@ -286,15 +284,15 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,14,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 5 ! number of parameters held constant
+    IB = (/3,7,10,14,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 4 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 100
+    max_iterations = 10
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
