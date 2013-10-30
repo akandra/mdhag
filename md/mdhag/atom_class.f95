@@ -13,12 +13,27 @@ module atom_class
     real(8), parameter          :: isqrt2   = 0.70710678118d0
     real(8), parameter          :: sqrt3    = 1.73205080757d0
     real(8), parameter          :: pi       = 3.14159265359d0
+    ! Unit conversion constants:
+!
+! The Basic Units are:
+!           Length : Angström
+!           Time   : fs
+!           Energy : eV
+!     Thus, the derived Units are:
+!           Mass   : eV fs^2 / A^2 = 1/103.6382 amu
+   real(8), parameter          :: amu2mass = 103.6382d0
+
 
 
     type atom
-        real(8), dimension(3)    :: r=0.0d0  ! position
-        real(8), dimension(3)    :: v=0.0d0  ! velocity
-        real(8), dimension(3)    :: f=0.0d0  ! force
+        real(8), dimension(3)    :: r=0.0d0     ! position
+        real(8), dimension(3)    :: v=0.0d0     ! velocity
+        real(8), dimension(3)    :: vp=0.0d0     ! predicted velocity
+        real(8), dimension(3)    :: a=0.0d0     ! acceleration
+        real(8), dimension(3)    :: aalt=0.0d0  !  old acceleration
+        real(8), dimension(3)    :: auralt=0.0d0  !  old acceleration
+
+        real(8), dimension(3)    :: f=0.0d0     ! force
     end type atom
 
     type species
@@ -27,6 +42,7 @@ module atom_class
         integer                     :: n        ! Number of atoms
         character(len=10)           :: pot      ! Name of Potential
         integer                     :: n_pars   ! Number of Parameters
+        integer                     :: fric     ! Type of Friction
     end type species
 
 

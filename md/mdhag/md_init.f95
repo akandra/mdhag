@@ -7,12 +7,15 @@ module md_init
 !           2. Construct simulations cell (that is, multiply 1. as often as necessary), depending
 !                on the form of the read-in conf.
 !           3. Assign velocities to atoms (i.e.: get temperature)
+
     use atom_class
     use open_file
     implicit none
     save
 
     real(8) :: a_lat
+    real(8) :: step
+    integer :: nsteps
     real(8),dimension(3,6) :: celli
     type(species) :: spec_l, spec_p
     real(8), dimension(:), allocatable :: pars_l, pars_p
@@ -51,6 +54,7 @@ subroutine simbox_init(teilchen,slab)
     integer, dimension(3)   :: celldim=(/2,2,4/)  ! contains cell geometry (2x2x4)
     integer                 :: rep=2      ! Repetitions of lattice (1,2,3)
     character(len=7)        :: confname='POSCAR'
+    integer                 :: fric_l, fric_p ! 0: no friction, 1: fixed coefficent
 ! other variables
     character(len=100)      :: buffer, label
     character(len=10):: name_p, name_l
@@ -60,12 +64,13 @@ subroutine simbox_init(teilchen,slab)
     integer :: pos1, ios = 0, line = 0
     real(8) :: temp
     real(8), dimension(3,3) :: c_matrix, d_matrix
-    integer :: i, j, k
+    integer :: i, j, k,l
     integer :: n_l0, itemp
     character(len=1) coord_sys
     real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, pos_l, pos_p
     integer :: n_l, n_p=1
     integer :: npars_p, npars_l
+
 
 
 
@@ -96,10 +101,14 @@ subroutine simbox_init(teilchen,slab)
             buffer = buffer(pos1+1:)
 
             select case (label)
+            case('step')
+                read(buffer,*,iostat=ios) step
+            case('nsteps')
+                read(buffer,*,iostat=ios) nsteps
             case ('particle')
-                read(buffer, *, iostat=ios) name_p, mass_p, pot_p, npars_p, key_p
+                read(buffer, *, iostat=ios) name_p, mass_p, pot_p, npars_p, key_p, fric_p
             case ('lattice')
-                read(buffer, *, iostat=ios) name_l, mass_l, pot_l, npars_l, key_l
+                read(buffer, *, iostat=ios) name_l, mass_l, pot_l, npars_l, key_l, fric_l
             case ('celldim')
                 read(buffer, *, iostat=ios) celldim
             case ('rep')
@@ -118,7 +127,7 @@ subroutine simbox_init(teilchen,slab)
                 read(38,*) start_p
 
            case default
-                print *, 'Skipping invalid label at line', line
+!                print *, 'Skipping invalid label at line', line, label
             end select
         end if
     end do
@@ -167,8 +176,8 @@ subroutine simbox_init(teilchen,slab)
 ! We have decided to replicate quadratically around the original lattice,
 ! otherwise, rep = 1 would not make much sense.
 !
-    itemp=celldim(1)*celldim(2)*celldim(3)
-    n_l=itemp*(2*rep+1)**2
+    itemp=celldim(1)*celldim(2)
+    n_l=itemp*celldim(3)*(2*rep+1)**2
 
 ! allocate arrays
     allocate(d_l(3,n_l))
@@ -176,18 +185,26 @@ subroutine simbox_init(teilchen,slab)
 
 ! Translation of the entire story
 
+
     i = 1
-    do j =-rep, rep
-        do k=-rep, rep
-            d_l(1,i:i+itemp-1) = start_l(1,:)+j
-            d_l(2,i:i+itemp-1) = start_l(2,:)+k
-            d_l(3,i:i+itemp-1) = start_l(3,:)
-            i = i+itemp
+    do l = 1, celldim(3)
+        do j =-rep, rep
+            do k=-rep, rep
+                d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
+                d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
+                d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
+
+                i = i+itemp
+            end do
         end do
     end do
 
+
+
     allocate(pos_l(3,n_l))
     pos_l = matmul(c_matrix,d_l)
+!    write(*,'(3f15.5)') pos_l
+!    stop
 
     allocate(pars_l(npars_l),pars_p(npars_p))
 
@@ -212,16 +229,18 @@ subroutine simbox_init(teilchen,slab)
 
     ! Species definition
     spec_l%name = name_l
-    spec_l%mass = mass_l
+    spec_l%mass = mass_l*amu2mass
     spec_l%n    = n_l
     spec_l%pot  = pot_l
     spec_l%n_pars= npars_l
+    spec_l%fric = fric_l
 
     spec_p%name = name_p
-    spec_p%mass = mass_p
+    spec_p%mass = mass_p*amu2mass
     spec_p%n    = n_p
     spec_p%pot  = pot_p
     spec_p%n_pars= npars_p
+    spec_p%fric = fric_p
 
 
     allocate(teilchen(n_p), slab(n_l))

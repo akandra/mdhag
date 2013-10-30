@@ -40,8 +40,11 @@
 		<Unit filename="md_init.f95">
 			<Option weight="1" />
 		</Unit>
-		<Unit filename="mdhag.f95">
+		<Unit filename="mdalgo.f95">
 			<Option weight="3" />
+		</Unit>
+		<Unit filename="mdhag.f95">
+			<Option weight="4" />
 		</Unit>
 		<Unit filename="open_file.f95">
 			<Option weight="0" />

@@ -81,12 +81,11 @@ implicit none
     real(8) :: expar, expar2
 
 ! Derivatives EMT
-    real(8) :: gij, gip, gtemp, Qij, f_p
+    real(8) :: gij, gip, gpi, gtemp, Qij, f_p
     real(8), dimension(3,spec_l%n*(spec_l%n-1)/2) :: nij, gij1
-    real(8), dimension(3,spec_l%n) :: nip, force_l, dV_lp, dV_pl
+    real(8), dimension(3,spec_l%n) :: nip, npi, force_l, dV_lp, dV_pl
     real(8), dimension(3,spec_l%n) :: dvref_l, dvref_p
-    real(8), dimension(3) ::force_p, gpi
-
+    real(8), dimension(3) ::force_p
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 ! definition of a few values that appear frequently in calculation
@@ -113,7 +112,7 @@ select case (spec_l%pot)
         rr = 4.0d0 * rcut / (sqrt3 + 2.0d0)
         acut = 9.21024d0/(rr -rcut) ! ln(10000)
 
-    ! Distances to the considered neighbours
+   ! Distances to the considered neighbours
         rnnl(1) = betas0_l
         rnnl(2) = rnnl(1) * sqrt2
         rnnl(3) = rnnl(1) * sqrt3
@@ -157,7 +156,6 @@ select case (spec_l%pot)
         V_pl = 0.0d0
         vref_p = 0.0d0
         Ecoh= 0.0d0
-        gpi= 0.0d0
         force_l = 0.0d0
         force_p = 0.0d0
         dV_lp=0.0d0
@@ -275,8 +273,10 @@ end select
         r3temp(1) = slab(i)%r(1)-teilchen(1)%r(1)
         r3temp(2) = slab(i)%r(2)-teilchen(1)%r(2)
         r3temp(3) = slab(i)%r(3)-teilchen(1)%r(3)
+
     ! transform distances into direct coordinates
         r3temp= matmul(celli(1:3,4:6),r3temp)
+
 
         r3temp(1)=r3temp(1)-Anint(r3temp(1))
         r3temp(2)=r3temp(2)-Anint(r3temp(2))
@@ -310,7 +310,7 @@ end select
 
             rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )
             sigma_pl = sigma_pl + rtemp
-            gpi = gpi + (gtemp+pars_l(1)) * rtemp * nip(:,i)
+            gpi = (gtemp+pars_l(1)) * rtemp
 
 
 
@@ -329,8 +329,10 @@ end select
             ! to be
             dV_pl(:,i) = (gtemp+kappadbeta_l)*rtemp*nip(:,i)
 
+ !           write(*,'(3e20.10)') theta
 
-            nip(:,i)=nip(:,i)*gip
+            npi(:,i)= - nip(:,i)*gpi
+            nip(:,i)=   nip(:,i)*gip
 
         case('morse')
 
@@ -347,6 +349,7 @@ end select
 
     end do
 
+
 select case(spec_l%pot)
 
     case ('emt')
@@ -356,9 +359,12 @@ select case(spec_l%pot)
         sigma_ll = sigma_ll * igamma1l
         V_ll = V_ll * voldegamma2l
         s_l_exp = sigma_ll
-        dV_lp=dV_lp*voldegamma2l*chilp
-        dV_pl=dV_pl*vopdegamma2p*chipl
-        force_l = force_l*voldegamma2l
+        dV_lp= - (dV_lp*voldegamma2l*chilp+dV_pl*vopdegamma2p*chipl)*0.50d0
+        force_l = force_l*voldegamma2l + dV_lp
+        force_p(1) = sum(dV_lp(1,:))
+        force_p(2) = sum(dV_lp(2,:))
+        force_p(3) = sum(dV_lp(3,:))
+
 
 
     if (spec_p%pot == 'emt') then
@@ -385,7 +391,8 @@ select case(spec_l%pot)
         rtemp = exp(-pars_p(4) * s_p)* pars_p(3)
         Ecoh = (1.0d0 + pars_p(4)*s_p) * rtemp
 
-        f_p = s_p * rtemp * pars_p(4)**2 / (chipl*sigma_pl*beta*pars_p(1))
+        f_p = (s_p * rtemp * pars_p(4)**2 + 0.5d0 * vref_p * pars_p(6)) &
+              / (sigma_pl*beta*pars_p(1))
 
     end if
 
@@ -429,39 +436,35 @@ select case(spec_l%pot)
 
     ! fi/f_l is the contribution to Ecoh_l that depends only on one index
     ! pj is the contribution to the reference energy that depends on one index
-    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_l - 0.50d0*p_l
+    f_l = pars_l(3) * pars_l(4)**2 * s_l_exp * f_l  - 0.50d0*p_l
 
     gij1 = gij1 * igamma1l
     nip = nip * igamma1l * chilp
-    gpi = gpi * igamma1p * chipl * f_p
+    npi = npi * igamma1p
 
     k = 0
+
     do i= 1, spec_l%n
         do j = i+1, spec_l%n
             r3temp = gij1(:,k+j-i)  * (f_l(i) + f_l(j))
             force_l(:,i) = force_l(:,i) + r3temp
             force_l(:,j) = force_l(:,j) - r3temp
 
-        ! Summation over pairwise potentials
-        force_l(:,i)= force_l(:,i) - 0.50d0 * (dV_lp(:,i) + dV_pl(:,i))
-
         end do
         k=k+spec_l%n-i
 
-        r3temp = f_l(i)*nip(:,i) - gpi
-        force_l(:,i) = force_l(:,i)  + r3temp
-        force_p      = force_p       - r3temp
+        r3temp = f_l(i)*nip(:,i) - f_p*npi(:,i)
+        slab(i)%f = force_l(:,i)  + r3temp
+        force_p   = force_p       - r3temp
+
+
+
    end do
-
-
     !-------------------------------OVERALL ENERGY---------------------------------
     ! Summation over all contributions.
 
     energy = energy+Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
-    write(*,'(3e15.5)') force_l
 
-
-stop
 
 
     case('morse')
@@ -475,10 +478,32 @@ stop
 end select
 
 Epot = energy
-
+teilchen(1)%f = force_p
 
 end subroutine pes
 
+subroutine fric_coef(r,fric_key,zeta)
+    !
+    ! Purpose:
+    !       Here, the friction coefficient is calculated
+    !       DON'T FORGET TO DEVIDE THE FRICTION THROUGH THE MASS!!!!
+    !
+
+    real(8), dimension(:,:), allocatable, intent(in) :: r
+    integer, intent(in) :: fric_key
+    real(8),intent(out) :: zeta ! Zeta is the friction coefficient.
+    real(8) :: mass
+
+    mass = spec_l%mass
+
+    select case(fric_key)
+    case(1)
+        zeta = 1.0
+    case default
+        print *, 'This is not the friction you are looking for'
+    end select
+
+end subroutine fric_coef
 
 
 
