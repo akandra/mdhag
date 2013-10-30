@@ -10,7 +10,7 @@ program mdhag
 !    use atom_class
     use md_init
     use force
-    use mdalgo
+!    use mdalgo
     use open_file
 
     implicit none
@@ -20,7 +20,7 @@ program mdhag
     real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp
     real(8),dimension(:), allocatable    :: imass
     integer :: i,j, iter=3, q, bl
-    real(8) :: Epot, rtemp, rdummy, Ekin(3)
+    real(8) :: Epot, rtemp, rdummy, Ekin(3),mom(3)
     real(8) :: zeta, norm, delta
 
 
@@ -52,7 +52,7 @@ program mdhag
         ff(:,i)     = teilchen(i)%f
         imass(i)   = rtemp
     enddo
-    rtemp=1.0d0/spec_l%mass
+    rtemp=1.0d0/spec_l%mass!/1000
     do i=spec_p%n+1, bl
         j=i-spec_p%n
         rr(:,i)     = slab(j)%r
@@ -63,12 +63,12 @@ program mdhag
         ff(:,i)     = slab(j)%f
         imass(i)    = rtemp
     enddo
-    vv(3,1) = -0.3d0
+    !vv(3,1) = -0.3d0
     vv(3,2:bl-36) = 0.001d0
-    !vv(1,2:bl-36) = 0.0003d0
-    !vv(2,2:bl-36) = 0.0003d0
+    vv(1,2:bl-36) = 0.0003d0
+    vv(2,2:bl-36) = 0.0003d0
    ! vv(2,1) = 0.0042d0
-    delta = 0.0010d0
+    delta = 0.00010d0
     !vv(2,18) = 0.02d0
  !   vp = 0.0d0
 
@@ -77,6 +77,9 @@ do q = 1, nsteps
 
 !    call beeman_1(rr,vv,aa,aao)
 !    call  predict(vv,vp,aa,aao)
+    rr(1,:) = rr(1,:) + vv(1,:)*step + step**2*aa(1,:)*imass
+    rr(2,:) = rr(2,:) + vv(2,:)*step + step**2*aa(2,:)*imass
+    rr(3,:) = rr(3,:) + vv(3,:)*step + step**2*aa(3,:)*imass
 
     do i=1,spec_p%n
         teilchen(i)%r = rr(:,i)
@@ -87,6 +90,8 @@ do q = 1, nsteps
     enddo
 
     call pes(teilchen, slab, Epot)
+    !ff(:,1)=teilchen(1)%f
+
 
     do j = 1, 3
     do i = 1, spec_l%n-36
@@ -94,25 +99,33 @@ do q = 1, nsteps
         call pes(teilchen, slab, rtemp)
         ff(j,i+1) = -(Epot-rtemp)/delta
         slab(i)%r(j) = rr(j,i+1)
+    ff(j,i+1)=slab(i)%f(j)
     enddo
+    !ff(j,2:bl) = 0.0d0
     do i = 1, spec_p%n
         teilchen(i)%r(j) = rr(j,i)-delta
         call pes(teilchen, slab, rtemp)
-        ff(j,i) = -(Epot-rtemp)/delta
+        ff(j,i) = -((Epot-rtemp)/delta)
         teilchen(i)%r(j) = rr(j,i)
     enddo
 
     enddo
 
-    rr(1,:) = rr(1,:) + vv(1,:)*step+step**2*imass*0.5d0*ff(1,:)
-    rr(2,:) = rr(2,:) + vv(2,:)*step+step**2*imass*0.5d0*ff(2,:)
-    rr(3,:) = rr(3,:) + vv(3,:)*step+step**2*imass*0.5d0*ff(3,:)
+!    rr(1,:) = rr(1,:) + vv(1,:)*step+step**2*imass*0.5d0*ff(1,:)
+!    rr(2,:) = rr(2,:) + vv(2,:)*step+step**2*imass*0.5d0*ff(2,:)
+!    rr(3,:) = rr(3,:) + vv(3,:)*step+step**2*imass*0.5d0*ff(3,:)
 
-    vv(:,1) = vv(:,1) + ff(:,1)*step*imass(1)
-    vv(:,2:bl-36) = vv(:,2:bl-36) + ff(:,2:bl-36)*step*imass(2)
-    vv(:,bl-35:bl) =vv(:,bl-35:bl) + ff(:,bl-35:bl)*step*imass(2)
-    !print *, rr(1,2), vv(1,2), ff(1,2)
+!    vv(:,1) = vv(:,1) + ff(:,1)*step*imass(1)
+!    vv(:,2:bl-36) = vv(:,2:bl-36) + ff(:,2:bl-36)*step*imass(2)
+!    vv(:,bl-35:bl) =vv(:,bl-35:bl) + ff(:,bl-35:bl)*step*imass(2)
 
+    vv(:,1) = vv(:,1) + 0.5d0*step*(ff(:,1) + aa(:,1))*imass(1)
+    do j=1,3
+        vv(j,2:bl-36) = vv(j,2:bl-36) + 0.5d0*step*(ff(j,2:bl-36) + aa(j,2:bl-36)) *imass(2:bl-36)
+        vv(j,bl-35:bl)= vv(j,bl-35:bl)+ 0.5d0*step*(ff(j,bl-35:bl)+ aa(j,bl-35:bl))*imass(bl-35:bl)
+    enddo
+
+    aa = ff
 
 !    call newton(ff,aa,imass)
 
@@ -141,7 +154,11 @@ do q = 1, nsteps
      Ekin(2)=(sum(vv(1,2:bl-36)**2)+sum(vv(2,2:bl-36)**2)+sum(vv(3,2:bl-36)**2))*0.5d0/imass(2)
      Ekin(3)=(sum(vv(1,bl-35:bl)**2)+sum(vv(2,bl-35:bl)**2)+sum(vv(3,bl-35:bl)**2))*0.5d0/imass(2)
      Ekin(1) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0/imass(1)
-    write(1,*) Epot, Ekin
+     mom(1)=sum(vv(1,:)/imass)
+     mom(2)=sum(vv(2,:)/imass)
+     mom(3)=sum(vv(3,:)/imass)
+
+    write(1,*) Epot, Ekin, mom
     end if
     if (rr(3,1) > 6.1 .or. rr(3,1) < -8.0) exit
 end do
