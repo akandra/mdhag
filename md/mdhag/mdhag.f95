@@ -52,7 +52,7 @@ program mdhag
         ff(:,i)     = teilchen(i)%f
         imass(i)   = rtemp
     enddo
-    rtemp=1.0d0/spec_l%mass!/1000
+    rtemp=1.0d0/spec_l%mass
     do i=spec_p%n+1, bl
         j=i-spec_p%n
         rr(:,i)     = slab(j)%r
@@ -63,10 +63,10 @@ program mdhag
         ff(:,i)     = slab(j)%f
         imass(i)    = rtemp
     enddo
-    !vv(3,1) = -0.3d0
-    vv(3,2:bl-36) = 0.001d0
-    vv(1,2:bl-36) = 0.0003d0
-    vv(2,2:bl-36) = 0.0003d0
+    vv(3,1) = -0.3d0
+!    vv(3,2:bl-36) = 0.001d0
+!    vv(1,2:bl-36) = 0.0003d0
+!    vv(2,2:bl-36) = 0.0003d0
    ! vv(2,1) = 0.0042d0
     delta = 0.00010d0
     !vv(2,18) = 0.02d0
@@ -77,9 +77,9 @@ do q = 1, nsteps
 
 !    call beeman_1(rr,vv,aa,aao)
 !    call  predict(vv,vp,aa,aao)
-    rr(1,:) = rr(1,:) + vv(1,:)*step + step**2*aa(1,:)*imass
-    rr(2,:) = rr(2,:) + vv(2,:)*step + step**2*aa(2,:)*imass
-    rr(3,:) = rr(3,:) + vv(3,:)*step + step**2*aa(3,:)*imass
+    rr(1,:) = rr(1,:) + vv(1,:)*step + 0.5d0*step**2*aa(1,:)*imass
+    rr(2,:) = rr(2,:) + vv(2,:)*step + 0.5d0*step**2*aa(2,:)*imass
+    rr(3,:) = rr(3,:) + vv(3,:)*step + 0.5d0*step**2*aa(3,:)*imass
 
     do i=1,spec_p%n
         teilchen(i)%r = rr(:,i)
