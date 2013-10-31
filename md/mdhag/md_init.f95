@@ -62,7 +62,7 @@ subroutine simbox_init(teilchen,slab)
     character(len=100) key_p, key_l
     real(8) :: mass_p, mass_l
     integer :: pos1, ios = 0, line = 0
-    real(8) :: temp
+    real(8) :: einc, inclination, azimuth, temp
     real(8), dimension(3,3) :: c_matrix, d_matrix
     integer :: i, j, k,l
     integer :: n_l0, itemp
@@ -101,6 +101,14 @@ subroutine simbox_init(teilchen,slab)
             buffer = buffer(pos1+1:)
 
             select case (label)
+            case('Einc')
+                read(buffer,*,iostat=ios) einc
+            case('inclination')
+                read(buffer,*,iostat=ios) inclination
+                inclination = inclination*deg2rad
+            case('azimuth')
+                read(buffer,*,iostat=ios) azimuth
+                azimuth = azimuth*deg2rad
             case('step')
                 read(buffer,*,iostat=ios) step
             case('nsteps')
@@ -247,6 +255,10 @@ subroutine simbox_init(teilchen,slab)
     do i = 1, n_p
         teilchen(i)%r=start_p(:,i)
     end do
+    einc = sqrt(2.0d0*einc/spec_p%mass) ! projectile speed
+    teilchen(1)%v(1) = einc*sin(inclination)*cos(azimuth)
+    teilchen(1)%v(2) = einc*sin(inclination)*sin(azimuth)
+    teilchen(1)%v(3) = - einc*cos(inclination)
 
    do i = 1, n_l
         slab(i)%r=pos_l(:,i)

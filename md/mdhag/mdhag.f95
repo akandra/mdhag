@@ -21,7 +21,8 @@ program mdhag
     real(8),dimension(:), allocatable    :: imass
     integer :: i,j, iter=3, q, bl
     real(8) :: Epot, rtemp, rdummy, Ekin(3),mom(3)
-    real(8) :: zeta, norm, delta
+    real(8) :: zeta, norm
+    real(8) :: delta = 0.0010d0     ! dr at numerical calculation of the forces
 
 
     call open_for_write(1,'testoutput2.dat')
@@ -63,15 +64,6 @@ program mdhag
         ff(:,i)     = slab(j)%f
         imass(i)    = rtemp
     enddo
-    vv(3,1) = -0.3d0
-!    vv(3,2:bl-36) = 0.001d0
-!    vv(1,2:bl-36) = 0.0003d0
-!    vv(2,2:bl-36) = 0.0003d0
-   ! vv(2,1) = 0.0042d0
-    delta = 0.00010d0
-    !vv(2,18) = 0.02d0
- !   vp = 0.0d0
-
 
 do q = 1, nsteps
 
@@ -90,18 +82,14 @@ do q = 1, nsteps
     enddo
 
     call pes(teilchen, slab, Epot)
-    !ff(:,1)=teilchen(1)%f
-
 
     do j = 1, 3
-    do i = 1, spec_l%n-36
-        slab(i)%r(j) = rr(j,i+1)-delta
-        call pes(teilchen, slab, rtemp)
-        ff(j,i+1) = -(Epot-rtemp)/delta
-        slab(i)%r(j) = rr(j,i+1)
-    ff(j,i+1)=slab(i)%f(j)
+    do i = 1, spec_l%n
+            slab(i)%r(j) = rr(j,i+1)-delta
+            call pes(teilchen, slab, rtemp)
+            ff(j,i+1) = -(Epot-rtemp)/delta
+            slab(i)%r(j) = rr(j,i+1)
     enddo
-    !ff(j,2:bl) = 0.0d0
     do i = 1, spec_p%n
         teilchen(i)%r(j) = rr(j,i)-delta
         call pes(teilchen, slab, rtemp)
@@ -111,19 +99,11 @@ do q = 1, nsteps
 
     enddo
 
-!    rr(1,:) = rr(1,:) + vv(1,:)*step+step**2*imass*0.5d0*ff(1,:)
-!    rr(2,:) = rr(2,:) + vv(2,:)*step+step**2*imass*0.5d0*ff(2,:)
-!    rr(3,:) = rr(3,:) + vv(3,:)*step+step**2*imass*0.5d0*ff(3,:)
-
-!    vv(:,1) = vv(:,1) + ff(:,1)*step*imass(1)
-!    vv(:,2:bl-36) = vv(:,2:bl-36) + ff(:,2:bl-36)*step*imass(2)
-!    vv(:,bl-35:bl) =vv(:,bl-35:bl) + ff(:,bl-35:bl)*step*imass(2)
-
-    vv(:,1) = vv(:,1) + 0.5d0*step*(ff(:,1) + aa(:,1))*imass(1)
     do j=1,3
-        vv(j,2:bl-36) = vv(j,2:bl-36) + 0.5d0*step*(ff(j,2:bl-36) + aa(j,2:bl-36)) *imass(2:bl-36)
-        vv(j,bl-35:bl)= vv(j,bl-35:bl)+ 0.5d0*step*(ff(j,bl-35:bl)+ aa(j,bl-35:bl))*imass(bl-35:bl)
+        vv(j,:) = vv(j,:) + 0.5d0*step*(ff(j,:) + aa(j,:))*imass
     enddo
+
+    vv(:,bl-35:bl)= 0.0d0  ! Nail down the lower layer
 
     aa = ff
 
@@ -148,25 +128,29 @@ do q = 1, nsteps
 !    end if
 !    vv=vc
 
-    print *, q
     if (mod(q,1) == 0) then
-     write(1,'(3f15.5)') rr
-     Ekin(2)=(sum(vv(1,2:bl-36)**2)+sum(vv(2,2:bl-36)**2)+sum(vv(3,2:bl-36)**2))*0.5d0/imass(2)
-     Ekin(3)=(sum(vv(1,bl-35:bl)**2)+sum(vv(2,bl-35:bl)**2)+sum(vv(3,bl-35:bl)**2))*0.5d0/imass(2)
-     Ekin(1) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0/imass(1)
-     mom(1)=sum(vv(1,:)/imass)
-     mom(2)=sum(vv(2,:)/imass)
-     mom(3)=sum(vv(3,:)/imass)
 
-    write(1,*) Epot, Ekin, mom
+        print *, q
+        write(1,'(3f15.5)') rr
+        Ekin(2)=(sum(vv(1,2:bl-36)**2)+sum(vv(2,2:bl-36)**2)+sum(vv(3,2:bl-36)**2))*0.5d0/imass(2)
+        Ekin(3)=(sum(vv(1,bl-35:bl)**2)+sum(vv(2,bl-35:bl)**2)+sum(vv(3,bl-35:bl)**2))*0.5d0/imass(2)
+        Ekin(1) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0/imass(1)
+
+        mom(1)=sum(vv(1,:)/imass)
+        mom(2)=sum(vv(2,:)/imass)
+        mom(3)=sum(vv(3,:)/imass)
+
+        write(1,*) Epot, Ekin, mom
+
     end if
-    if (rr(3,1) > 6.1 .or. rr(3,1) < -8.0) exit
-end do
 
- !   write(*,'(3f10.5)') ( (vv(:,i)-vp(:,i)), i=1, spec_l%n)
+    if (rr(3,1) > 6.1 .or. rr(3,1) < -8.0) exit
+
+end do
 
  !   write(*,'(3e15.5)') (slab(i)%f, i=1, spec_l%n)
  !   write(*,'(3e15.5)') teilchen(1)%f
 
 close(1)
+
 end program mdhag

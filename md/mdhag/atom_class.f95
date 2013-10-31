@@ -21,7 +21,9 @@ module atom_class
 !           Energy : eV
 !     Thus, the derived Units are:
 !           Mass   : eV fs^2 / A^2 = 1/103.6382 amu
+!           Angle  : radian = 180 deg
    real(8), parameter          :: amu2mass = 103.6382d0
+   real(8), parameter          :: deg2rad  = pi/180.0d0
 
 
 

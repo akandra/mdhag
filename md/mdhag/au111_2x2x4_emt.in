@@ -1,3 +1,6 @@
+Einc 5.0
+inclination 0.0
+azimuth 0.0
 step 0.1
 nsteps 100000
 particle H 1.0079 emt 7 stroem_der.127.H.nml 0
