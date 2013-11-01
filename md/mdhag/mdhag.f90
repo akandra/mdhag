@@ -10,7 +10,7 @@ program mdhag
 !    use atom_class
     use md_init
     use force
-!    use mdalgo
+    use mdalgo
     use open_file
 
     implicit none
@@ -19,13 +19,18 @@ program mdhag
 
     real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp
     real(8),dimension(:), allocatable    :: imass
-    integer :: i,j, iter=3, q, bl
-    real(8) :: Epot, rtemp, rdummy, Ekin(3),mom(3)
+    integer :: i,j, iter=3, q, bl, itraj, tw, s
+    real(8) :: Epot, rtemp, rdummy
     real(8) :: zeta, norm
     real(8) :: delta = 0.0010d0     ! dr at numerical calculation of the forces
+    character(len=100)  :: filename
+    integer             :: randk = 13
+    real(8), dimension(2) :: xy_p
+    real(8),dimension(:), allocatable :: pe, ke_p, ke_l
+    real(8),dimension(:,:), allocatable :: rt, vt
 
+    if (iargc().ne.1) stop " I need an input file"
 
-    call open_for_write(1,'testoutput2.dat')
     ! Call up procedure that gets us geometries
     call simbox_init(teilchen,slab)
 
@@ -33,16 +38,20 @@ program mdhag
     ! Print out what kind of potential has been chosen, the parameters and the
     ! initial conditions. DON'T FORGET!
 
- !   call pes(teilchen, slab, Epot)
     bl= spec_l%n+spec_p%n
-    !teilchen%v(1) = 0.01
-    !teilchen%v(2) = 0.02
-    !teilchen%v(3) = -0.03
-
 
     allocate(rr(3,bl),vv(3,bl),vp(3,bl))
     allocate(aa(3,bl),aao(3,bl),ff(3,bl))
     allocate(vc(3,bl),aauo(3,bl),ac_temp(3,bl),imass(bl))
+
+    tw = nsteps/wstep +1
+    allocate(pe(tw),ke_l(tw),ke_p(tw),rt(3,tw),vt(3,tw))
+
+do itraj = start_tr, ntrajs+start_tr-1
+
+    print *, "Trajectory No. ", itraj
+    print *, "----------------------------------------------"
+
     rtemp=1.0d0/spec_p%mass
     do i=1,spec_p%n
         rr(:,i)     = teilchen(i)%r
@@ -65,7 +74,30 @@ program mdhag
         imass(i)    = rtemp
     enddo
 
+    ! Seed random number generator
+    call random_seed(size=randk)
+    call random_seed(put = itraj*randseed)
+
+    ! Initialize particle position
+    call random_number(xy_p)
+    xy_p =  matmul(celli(1:2,1:2),xy_p)
+    rr(1:2,1) = rr(1:2,1)+xy_p
+
+    rr(1,1)=-3.01403
+    rr(2,1)=5.22151
+
+    s=1
+    call pes(teilchen, slab, Epot)
+
+    ke_p(s) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0*spec_p%mass
+    ke_l(s) = (sum(vv(1,2:bl)**2)+sum(vv(2,2:bl)**2)+sum(vv(3,2:bl)**2))*0.5d0*spec_l%mass
+    pe(s)   = Epot
+    rt(:,s) = rr(:,1)
+    vt(:,s) = vv(:,1)
+
+
 do q = 1, nsteps
+    print *, q
 
 !    call beeman_1(rr,vv,aa,aao)
 !    call  predict(vv,vp,aa,aao)
@@ -128,29 +160,35 @@ do q = 1, nsteps
 !    end if
 !    vv=vc
 
-    if (mod(q,1) == 0) then
+!    if (mod(q,1) == 0) then
+!    end if
 
-        print *, q
-        write(1,'(3f15.5)') rr
-        Ekin(2)=(sum(vv(1,2:bl-36)**2)+sum(vv(2,2:bl-36)**2)+sum(vv(3,2:bl-36)**2))*0.5d0/imass(2)
-        Ekin(3)=(sum(vv(1,bl-35:bl)**2)+sum(vv(2,bl-35:bl)**2)+sum(vv(3,bl-35:bl)**2))*0.5d0/imass(2)
-        Ekin(1) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0/imass(1)
-
-        mom(1)=sum(vv(1,:)/imass)
-        mom(2)=sum(vv(2,:)/imass)
-        mom(3)=sum(vv(3,:)/imass)
-
-        write(1,*) Epot, Ekin, mom
-
+    if (mod(q,wstep) == 0) then
+        s = s+1
+        ke_p(s) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0*spec_p%mass
+        ke_l(s) = (sum(vv(1,2:bl)**2)+sum(vv(2,2:bl)**2)+sum(vv(3,2:bl)**2))*0.5d0*spec_l%mass
+        pe(s)   = Epot
+        rt(:,s) = rr(:,1)
+        vt(:,s) = vv(:,1)
     end if
 
     if (rr(3,1) > 6.1 .or. rr(3,1) < -8.0) exit
 
-end do
+end do ! Cycle over time-steps
 
- !   write(*,'(3e15.5)') (slab(i)%f, i=1, spec_l%n)
- !   write(*,'(3e15.5)') teilchen(1)%f
+    write(filename,'(A,I7.7,A)') './trajs/traj',itraj,'.dat'
+    call open_for_write(1,filename)
+    write(1,'(10A15)') 'time(fs)','Ekin_p(eV)','Ekin_l(eV)','Epot(eV)',&
+                        'x_p(A)','y_p(A)','z_p(A)',&
+                        'vx_p(A)','vy_p(A)','vz_p(A)'
+    do q = 1,s
+        write(1,'(14f15.5)') (q-1)*wstep*step, ke_p(q), ke_l(q), pe(q), rt(:,q), vt(:,q)
+    end do
+    close(1)
 
-close(1)
+
+end do ! Cycle over trajectories
+
+deallocate(pe,ke_l,ke_p,rt,vt)
 
 end program mdhag

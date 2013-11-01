@@ -15,7 +15,9 @@ module md_init
 
     real(8) :: a_lat
     real(8) :: step
-    integer :: nsteps
+    integer :: nsteps, wstep
+    integer :: start_tr
+    integer :: ntrajs
     real(8),dimension(3,6) :: celli
     type(species) :: spec_l, spec_p
     real(8), dimension(:), allocatable :: pars_l, pars_p
@@ -60,7 +62,7 @@ subroutine simbox_init(teilchen,slab)
     character(len=10):: name_p, name_l
     character(len=10):: pot_p, pot_l
     character(len=100) key_p, key_l
-    real(8) :: mass_p, mass_l
+    real(8) :: mass_p, mass_l, Tsurf
     integer :: pos1, ios = 0, line = 0
     real(8) :: einc, inclination, azimuth, temp
     real(8), dimension(3,3) :: c_matrix, d_matrix
@@ -70,14 +72,12 @@ subroutine simbox_init(teilchen,slab)
     real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, pos_l, pos_p
     integer :: n_l, n_p=1
     integer :: npars_p, npars_l
-
-
-
-
+    logical :: exists
 !______________________________________________________________________________
 
 
-    pos_init_file = 'au111_2x2x4_emt.in'
+    call getarg(1, pos_init_file)
+!    pos_init_file = 'mdhag.inp'
 
 !------------------------------------------------------------------------------
 !                       READ IN GEOMETRIES
@@ -101,8 +101,16 @@ subroutine simbox_init(teilchen,slab)
             buffer = buffer(pos1+1:)
 
             select case (label)
+            case('wstep')
+                read(buffer,*,iostat=ios) wstep
+            case('Tsurf')
+                read(buffer,*,iostat=ios) Tsurf
             case('Einc')
                 read(buffer,*,iostat=ios) einc
+            case('start')
+                read(buffer,*,iostat=ios) start_tr
+            case('ntrajs')
+                read(buffer,*,iostat=ios) ntrajs
             case('inclination')
                 read(buffer,*,iostat=ios) inclination
                 inclination = inclination*deg2rad
@@ -260,9 +268,16 @@ subroutine simbox_init(teilchen,slab)
     teilchen(1)%v(2) = einc*sin(inclination)*sin(azimuth)
     teilchen(1)%v(3) = - einc*cos(inclination)
 
-   do i = 1, n_l
+    do i = 1, n_l
         slab(i)%r=pos_l(:,i)
     end do
+
+! Create a directory for trajectory data
+    inquire(file='trajs',exist=exists)
+    if (.not. exists) then
+        call system('mkdir trajs')
+    end if
+
 
     deallocate(start_p)
     deallocate(pos_l,d_l,start_l)

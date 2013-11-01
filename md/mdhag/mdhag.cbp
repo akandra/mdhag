@@ -6,15 +6,6 @@
 		<Option pch_mode="2" />
 		<Option compiler="gfortran" />
 		<Build>
-			<Target title="Debug">
-				<Option output="bin/Debug/mdhag" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Debug/" />
-				<Option type="1" />
-				<Option compiler="gfortran" />
-				<Compiler>
-					<Add option="-g" />
-				</Compiler>
-			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/mdhag" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
@@ -31,24 +22,7 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="atom_class.f95">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="force.f95">
-			<Option weight="2" />
-		</Unit>
-		<Unit filename="md_init.f95">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="mdalgo.f95">
-			<Option weight="3" />
-		</Unit>
-		<Unit filename="mdhag.f95">
-			<Option weight="4" />
-		</Unit>
-		<Unit filename="open_file.f95">
-			<Option weight="0" />
-		</Unit>
+		<Unit filename="main.f90" />
 		<Extensions>
 			<code_completion />
 			<envvars />
