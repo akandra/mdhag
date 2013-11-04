@@ -11,6 +11,7 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gfortran" />
+				<Option parameters="mdhag.inp" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>
@@ -22,7 +23,24 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="main.f90" />
+		<Unit filename="atom_class.f90">
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="force.f90">
+			<Option weight="2" />
+		</Unit>
+		<Unit filename="md_init.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="mdalgo.f90">
+			<Option weight="3" />
+		</Unit>
+		<Unit filename="mdhag.f90">
+			<Option weight="4" />
+		</Unit>
+		<Unit filename="open_file.f90">
+			<Option weight="0" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
