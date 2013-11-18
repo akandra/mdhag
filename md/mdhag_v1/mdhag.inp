@@ -1,0 +1,14 @@
+start 1
+ntrajs 1
+Einc 5.0
+inclination 60.0
+azimuth 0.0
+Tsurf 120
+step 1
+nsteps 100000
+wstep 1
+particle H 1.0079 emt 7 stroem.00.H.nml 0
+lattice Au 196.96657 emt 7 stroem.00.Au.nml 0
+celldim 2 2 4
+rep 1
+conf POSCAR au111_2x2x4.POSCAR
