@@ -134,12 +134,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.128.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.128.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.128.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.134.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.134.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.134.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.127.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.127.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.01.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -187,18 +187,21 @@ program EMT_fit_1
     !                   200   : only DFT points
     !                   201   : only AIMD points
 
-    rep = 2
+    rep = 1
     cell_b=(/2,2,4/)
-    control=1
+    control=200
     e_aimd_max=0.00
+    just_l = .false.
 
-    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, time, l_aimd, n_l, &
-                                                                celli, x_all, E_all)
+
+    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, just_l, time, l_aimd, n_l, &
+                                                                n_p,celli, x_all, E_all)
     print *, 'l_aimd', l_aimd
 
-
-    X(1:time,:,1:n_l+1)=x_all(1:time,:,1:n_l+1)
+    X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
     Y(1:time)=E_all(1:time)
+
+
 
     call open_for_write(10, fit_results_fname)
 
@@ -216,26 +219,25 @@ program EMT_fit_1
         sumsq = 0
         allocate(r_l(time,3,n_l))
         allocate(r_p(time,3))
-        r_l(1,:,:)=x_all(1,:,2:n_l+1)
+        r_l(1,:,:)=x_all(1,:,n_p+1:n_l+n_p)
         r_p(1,:)=x_all(1,:,1)
-        call emt_init(a_lat, celli, n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
+        call emt_l(a_lat, celli, n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
 
 
         do q=1,time
-            r_l(q,:,:)=x_all(q,:,2:n_l+1)
-            r_p(q,:)=x_all(q,:,1)
-            call emt(a_lat, celli, r_p(q,:), r_l(q,:,:), n_l, particle_pars, lattice_pars, energy)
+            r_l(q,:,:)=x_all(q,:,n_p+1:n_l+n_p)
+            r_p(q,:)=x_all(1,:,5)
+            call emt_mixed(a_lat, celli,r_p(q,:), r_l(q,:,:), n_l,particle_pars, lattice_pars, energy)
+!a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy
 
-
-            if(q<10) write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
-            write(10,'(1X, 5F15.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
-            write(7, '(1X, 4F16.10)')  X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref
+            if(q<10) write( *,'(1X, 5F15.8)') X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
+            write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
+            write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy
             if (q > 483) then
             !write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
-            write(*,'(f20.10)') energy/400
 
             end if
-            sumsq=sumsq+(energy-E_ref-Y(q))**2
+            sumsq=sumsq+(energy-Y(q))**2
         end do
         write(*,*)
         write(10,*)
@@ -244,10 +246,9 @@ program EMT_fit_1
         write(*,*)
         write(10,*)
     end if
-stop
-! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
 
 !stop
+! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -284,15 +285,15 @@ stop
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,10,14,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 4 ! number of parameters held constant
+    IB = (/3,10,7,14,1,8,2,9,4,11,0,0,0,0/) ! indicies of parameters held constant
+    IP = 10 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 10
+    max_iterations = 1000
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -336,7 +337,7 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     write (11,nml=particle_pars_list)
     write (12,nml=lattice_pars_list)
 
-    deallocate(r1)
+    !deallocate(r1)
 
     1000 format(2x,a15,2x,a2,7F7.3)
     1010 format(2x,a15,4x,7F7.3,/,19x,7f7.3)

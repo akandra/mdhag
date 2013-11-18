@@ -1,11 +1,13 @@
 module emt_init_data
-    use EMTparms_class
+    !use EMTparms_class
     implicit none
     save
 
     integer :: time
-    integer :: n_l
+    integer :: n_l, n_p
     real(8), dimension(3,6) :: celli
+    logical  :: just_l
+!    integer :: rep
 
 contains
 
@@ -14,8 +16,8 @@ contains
 !           by passing a deferred-array to a subroutine
 
 
-subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n_l, &
-                                                                    celli, x_all, E_all)
+subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l_aimd, n_l, &
+                                                                    n_p,celli, x_all, E_all)
 !
 ! Purpose:
 !           Reads in the gold and hydrogen positions from AIMD
@@ -35,10 +37,12 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     integer, intent(out)                  :: time        ! different configuration and energies
     real(8),allocatable,dimension(:), intent(out)                 :: E_all    ! DFT energy
     real(8),dimension(3,6), intent(out)               :: celli
-    integer, intent(out)                :: n_l, l_aimd  ! number of l atoms, number of aimd contributions
+    integer, intent(out)                :: n_l, n_p, l_aimd  ! number of l atoms,number of p atoms, number of aimd contributions
     real(8), dimension(:,:,:), allocatable, intent(out) :: x_all
     integer , intent(in)                        :: control
     real(8), intent(in) :: e_aimd_max
+    logical :: just_l
+
 
 ! other variables
     character(len=35)   :: position_of_l_and_p, fix_position
@@ -51,13 +55,11 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     character(len=35):: emptys
     ! Arrays. Structure: timestep, x,y,z of atoms
     real(8), dimension(:,:,:), allocatable :: aimd_l,  prae_read_l, read_l ! array of au after read in
-    real(8), dimension(:,:),allocatable    :: aimd_p,  prae_d_p, d_p     ! array of h
-    real(8), dimension(:,:,:), allocatable :: d_l     ! array after multiplying lattice image
+    real(8), dimension(:,:),allocatable    :: aimd_p,  prae_d_p, read_p     ! array of h
+    real(8), dimension(:,:,:), allocatable :: d_l, d_p     ! array after multiplying lattice image
     real(8), dimension(:,:), allocatable :: fix_l, dfix ! array of au after read in
     real(8), dimension(:,:),allocatable    :: fix_p     ! array of h
-    real(8), dimension(:,:,:), allocatable:: r_l      ! Position of lattice atoms
-    real(8), dimension(:,:),allocatable   :: r_p        ! Position of particle
-    integer                        :: orc_nl_eq       ! original size of the lattice
+    real(8), dimension(:,:,:), allocatable:: r_l, r_p      ! Position of lattice atoms, position of particle
 
     real(8), dimension(:), allocatable   :: E_fix    ! energy of fixed lattice geometires
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
@@ -67,7 +69,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     energy_l_and_p =      'data/traj825/analyse_825.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
-    fix_energy = 'data/hau111_plot.E.dat'
+    fix_energy = 'data/energy.dat'!'data/hau111_plot.E.dat'
 
 !------------------------------------------------------------------------------
 !                       READ IN GEOMETRIES AND ENERGIES
@@ -76,14 +78,14 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 
 ! -------------------------READ IN FIXED LATTICE-------------------------------
 ! read in energies
-    e_max=10.0
+    e_max=-45.0
 
     call open_for_read(39,fix_energy)
     i=1
     do
         read(39,*,iostat=ios) empty, empty, empty, empty, empty
         if(ios <0) exit
-        if (abs(empty)<=e_max) i=i+1
+        if (empty<=e_max .and. empty > e_max*2) i=i+1
     end do
     npts = i-1
 
@@ -95,7 +97,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     do
         read(39,*,iostat=ios) empty, empty3(1), empty3(2), empty3(3), empty
         if(ios <0) exit
-        if (abs(empty)<=e_max) then
+        !if (abs(empty)<=e_max) then
+        if (empty<=e_max .and. empty > e_max*2) then
             E_fix(j) = empty
             fix_p(j,:) = empty3
             j=j+1
@@ -132,7 +135,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 
 
 
-    fix_p=matmul(fix_p,transpose(d_matrix))
+    fix_p=matmul(fix_p,transpose(d_matrix))     ! Turn H-positions into direct coordinates
 
     do i=1,npts
         if (fix_p(i,1) < -0.001d0) fix_p(i,1)=fix_p(i,1)+1.0d0
@@ -161,13 +164,6 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     read(18,*) d_matrix
     read(18,'(//)')
 
-! correction because aimd a=4.205, not 4.201
-!    isqrt_2=0.7071067812d0
-!    c12=-a_lat*isqrt_2*cell_in(1)/2
-!    c11=a_lat*isqrt_2*cell_in(1)
-!    c22=a_lat*sqrt(3.)*isqrt_2*cell_in(1)/2
-!    c33=(cell_in(3)-1)*a_lat/sqrt(3.)+13
-
 ! According to the energy file, we define our time steps
     time = 0
     do
@@ -191,13 +187,15 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     read(17,'(A)') empty
     read(17,*) temp, temp, E_dft1(1)
     read(18,*) aimd_l(1,:,:)
-    read(18,*) aimd_p(1,:)
+    if (just_l .eqv. .false.) read(18,*) aimd_p(1,:)
+    if (just_l .eqv. .true.)  aimd_p(1,:) = (/0.0d0,0.0d0,6.0d0/)
     j=2
 
     do i=2,ende
         read(17,*) temp, temp, E_dft1(j)
         read(18,*) aimd_l(j,:,:)
-        read(18,*) aimd_p(j,:)
+        if (just_l .eqv. .false.) read(18,*) aimd_p(j,:)
+        if (just_l .eqv. .true.)  aimd_p(1,:) = (/0.0d0,0.0d0,6.0d0/)
         temp = E_dft1(j-1)-E_dft1(j)
         if (abs(temp) >= e_aimd_max) j = j+1
     end do
@@ -214,7 +212,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
                aimd_l(i,3,q)=aimd_l(i,3,q) - ANINT(dfix(3,q))
         end do
     end do
-   E_dft1=E_dft1+25.019988 ! energy per l-atom
+   !E_dft1=E_dft1+25.019988 ! reference energy
 
 !------------------------------------------------------------------------------
 !                   HOW MUCH AIMD CONTRIBUTION DO WE WANT?
@@ -240,18 +238,18 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     ! combine the DFT and the AIMD-array
         time=o+npts
         allocate(read_l(time,3,16))
-        allocate(d_p(time,3))
+        allocate(read_p(time,3))
         allocate(E_all(time))
         read_l=0
-        d_p=0
+        read_p=0
         E_all=0
 
         do i=1,npts
             read_l(i,:,:) = fix_l
         end do
         read_l(npts+1:time,:,:) = prae_read_l
-        d_p(1:npts,:) = fix_p
-        d_p(npts+1:time,:) = prae_d_p
+        read_p(1:npts,:) = fix_p
+        read_p(npts+1:time,:) = prae_d_p
         E_all(1:npts) = E_fix
         E_all(npts+1:time)=prae_E_dft
 
@@ -259,15 +257,15 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     else if (control == 200) then
         time = npts
         allocate(read_l(time,3,k))
-        allocate(d_p(time,3))
+        allocate(read_p(time,3))
         allocate(E_all(time))
         read_l=0
-        d_p=0
+        read_p=0
         E_all=0
         do i=1,npts
             read_l(i,:,:) = fix_l
         end do
-        d_p = fix_p
+        read_p = fix_p
         l_aimd=0
         E_all=E_fix
 
@@ -275,13 +273,13 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
     else if (control == 201) then
         time=ende2
         allocate(read_l(time,3,k))
-        allocate(d_p(time,3))
+        allocate(read_p(time,3))
         allocate(E_all(time))
         read_l=0.0
-        d_p=0
+        read_p=0
         E_all=0
         read_l = aimd_l(1:time,:,:)
-        d_p = aimd_p(1:time,:)
+        read_p = aimd_p(1:time,:)
         l_aimd = time
         E_all=E_dft1(1:time)
     end if
@@ -307,14 +305,21 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
 !
     temp=cell_in(1)*cell_in(2)*cell_in(3)
     n_l=temp*(2*rep+1)**2
+    n_p = (2*rep+1)**2
+    E_all = E_all * (2*rep+1)*2 ! energy needs to be increased to account for all images.
+
 
 ! allocate arrays
     allocate(d_l(ende,3,n_l))
+    allocate(d_p(ende,3,n_p))
     d_l=0.d0
+    d_p = 0.0d0
+
 
 ! Translation of the entire story
     do q=1, ende
         i = 1
+        j= 1
         do r =-rep, rep
             do s=-rep, rep
                 ! Set the running parameters
@@ -322,28 +327,36 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, time, l_aimd, n
                 d_l(q,2,i:i+temp-1) = read_l(q,2,:)+s
                 d_l(q,3,i:i+temp-1) = read_l(q,3,:)
                 i = i+temp
+
+                d_p(q,1,j) = read_p(q,1)+r
+                d_p(q,2,j) = read_p(q,2)+s
+                d_p(q,3,j) = read_p(q,3)
+                j = j + 1
            end do
         end do
     end do
 
 
-! allocate important arrays
+
+ !allocate important arrays
     allocate(r_l(ende,3,n_l))
-    allocate(r_p(ende,3))
+    allocate(r_p(ende,3,n_p))
 
      do q=1,ende
             r_l(q,:,:) = matmul(c_matrix,d_l(q,:,:))
+            r_p(q,:,:) = matmul(c_matrix,d_p(q,:,:)) ! is this right?
      end do
-     r_p = matmul(d_p,transpose(c_matrix))
 
-! Sascha, you have commented that you understand what we did here and that it s right.
-! Dont ask stupid questions, just ACCEPT it.
+
+! Sascha, you have commented that you understand what we did here and that it is right.
+! Dont ask questions, just ACCEPT it.
     ! Write the overall array that contains both H and Au positions
-    k=n_l+1
+    k=n_l+n_p
     allocate(x_all(ende,3,k))
 
-    x_all(:,:,1)=r_p
-    x_all(:,:,2:k)=r_l
+
+    x_all(:,:,1:n_p)=r_p
+    x_all(:,:,n_p+1:k)=r_l
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!

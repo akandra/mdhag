@@ -15,7 +15,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: I, JP,ij
 
     real(8)             :: B, P, RES
-    integer             :: IP,IB
+    integer             :: IP,IB,J
     integer             :: N, M, KK
 
     integer             :: iteration
@@ -59,16 +59,27 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     allocate(r_p(time,3))
     allocate(denergy1(time,14))
 
+    do J = 1,14
+        if (B(J) .lt. 0.d0 .and. J/=3 .and. J/=10) then
+            !print *, 'Parameter', J, 'turned negative. Resetting value.'
+            B(J) = 10.
+        end if
+    end do
+
+    if (just_l .eqv. .true.) then
+        B(1:7) = 0.0d0
+        P(1:7) = 0.0d0
+    end if
 ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
         !call emt_init(a_lat,cell_0, n_l0, r0_lat, particle_parms,lattice_parms, Eref)
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
-        call emt_init(a_lat, celli, n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
-        call emt(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
+        !call emt_init(a_lat, celli, n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
+        call emt_mixed(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
 
-        energy= energy-Eref
+        energy= energy!-Eref
 
         F   = energy
         RES = YDAT(I) - F
@@ -81,9 +92,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 !        call emt_fit_init(a_lat, cell_0, r0_lat,n_l0, particle_parms, lattice_parms, E_dref, dE_ref)
         r_l(I,:,:)=XDAT(I,:,2:n_l+1)
         r_p(I,:)=XDAT(I,:,1)
-        call emt_fit_init(a_lat, celli, XDAT(1,:,2:n_l+1), n_l, particle_parms, lattice_parms, E_dref, dE_ref)
-        call emt_fit(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
-        energy=energy-E_dref
+        !call emt_fit_init(a_lat, celli, XDAT(1,:,2:n_l+1), n_l, particle_parms, lattice_parms, E_dref, dE_ref)
+        call emt_fit_mixed(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
+        !energy=energy-E_dref
 !        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
 
 
@@ -91,7 +102,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         RES = YDAT(I) - F
 !        denergy(8:14) = denergy(8:14)-dE_ref
 !        P(1:14)=denergy
-        denergy = denergy-dE_ref
+        !denergy = denergy-dE_ref
         P(1:14)=denergy
 
         do ij=1,IP
@@ -99,8 +110,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         end do
 
 
-
-        !print *, 'der', P(1:7)
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 
         if ( ((mod(i,10)==0) .or. (i==N))) then
@@ -130,7 +139,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     first_run=.false.
     RETURN
 
-    1000 format(2i4, 2f8.4, 7f6.2 / 24x,7f6.2)
+    1000 format(2i4, 2f12.4, 7f6.2 / 32x,7f6.2)
     1010 format(2i4,3f6.2,3E12.3,14f6.2)
 
 end subroutine MODEL
