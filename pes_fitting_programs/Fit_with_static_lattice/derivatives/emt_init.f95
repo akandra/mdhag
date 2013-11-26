@@ -65,8 +65,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj825/XDATCAR_825.dat'
-    energy_l_and_p =      'data/traj825/analyse_825.out'
+    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    energy_l_and_p =      'data/traj005/analyse_005.out'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/energy.dat'!'data/hau111_plot.E.dat'
@@ -78,7 +78,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 
 ! -------------------------READ IN FIXED LATTICE-------------------------------
 ! read in energies
-    e_max=-45.0
+    e_max=-15.0
 
     call open_for_read(39,fix_energy)
     i=1
@@ -151,6 +151,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 !        if (fix_l(2,i) < 0.0d0) fix_l(2,i)=fix_l(2,i)+1.0d0
         if (fix_l(3,i) < -0.0001d0) fix_l(3,i)=fix_l(3,i)+1.0d0
     end do
+
 
 !---------------------------READ IN AIMD GEOMETRIES----------------------------
 
@@ -351,12 +352,18 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 ! Sascha, you have commented that you understand what we did here and that it is right.
 ! Dont ask questions, just ACCEPT it.
     ! Write the overall array that contains both H and Au positions
-    k=n_l+n_p
-    allocate(x_all(ende,3,k))
-
-
-    x_all(:,:,1:n_p)=r_p
-    x_all(:,:,n_p+1:k)=r_l
+    if (just_l .eqv. .false.) then
+        k=n_l+n_p
+        allocate(x_all(ende,3,k))
+        x_all(:,:,1:n_p)=r_p
+        x_all(:,:,n_p+1:k)=r_l
+    else if (just_l .eqv. .true.) then
+        allocate(x_all(ende,3,n_l))
+        x_all=r_l
+        n_p = 0
+    else
+        print*,"There's something wrong with your allocation of x_all in emt_init"
+    end if
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!

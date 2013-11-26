@@ -58,7 +58,7 @@ program EMT_fit_1
     ! At entry, B's are initial guesses for parameters
     ! On exit, B's are the results of the fit.
     !real(8), allocatable :: RRR(:) ! Array used optionally for communication with MODEL
-    real(8) :: X(1000,3,1000),Y(1000),RRR(1000)
+    real(8) :: X(5000,3,1000),Y(5000),RRR(5000)
     integer, dimension(8) :: NARRAY ! Integer array of control parameters
     real, dimension(8) :: ARRAY = 0 ! Array of statistical parameters. Use 0.0 to get default values.
     integer, dimension(14) :: IB = 0 ! Integer Array containing the subscripts of parameters to be held constant.
@@ -88,7 +88,7 @@ program EMT_fit_1
 
     integer site(1000)
     real(8) :: energy ! energy output from emt subroutines
-    real(8), dimension(7) :: denergy
+    real(8), dimension(14) :: denergy, dE_ref
     real(8) :: e_ref ! reference energy with particle at infinity
     real(8) :: e_max ! maximum DFT to use in the fit
     real(8) :: sumsq ! used to calculate rms error
@@ -112,6 +112,7 @@ program EMT_fit_1
     real(8), dimension(:,:), allocatable :: r_p
     integer :: q
     real(8) :: e_aimd_max
+    real(8), dimension(:,:), allocatable :: check
 
 
     ! file names
@@ -134,9 +135,9 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.134.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.134.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.134.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.140.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.140.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.140.Au.nml'
 
     particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
     lattice_nml_in  = 'data/parameters_and_fit_results/stroem.01.Au.nml' !stroem.00.Au.nml'
@@ -201,8 +202,6 @@ program EMT_fit_1
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
     Y(1:time)=E_all(1:time)
 
-
-
     call open_for_write(10, fit_results_fname)
 
     !------------------------------------------------------------------------------------------------------------------
@@ -220,15 +219,16 @@ program EMT_fit_1
         allocate(r_l(time,3,n_l))
         allocate(r_p(time,3))
         r_l(1,:,:)=x_all(1,:,n_p+1:n_l+n_p)
-        r_p(1,:)=x_all(1,:,1)
-        call emt_l(a_lat, celli, n_l, r_l(1,:,:), particle_pars, lattice_pars, E_ref)
+        call emt(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref)
+
 
 
         do q=1,time
             r_l(q,:,:)=x_all(q,:,n_p+1:n_l+n_p)
-            r_p(q,:)=x_all(1,:,5)
-            call emt_mixed(a_lat, celli,r_p(q,:), r_l(q,:,:), n_l,particle_pars, lattice_pars, energy)
-!a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy
+            if (just_l .eqv. .false.) r_p(q,:)=x_all(1,:,5)
+            if (just_l .eqv. .true.) r_p(q,:)=(/0.0d0,0.0d0,6.0d0/)
+            call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
+
 
             if(q<10) write( *,'(1X, 5F15.8)') X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
             write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
@@ -247,8 +247,8 @@ program EMT_fit_1
         write(10,*)
     end if
 
-!stop
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
+!stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -285,8 +285,8 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,10,7,14,1,8,2,9,4,11,0,0,0,0/) ! indicies of parameters held constant
-    IP = 10 ! number of parameters held constant
+    IB = (/3,10,7,14,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 5 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
@@ -341,6 +341,17 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
 
     1000 format(2x,a15,2x,a2,7F7.3)
     1010 format(2x,a15,4x,7F7.3,/,19x,7f7.3)
+
+    do q=1,time
+            call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
+
+
+            write( *,'(1X, 5F15.8)') energy-Y(q)
+            !write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
+            !write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy
+            sumsq=sumsq+(energy-Y(q))**2
+    end do
+    print*, sumsq/q
 
 end program
 !-------------------------------------------------------------------------------------------------------|

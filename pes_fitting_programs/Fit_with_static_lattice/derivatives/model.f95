@@ -9,9 +9,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
     real(8)             :: F
-    real(8)             :: YDAT(1000)   !YDAT(N)
-    real(8)             :: XDAT(1000,3,1000) !XDAT(N,M)
-    real(8)             :: RRR(1000)
+    real(8)             :: YDAT(5000)   !YDAT(N)
+    real(8)             :: XDAT(5000,3,1000) !XDAT(N,M)
+    real(8)             :: RRR(5000)
     integer             :: I, JP,ij
 
     real(8)             :: B, P, RES
@@ -59,27 +59,19 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     allocate(r_p(time,3))
     allocate(denergy1(time,14))
 
-    do J = 1,14
-        if (B(J) .lt. 0.d0 .and. J/=3 .and. J/=10) then
+    ! This loop is to reset parameters that have become lower than 0.0d0
+!    do J = 1,14
+!        if (B(J) .lt. 0.d0 .and. J/=3 .and. J/=10 .and. J/=5 .and. J/=12) then
             !print *, 'Parameter', J, 'turned negative. Resetting value.'
-            B(J) = 10.
-        end if
-    end do
+!            B(J) = 10.
+!        end if
+!    end do
 
-    if (just_l .eqv. .true.) then
-        B(1:7) = 0.0d0
-        P(1:7) = 0.0d0
-    end if
-! Select if derivatives shall be called or not.
+    ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
-        !call emt_init(a_lat,cell_0, n_l0, r0_lat, particle_parms,lattice_parms, Eref)
-        r_l(I,:,:)=XDAT(I,:,2:n_l+1)
-        r_p(I,:)=XDAT(I,:,1)
-        !call emt_init(a_lat, celli, n_l, XDAT(1,:,2:n_l+1), particle_parms,lattice_parms, Eref)
-        call emt_mixed(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy)
-
-        energy= energy!-Eref
+        call emt(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
+        !print *, energy
 
         F   = energy
         RES = YDAT(I) - F
@@ -87,24 +79,15 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
 
     case(2)
-!        I=3
+        call emt_fit(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
 
-!        call emt_fit_init(a_lat, cell_0, r0_lat,n_l0, particle_parms, lattice_parms, E_dref, dE_ref)
-        r_l(I,:,:)=XDAT(I,:,2:n_l+1)
-        r_p(I,:)=XDAT(I,:,1)
-        !call emt_fit_init(a_lat, celli, XDAT(1,:,2:n_l+1), n_l, particle_parms, lattice_parms, E_dref, dE_ref)
-        call emt_fit_mixed(a_lat, celli, r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
-        !energy=energy-E_dref
-!        call emt_fit_old(a_lat, celli(I,:), r_p(I,:), r_l(I,:,:), n_l, particle_parms, lattice_parms, energy, denergy)
-
-
+        !print *, 'case2',energy
+        !stop
         F   = energy
         RES = YDAT(I) - F
-!        denergy(8:14) = denergy(8:14)-dE_ref
-!        P(1:14)=denergy
-        !denergy = denergy-dE_ref
         P(1:14)=denergy
 
+        ! Set derivatives of those parameters zero that aren't supposed to contribute to fit.
         do ij=1,IP
             P(IB(ij)) = 0.0d0
         end do
@@ -122,7 +105,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
 
     case(4)
-!        call emt (a_lat, r_part, particle_parms, lattice_parms, energy)
+        call emt(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
         F   = energy
         RRR(I) = F
 
