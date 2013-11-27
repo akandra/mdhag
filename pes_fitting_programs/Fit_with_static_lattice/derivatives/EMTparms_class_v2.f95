@@ -223,6 +223,7 @@ implicit none
                 k=j-n_p
 
 
+
                 !-------------------------------MIXED SIGMA--------------------------------
                 ! Contributions of both particle and lattice to neutral sphere radius
                 ! To fully include the cut-off, we correct them later by gamma.
@@ -363,44 +364,44 @@ implicit none
 
 ! declare variables and parameters that are passed down from the program
 
-    real(8), intent(in)                 :: a_lat    ! lattice constant of lattice
-    real(8), dimension(3,6), intent(in) :: cell     ! cell matrix and its inverse
-    integer, intent(in)                 :: n_l, n_p ! number of lattice/particle atoms
-    real(8), dimension(:,:), intent(in) :: x_all    ! positions of lattice atoms
-    type(EMTparms), intent(inout)       :: pars_p   ! parameters of particle
-    type(EMTparms), intent(inout)       :: pars_l   ! parameters of lattice atoms
-    real(8), intent(out)                :: energy   ! calc. reference energy
-    real(8), dimension(14), intent(out)  :: denergy ! derivatives
+    real(8), intent(in)                 :: a_lat        ! lattice constant of lattice
+    real(8), dimension(3,6), intent(in) :: cell         ! cell matrix and its inverse
+    integer, intent(in)                 :: n_l, n_p     ! number of lattice/particle atoms
+    real(8), dimension(:,:), intent(in) :: x_all        ! positions of lattice atoms
+    type(EMTparms), intent(inout)       :: pars_p       ! parameters of particle
+    type(EMTparms), intent(inout)       :: pars_l           ! parameters of lattice atoms
+    real(8), intent(out)                :: energy    ! calc. reference energy
+    real(8), dimension(14), intent(out)  :: denergy  ! derivatives
                                                         ! with respect to to
                                                         ! eta2, followed by no,
                                                         ! eo, lambda, vo, kappa
                                                         ! and so.
 
-! declare the variables that appear in the subroutine
+! declare the variables that appear in the subroutine and initialise them.
 
-    integer :: i,j, k,q                   ! running parameter
-    real(8) :: r                        ! distance
-    real(8) :: rcut, rr, acut           ! values to calculate cut-off
-    real(8) :: igamma1p, igamma2p       ! inverse gamma for particle
-    real(8) :: igamma1l, igamma2l       ! inverse gamma for lattice atoms
-    real(8) :: theta                    ! variable for cut-off calculation
-    real(8) :: chilp, chipl             ! mixing between lattice (l) and particle (p)
-    real(8), dimension(n_p) :: sigma_pl ! mixed contribution to neutral sphere,
-    real(8), dimension(n_p) :: s_p      ! neutral sphere radius particle
-    real(8), dimension(n_l) :: sigma_ll ! contribution to ns, l only
-    real(8), dimension(n_p) :: sigma_pp ! contribution to ns, l only
-    real(8), dimension(n_l) :: sigma_lp ! mixed contribution to ns
-    real(8), dimension(n_l) :: s_l      ! neutral sphere radius lattice atoms
-    real(8) :: V_pl, V_lp, V_ll, V_pp   ! Pair potential contributions
-    real(8) :: vref_l, vref_p           ! reference pair pot. contrib.
-    real(8) :: Ecoh                     ! cohesive energy of part & lattice atoms
-    real(8), dimension(3) :: xl, xp     ! for cal. cut-off
-    real(8), dimension(3) :: rnnl, rnnp ! next neighbour distance for cut-off
-    real(8), dimension(3) :: rnndbeta_l, rnndbeta_p ! divide rnn by beta
-    real(8) :: betas0_l, betas0_p       ! beta * s0= for l and p
-    real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
-    real(8), dimension(3) :: r3temp, r3temp1     ! temporary array variable
-    real(8) :: rtemp, rtemp1                    ! temporary variable
+    integer :: i,j, k,q                                 ! running parameter
+    real(8) :: r                                        ! distance
+    real(8) :: rcut= 0.0d0, rr= 0.0d0, acut= 0.0d0      ! values to calculate cut-off
+    real(8) :: igamma1p= 0.0d0, igamma2p= 0.0d0         ! inverse gamma for particle
+    real(8) :: igamma1l= 0.0d0, igamma2l= 0.0d0         ! inverse gamma for lattice atoms
+    real(8) :: theta= 0.0d0                             ! variable for cut-off calculation
+    real(8) :: chilp= 0.0d0, chipl= 0.0d0               ! mixing between lattice (l) and particle (p)
+    real(8), dimension(n_p) :: sigma_pl          ! mixed contribution to neutral sphere,
+    real(8), dimension(n_p) :: s_p               ! neutral sphere radius particle
+    real(8), dimension(n_l) :: sigma_ll          ! contribution to ns, l only
+    real(8), dimension(n_p) :: sigma_pp          ! contribution to ns, l only
+    real(8), dimension(n_l) :: sigma_lp          ! mixed contribution to ns
+    real(8), dimension(n_l) :: s_l               ! neutral sphere radius lattice atoms
+    real(8) :: V_pl= 0.0d0, V_lp= 0.0d0, V_ll= 0.0d0, V_pp= 0.0d0   ! Pair potential contributions
+    real(8) :: vref_l= 0.0d0, vref_p= 0.0d0             ! reference pair pot. contrib.
+    real(8) :: Ecoh= 0.0d0                              ! cohesive energy of part & lattice atoms
+    real(8), dimension(3) :: xl= 0.0d0, xp= 0.0d0       ! for cal. cut-off
+    real(8), dimension(3) :: rnnl= 0.0d0, rnnp= 0.0d0   ! next neighbour distance for cut-off
+    real(8), dimension(3) :: rnndbeta_l= 0.0d0, rnndbeta_p= 0.0d0 ! divide rnn by beta
+    real(8) :: betas0_l= 0.0d0, betas0_p= 0.0d0         ! beta * s0= for l and p
+    real(8) :: kappadbeta_l= 0.0d0, kappadbeta_p= 0.0d0 ! beta * kappa for l and p
+    real(8), dimension(3) :: r3temp= 0.0d0, r3temp1= 0.0d0     ! temporary array variable
+    real(8) :: rtemp= 0.0d0, rtemp1= 0.0d0              ! temporary variable
     real(8), dimension(n_l) :: rn_ltemp
     real(8), dimension(n_p) :: rn_ptemp
 
@@ -410,22 +411,22 @@ implicit none
 ! derivative with respect to to eta2, followed by no, eo, lambda, vo, kappa and so.
 ! The general notation is:
 ! e.g. dV_lp_l(1) : the derivative of V_lp with respect to eta2_l.
-    real(8), dimension(2) :: dchilp, dchipl     ! First element: p, then l
-    real(8), dimension(7) :: dgamma1l, dgamma2l
-    real(8), dimension(7) :: dgamma1p, dgamma2p
+    real(8), dimension(2) :: dchilp= 0.0d0, dchipl= 0.0d0     ! First element: p, then l
+    real(8), dimension(7) :: dgamma1l= 0.0d0, dgamma2l= 0.0d0
+    real(8), dimension(7) :: dgamma1p= 0.0d0, dgamma2p= 0.0d0
     real(8), dimension(7,n_l) :: dsigma_ll
     real(8), dimension(7,n_p) :: dsigma_pp
     real(8), dimension(7,n_l) :: dsigma_lp_l
     real(8), dimension(7,n_l) :: dsigma_lp_p
     real(8), dimension(7, n_p) :: dsigma_pl_l, dsigma_pl_p
-    real(8), dimension(7) :: dV_ll, dV_pp
-    real(8), dimension(7) :: dV_lp_l, dV_lp_p
-    real(8), dimension(7) :: dV_pl_l, dV_pl_p
+    real(8), dimension(7) :: dV_ll= 0.0d0, dV_pp= 0.0d0
+    real(8), dimension(7) :: dV_lp_l= 0.0d0, dV_lp_p= 0.0d0
+    real(8), dimension(7) :: dV_pl_l= 0.0d0, dV_pl_p= 0.0d0
     real(8), dimension(7,n_l) :: ds_l_l, ds_l_p
     real(8), dimension(7,n_p) :: ds_p_l, ds_p_p
-    real(8), dimension(7) :: dvref_l_l, dvref_l_p
-    real(8), dimension(7) :: dvref_p_l, dvref_p_p
-    real(8), dimension(7) :: dEcoh_l, dEcoh_p
+    real(8), dimension(7) :: dvref_l_l= 0.0d0, dvref_l_p= 0.0d0
+    real(8), dimension(7) :: dvref_p_l= 0.0d0, dvref_p_p= 0.0d0
+    real(8), dimension(7) :: dEcoh_l= 0.0d0, dEcoh_p= 0.0d0
 
 !______________________________________________________________________________
 
@@ -526,6 +527,7 @@ implicit none
     dsigma_ll = 0.0d0
     dsigma_pp = 0.0d0
     sigma_pl = 0.0d0
+    sigma_lp=0.0d0
     dsigma_lp_l=0.0d0
     dsigma_lp_p=0.0d0
     dsigma_pl_l=0.0d0
@@ -551,6 +553,11 @@ implicit none
     dEcoh_l = 0.0d0
     dEcoh_p = 0.0d0
     denergy = 0.0d0
+    energy = 0.0d0
+    rn_ltemp = 0.0d0
+    rn_ptemp=0.0d0
+    s_l = 0.0d0
+    s_p = 0.0d0
 
     do i = 1,n_l+n_p
         do j = i+1, n_l+n_p
@@ -621,6 +628,7 @@ implicit none
 
             else if ( i <= n_p .and. j > n_p) then
                 k = j-n_p   ! becauce we want all the arrays in here to start from 1
+
 
                 !-------------------------------MIXED SIGMA--------------------------------
                 ! Contributions of both particle and lattice to neutral sphere radius
@@ -901,6 +909,7 @@ implicit none
     denergy(6) = dV_pp(6)+0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy(7) = dEcoh_p(7) + dV_pp(7)+ &
                    + 0.5d0*(dV_lp_p(7)+dV_pl_p(7)+dvref_l_p(7)+dvref_p_p(7))
+
 
 
 end subroutine emt_fit

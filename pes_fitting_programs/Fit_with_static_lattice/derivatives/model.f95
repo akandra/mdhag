@@ -9,9 +9,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     type(EMTparms)      :: particle_parms   ! parameters of particle
     type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
     real(8)             :: F
-    real(8)             :: YDAT(5000)   !YDAT(N)
-    real(8)             :: XDAT(5000,3,1000) !XDAT(N,M)
-    real(8)             :: RRR(5000)
+    real(8)             :: YDAT(1000)   !YDAT(N)
+    real(8)             :: XDAT(1000,3,1000) !XDAT(N,M)
+    real(8)             :: RRR(1000)
     integer             :: I, JP,ij
 
     real(8)             :: B, P, RES
@@ -70,18 +70,17 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
-        call emt(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
-        !print *, energy
-
+        call emt(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
         F   = energy
         RES = YDAT(I) - F
 
 
 
     case(2)
-        call emt_fit(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
+        call emt_fit(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
 
-        !print *, 'case2',energy
+        !print *, energy-E_dref
+        print *, 'bla'
         !stop
         F   = energy
         RES = YDAT(I) - F
@@ -105,11 +104,19 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
 
     case(4)
-        call emt(a_lat, celli, XDAT(1,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
+        call emt(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
         F   = energy
         RRR(I) = F
 
     end select
+
+        if ( ((mod(i,10)==0) .or. (i==N))) then
+            write(*,1000) iteration, i, YDAT(i), F, B(1:14)
+        end if
+
+        if (debug(4)) then
+            write(7,1010) iteration,i, xdat(i,:,1),YDAT(i), F, RES, B(1:14)
+        end if
 
 !    F   = energy
 !    RES = YDAT(I) - F

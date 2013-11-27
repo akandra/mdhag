@@ -65,8 +65,12 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    energy_l_and_p =      'data/traj005/analyse_005.out'
+    !position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    !energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
+    energy_l_and_p =      'data/trajjustau/enery_move_Au.dat'
+    !position_of_l_and_p = 'data/trajjustau/XDATCAR.out'
+    !energy_l_and_p =      'data/trajjustau/energy.dat'
 
     fix_position = 'data/au111_2x2x4.POSCAR'
     fix_energy = 'data/energy.dat'!'data/hau111_plot.E.dat'

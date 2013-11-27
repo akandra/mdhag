@@ -58,7 +58,7 @@ program EMT_fit_1
     ! At entry, B's are initial guesses for parameters
     ! On exit, B's are the results of the fit.
     !real(8), allocatable :: RRR(:) ! Array used optionally for communication with MODEL
-    real(8) :: X(5000,3,1000),Y(5000),RRR(5000)
+    real(8) :: X(1000,3,1000),Y(1000),RRR(1000)
     integer, dimension(8) :: NARRAY ! Integer array of control parameters
     real, dimension(8) :: ARRAY = 0 ! Array of statistical parameters. Use 0.0 to get default values.
     integer, dimension(14) :: IB = 0 ! Integer Array containing the subscripts of parameters to be held constant.
@@ -75,6 +75,11 @@ program EMT_fit_1
     type (EMTparms) :: particle_pars ! EMT parameters of particle
     type (EMTparms) :: lattice_pars ! EMT parameters of lattice
     type (EMTparms) :: test_pars ! used for check conversion routines
+    type (EMTparms) :: part_new ! EMT parameters of particle
+    type (EMTparms) :: latt_new ! EMT parameters of lattice
+
+    namelist / lattice_pars_list_new / latt_new ! Namelists to handle I/O of parameters
+    namelist / particle_pars_list_new / part_new
 
     namelist / lattice_pars_list / lattice_pars ! Namelists to handle I/O of parameters
     namelist / particle_pars_list / particle_pars
@@ -135,9 +140,9 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.140.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.140.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.140.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.146.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.146.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.146.Au.nml'
 
     particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
     lattice_nml_in  = 'data/parameters_and_fit_results/stroem.01.Au.nml' !stroem.00.Au.nml'
@@ -190,14 +195,16 @@ program EMT_fit_1
 
     rep = 1
     cell_b=(/2,2,4/)
-    control=200
+    control=201
     e_aimd_max=0.00
-    just_l = .false.
+    just_l = .true.
 
 
     call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, just_l, time, l_aimd, n_l, &
                                                                 n_p,celli, x_all, E_all)
+
     print *, 'l_aimd', l_aimd
+
 
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
     Y(1:time)=E_all(1:time)
@@ -224,9 +231,6 @@ program EMT_fit_1
 
 
         do q=1,time
-            r_l(q,:,:)=x_all(q,:,n_p+1:n_l+n_p)
-            if (just_l .eqv. .false.) r_p(q,:)=x_all(1,:,5)
-            if (just_l .eqv. .true.) r_p(q,:)=(/0.0d0,0.0d0,6.0d0/)
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
 
 
@@ -285,15 +289,15 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,10,7,14,11,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 5 ! number of parameters held constant
+    IB = (/3,7,14,0,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 3 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 1000
+    max_iterations = 500
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -342,16 +346,17 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     1000 format(2x,a15,2x,a2,7F7.3)
     1010 format(2x,a15,4x,7F7.3,/,19x,7f7.3)
 
+
+    call array2emt_parms( B(1:7 ), part_new)
+    call array2emt_parms( B(8:14), latt_new )
+
+    sumsq=0.0d0
     do q=1,time
-            call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
-
-
+            call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, part_new, latt_new, energy)
             write( *,'(1X, 5F15.8)') energy-Y(q)
-            !write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
-            !write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy
             sumsq=sumsq+(energy-Y(q))**2
     end do
-    print*, sumsq/q
+    print*, sqrt(sumsq/time)
 
 end program
 !-------------------------------------------------------------------------------------------------------|

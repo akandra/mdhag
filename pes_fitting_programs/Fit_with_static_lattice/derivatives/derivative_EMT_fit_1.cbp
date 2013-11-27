@@ -54,6 +54,9 @@
 		<Unit filename="parameters_and_fit_results/stroem.00.H.nml" />
 		<Unit filename="ref_conf_Au111.dat" />
 		<Unit filename="ref_conf_Au111a.dat" />
+		<Unit filename="whatever.f95">
+			<Option weight="0" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
