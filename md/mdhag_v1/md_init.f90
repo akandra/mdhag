@@ -68,10 +68,10 @@ subroutine simbox_init(teilchen,slab)
     real(8) :: einc, inclination, azimuth, temp, E_pdof, v_pdof
     real(8), dimension(3,3) :: c_matrix, d_matrix
     integer :: i, j, k,l
-    integer :: n_l0, itemp
+    integer :: n_l0,,n_p0 itemp
     character(len=1) coord_sys
-    real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, pos_l, v_l, pos_p
-    integer :: n_l, n_p=1
+    real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, d_p, pos_l, v_l, pos_p
+    integer :: n_l, n_p
     integer :: npars_p, npars_l
     logical :: exists
     character(len=100) :: confname_file
@@ -151,7 +151,7 @@ subroutine simbox_init(teilchen,slab)
         read(17,*) buffer
         read(17,*) temp
         read(17,*) c_matrix
-        read(17,*) n_l0, n_p
+        read(17,*) n_l0, n_p0
         read(17,*) coord_sys
 
         ! Make sure that zero-arguments in c_matrix are indeed zeros
@@ -175,14 +175,16 @@ subroutine simbox_init(teilchen,slab)
 
         allocate(start_l(3,n_l0))
         read(17,*) start_l
-        allocate(start_p(3,n_p))
+        allocate(start_p(3,n_p0)
         read(17,*) start_p
 
         ! Transform the read in coordinates into direct if they are cartesians:
         if (coord_sys == 'C' .or. coord_sys == 'c') then
             start_l=matmul(d_matrix,start_l)
+            start_p=matmul(d_matrix,start_p)
         else
             start_p=matmul(c_matrix,start_p)
+            start_l=matmul(c_matrix,start_l)
         end if
 
 
@@ -204,23 +206,32 @@ subroutine simbox_init(teilchen,slab)
     !
         itemp=celldim(1)*celldim(2)
         n_l=itemp*celldim(3)*(2*rep+1)**2
+        n_p = (2*rep+1)**2
 
     ! allocate arrays
         allocate(d_l(3,n_l))
+        allocate(d_p(ende,3,n_p))
         d_l=0.d0
+        d_p = 0.0d0
+
 
     ! Translation of the entire story
 
 
         i = 1
+        s = 1
         do l = 1, celldim(3)
             do j =-rep, rep
                 do k=-rep, rep
                     d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
                     d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
                     d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
-
                     i = i+itemp
+
+                    d_p(q,1,s) = read_p(q,1)+j
+                    d_p(q,2,s) = read_p(q,2)+k
+                    d_p(q,3,s) = read_p(q,3)
+                    s = s + 1
                 end do
             end do
         end do
@@ -228,8 +239,10 @@ subroutine simbox_init(teilchen,slab)
 
 
         allocate(pos_l(3,n_l),v_l(3,n_l))
+        allocate(pos_p(3,n_p))
 
         pos_l = matmul(c_matrix,d_l)
+        pos_p = matmul(c_matrix,d_p)
     !    write(*,'(3f15.5)') pos_l
     !    stop
 
@@ -263,7 +276,7 @@ subroutine simbox_init(teilchen,slab)
         read(17,*) pos_l
         read(17,*) v_l
 
-    endif
+    endif ! If loop to read in, either from POSCAR or 'else'-file
 
     close(17)
 
@@ -306,15 +319,15 @@ subroutine simbox_init(teilchen,slab)
 
     allocate(teilchen(n_p), slab(n_l))
     do i = 1, n_p
-        teilchen(i)%r=start_p(:,i)
+        teilchen(i)%r=pos_p(:,i)
     end do
     if (confname .ne. 'POSCAR') then
         einc = sqrt(2.0d0*einc/spec_p%mass) ! projectile speed
-        teilchen(1)%v(1) = einc*sin(inclination)*cos(azimuth)
-        teilchen(1)%v(2) = einc*sin(inclination)*sin(azimuth)
-        teilchen(1)%v(3) = - einc*cos(inclination)
+        teilchen(:)%v(1) = einc*sin(inclination)*cos(azimuth)
+        teilchen(:)%v(2) = einc*sin(inclination)*sin(azimuth)
+        teilchen(:)%v(3) = - einc*cos(inclination)
     else
-        teilchen(1)%v = 0.0d0
+        teilchen(:)%v = 0.0d0
     end if
 
     do i = 1, n_l
@@ -334,12 +347,16 @@ subroutine simbox_init(teilchen,slab)
 
 end subroutine simbox_init
 
+
+
 function ran1()  !returns random number between 0 - 1
  implicit none
         real(8) ran1,x
         call random_number(x) ! built in fortran 90 random number function
         ran1=x
 end function ran1
+
+
 
 function normal(mean,sigma) !returns a normal distribution
  implicit none

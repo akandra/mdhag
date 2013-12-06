@@ -180,13 +180,14 @@ program mdhag
                     write(*,'(4f12.3)') q*step, 2.0d0*ke_l(s)/(kB*3.0d0*(spec_l%n-36)),&
                              ke_p(s)+ke_l(s)+pe(s)-(ke_p(1)+ke_l(1)+pe(1)), pe(s)
                     if (q > 0/step) then
-                        write(filename,'(A,I7.7,A)') './trajPd/conf',q,'.dat'
+                        write(filename,'(A,I7.7,A)') './traj191/conf',q,'.dat'
                         call open_for_write(1,filename)
                         write(1,'(3f18.8)') celli
                         write(1,'(2I5)') spec_l%n,spec_l%n
                         write(1,'(3f18.8)') rr(:,2:bl)
                         write(1,'(3f18.8)') vv(:,2:bl)
-                        print*,'print the configuration to', filename
+                        write(1,'(f18.8)') Epot
+                       print*,'print the configuration to', filename
                     end if
                 end if
 

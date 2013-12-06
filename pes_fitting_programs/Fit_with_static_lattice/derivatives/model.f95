@@ -71,6 +71,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     select case(jp)
     case(1)
         call emt(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
+        !energy=energy+E_pseudo
         F   = energy
         RES = YDAT(I) - F
 
@@ -79,8 +80,9 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     case(2)
         call emt_fit(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
 
+        !energy=energy+E_pseudo
         !print *, energy-E_dref
-        print *, 'bla'
+        !print *, 'bla'
         !stop
         F   = energy
         RES = YDAT(I) - F
@@ -95,7 +97,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         !--------WRITE ITERATION AND POINT TO SHOW STATUS ------------
 
         if ( ((mod(i,10)==0) .or. (i==N))) then
-            write(*,1000) iteration, i, YDAT(i), F, B(1:14)
+            !write(*,1000) iteration, i, YDAT(i), F, B(1:14)
+            write(*,1000) iteration, i, YDAT(i), YDAT(i)-F, B(1:14)
         end if
 
         if (debug(4)) then
@@ -110,13 +113,13 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 
     end select
 
-        if ( ((mod(i,10)==0) .or. (i==N))) then
-            write(*,1000) iteration, i, YDAT(i), F, B(1:14)
-        end if
+       ! if ( ((mod(i,10)==0) .or. (i==N))) then
+       !     write(*,1000) iteration, i, YDAT(i), F, B(1:14)
+       ! end if
 
-        if (debug(4)) then
-            write(7,1010) iteration,i, xdat(i,:,1),YDAT(i), F, RES, B(1:14)
-        end if
+        !if (debug(4)) then
+        !    write(7,1010) iteration,i, xdat(i,:,1),YDAT(i), F, RES, B(1:14)
+        !end if
 
 !    F   = energy
 !    RES = YDAT(I) - F

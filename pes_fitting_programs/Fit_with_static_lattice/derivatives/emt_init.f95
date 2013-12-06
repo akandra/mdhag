@@ -8,6 +8,7 @@ module emt_init_data
     real(8), dimension(3,6) :: celli
     logical  :: just_l
 !    integer :: rep
+    real(8) :: E_pseudo
 
 contains
 
@@ -45,8 +46,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 
 
 ! other variables
-    character(len=35)   :: position_of_l_and_p, fix_position
-    character(len=35)    :: energy_l_and_p, fix_energy
+    character(len=40)   :: position_of_l_and_p, fix_position
+    character(len=40)    :: energy_l_and_p, fix_energy
     integer             :: i, j,k,u,l, m,n,q, ios, start, ende, ende2,o,npts,s,r
     real(8)             :: c11,c12,c22, c33
     real(8)             :: temp, e_max
@@ -67,8 +68,23 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 
     !position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
     !energy_l_and_p =      'data/traj005/analyse_005.out'
-    position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
-    energy_l_and_p =      'data/trajjustau/enery_move_Au.dat'
+
+    ! 187 config, some from aimd, some from dragging Au out
+    !position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
+    !energy_l_and_p =      'data/trajjustau/enery_move_Au.dat'
+
+    ! 447 config, some from aimd, some from dragging Au out
+    !position_of_l_and_p = 'data/trajjustau/XDATCAR_more_drAu.out'
+    !energy_l_and_p =      'data/trajjustau/energy_more_drAu.dat'
+
+
+
+    ! 388 config, all from aimd
+    position_of_l_and_p = 'data/trajjustau/XDATCAR_more_Au.out'
+    energy_l_and_p =      'data/trajjustau/energy_more_Au.dat'
+
+
+    ! 137 config, all from aimd
     !position_of_l_and_p = 'data/trajjustau/XDATCAR.out'
     !energy_l_and_p =      'data/trajjustau/energy.dat'
 
@@ -311,7 +327,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     temp=cell_in(1)*cell_in(2)*cell_in(3)
     n_l=temp*(2*rep+1)**2
     n_p = (2*rep+1)**2
-    E_all = E_all * (2*rep+1)*2 ! energy needs to be increased to account for all images.
+    E_all = E_all * (2*rep+1)**2 ! energy needs to be increased to account for all images.
+    E_pseudo = 25.019988* (2*rep+1)**2
 
 
 ! allocate arrays

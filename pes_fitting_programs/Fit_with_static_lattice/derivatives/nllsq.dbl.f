@@ -378,7 +378,7 @@ C**********************************************************************
       DO 50 II=1,N
 C     LOOK FOR PARTIALS
       !J=2
-      J=1
+      J=2
       CALL MODEL(F,Y,X,RES,II,J)
       RD=RE
       DO30JJ=1,K

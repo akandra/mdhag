@@ -140,12 +140,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.146.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.146.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.146.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.192.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.192.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.192.Au.nml'
 
     particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.01.Au.nml' !stroem.00.Au.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.190.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -207,7 +207,7 @@ program EMT_fit_1
 
 
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
-    Y(1:time)=E_all(1:time)
+    Y(1:time)=E_all(1:time)!+E_pseudo
 
     call open_for_write(10, fit_results_fname)
 
@@ -226,7 +226,10 @@ program EMT_fit_1
         allocate(r_l(time,3,n_l))
         allocate(r_p(time,3))
         r_l(1,:,:)=x_all(1,:,n_p+1:n_l+n_p)
-        call emt(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref)
+        !call emt(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref)
+        call emt_fit(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref, Ablei)
+        write(*,'(7f15.5)'), Ablei
+
 
 
 
@@ -289,15 +292,15 @@ program EMT_fit_1
     ! V0        5 12      x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/3,7,14,0,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 3 ! number of parameters held constant
+    IB = (/1,2,3,4,5,6,7,14,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 8 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 500
+    max_iterations = 1000
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -353,10 +356,11 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     sumsq=0.0d0
     do q=1,time
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, part_new, latt_new, energy)
-            write( *,'(1X, 5F15.8)') energy-Y(q)
+            !write( *,'(1X, 5F15.8)') energy-Y(q)
             sumsq=sumsq+(energy-Y(q))**2
     end do
-    print*, sqrt(sumsq/time)
+    print*, sqrt(sumsq/time)*1000, 'meV'
+    write(*,'(7f15.5)'), Ablei
 
 end program
 !-------------------------------------------------------------------------------------------------------|

@@ -1,4 +1,5 @@
 module EMTparms_class
+    use emt_init_data
 
     implicit none
     save
@@ -17,6 +18,7 @@ module EMTparms_class
     real(8),allocatable             :: r0_lat(:,:)  ! positions of reference lattice atoms
     real(8), private                :: Eref         ! reference energy
     real(8)                         :: a_lat        ! global variable for the lattice constant
+    real(8), dimension(14)          :: Ablei
 
 
     type EMTparms
@@ -326,6 +328,7 @@ implicit none
 ! Summation over all contributions.
 
     energy = Ecoh - V_ll - V_pp - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
+    !energy=energy+E_pseudo
 
 
 end subroutine emt
@@ -886,6 +889,7 @@ implicit none
 ! Summation over all contributions.
 ! Overall energy
     energy = Ecoh - V_ll - V_pp - 0.5d0* ( V_lp + V_pl - vref_l - vref_p)
+    !energy=energy+E_pseudo
 
     ! Derivative with respect to l
     denergy(8) = dEcoh_l(1) + 0.5d0*( dvref_l_l(1)+dvref_p_l(1))
@@ -909,6 +913,8 @@ implicit none
     denergy(6) = dV_pp(6)+0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
     denergy(7) = dEcoh_p(7) + dV_pp(7)+ &
                    + 0.5d0*(dV_lp_p(7)+dV_pl_p(7)+dvref_l_p(7)+dvref_p_p(7))
+
+    Ablei=denergy
 
 
 
