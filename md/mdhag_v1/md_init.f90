@@ -21,6 +21,7 @@ module md_init
     real(8),dimension(3,6) :: celli
     type(species) :: spec_l, spec_p
     real(8), dimension(:), allocatable :: pars_l, pars_p
+    real(8), dimension(:,:), allocatable :: x_ref
     character(len=7)        :: confname
 
 
@@ -67,11 +68,12 @@ subroutine simbox_init(teilchen,slab)
     integer :: pos1, ios = 0, line = 0
     real(8) :: einc, inclination, azimuth, temp, E_pdof, v_pdof
     real(8), dimension(3,3) :: c_matrix, d_matrix
-    integer :: i, j, k,l
-    integer :: n_l0,,n_p0 itemp
+    integer :: i, j, k,l, s,r
+    integer :: n_l0, itemp
     character(len=1) coord_sys
-    real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, d_p, pos_l, v_l, pos_p
-    integer :: n_l, n_p
+    real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, pos_l, v_l, pos_p
+    real(8), dimension(:,:), allocatable :: d_ref, d_p,  v_p
+    integer :: n_l, n_p=1
     integer :: npars_p, npars_l
     logical :: exists
     character(len=100) :: confname_file
@@ -151,7 +153,7 @@ subroutine simbox_init(teilchen,slab)
         read(17,*) buffer
         read(17,*) temp
         read(17,*) c_matrix
-        read(17,*) n_l0, n_p0
+        read(17,*) n_l0, n_p
         read(17,*) coord_sys
 
         ! Make sure that zero-arguments in c_matrix are indeed zeros
@@ -175,7 +177,7 @@ subroutine simbox_init(teilchen,slab)
 
         allocate(start_l(3,n_l0))
         read(17,*) start_l
-        allocate(start_p(3,n_p0)
+        allocate(start_p(3,n_p))
         read(17,*) start_p
 
         ! Transform the read in coordinates into direct if they are cartesians:
@@ -183,10 +185,14 @@ subroutine simbox_init(teilchen,slab)
             start_l=matmul(d_matrix,start_l)
             start_p=matmul(d_matrix,start_p)
         else
-            start_p=matmul(c_matrix,start_p)
-            start_l=matmul(c_matrix,start_l)
+            !start_p=matmul(c_matrix,start_p)
+            !start_l=matmul(c_matrix,start_l)
         end if
 
+        ! Define geometry for reference energy
+        allocate(d_ref(3,n_l0+1))
+        d_ref(:,1) = (/0.0d0,0.0d0,0.29618952180d0/)
+        d_ref(:,2:n_l0+1) = start_l
 
     !------------------------------------------------------------------------------
     !                    TRANSLATE LATTICE INTO BIGGER CELLS
@@ -210,10 +216,11 @@ subroutine simbox_init(teilchen,slab)
 
     ! allocate arrays
         allocate(d_l(3,n_l))
-        allocate(d_p(ende,3,n_p))
+        allocate(d_p(3,n_p))
+        allocate(x_ref(3,n_p+n_l))
         d_l=0.d0
         d_p = 0.0d0
-
+        x_ref=0.0d0
 
     ! Translation of the entire story
 
@@ -226,25 +233,46 @@ subroutine simbox_init(teilchen,slab)
                     d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
                     d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
                     d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
+
                     i = i+itemp
 
-                    d_p(q,1,s) = read_p(q,1)+j
-                    d_p(q,2,s) = read_p(q,2)+k
-                    d_p(q,3,s) = read_p(q,3)
-                    s = s + 1
                 end do
             end do
         end do
 
+        itemp=itemp*celldim(3)
+        i=1
+        j=1
+        do r =-rep, rep
+            do s=-rep, rep
+                ! Set the running parameters
+                x_ref(1,n_p+i:n_p+n_l) = d_ref(1,2:n_l0+1)+r
+                x_ref(2,n_p+i:n_p+n_l) = d_ref(2,2:n_l0+1)+s
+                x_ref(3,n_p+i:n_p+n_l) = d_ref(3,2:n_l0+1)
+                i = i+itemp
 
+                x_ref(1,j) = d_ref(1,1)+r
+                x_ref(2,j) = d_ref(2,1)+s
+                x_ref(3,j) = d_ref(3,1)
+
+                d_p(1,j) = start_p(1,1)+r
+                d_p(2,j) = start_p(2,1)+s
+                d_p(3,j) = start_p(3,1)
+
+                j=j+1
+
+            end do
+        end do
 
         allocate(pos_l(3,n_l),v_l(3,n_l))
-        allocate(pos_p(3,n_p))
+        allocate(pos_p(3,n_p),v_p(3,n_p))
 
         pos_l = matmul(c_matrix,d_l)
         pos_p = matmul(c_matrix,d_p)
-    !    write(*,'(3f15.5)') pos_l
-    !    stop
+        x_ref = matmul(c_matrix,x_ref)
+
+        !write(*,'(3f15.5)') x_ref1
+        !stop
 
     ! Now, we implement the velocities of the Au atoms
     ! This is the doubled energy per atom
@@ -261,6 +289,7 @@ subroutine simbox_init(teilchen,slab)
             v_l(2,i) = normal(0.0d0,v_pdof)
             v_l(3,i) = normal(0.0d0,v_pdof)
         enddo
+        v_p = 0.0d0
         ! Set c.-of-m. velocity to zero
         v_l(1,1:n_l0) = v_l(1,1:n_l0) - sum(v_l(1,1:n_l0))/n_l0
         v_l(2,1:n_l0) = v_l(2,1:n_l0) - sum(v_l(2,1:n_l0))/n_l0
@@ -276,7 +305,7 @@ subroutine simbox_init(teilchen,slab)
         read(17,*) pos_l
         read(17,*) v_l
 
-    endif ! If loop to read in, either from POSCAR or 'else'-file
+    endif
 
     close(17)
 
@@ -298,8 +327,6 @@ subroutine simbox_init(teilchen,slab)
     end do
     close(23)
 !    print *, pars_p
-
-
 
     ! Species definition
     spec_l%name = name_l
@@ -327,7 +354,7 @@ subroutine simbox_init(teilchen,slab)
         teilchen(:)%v(2) = einc*sin(inclination)*sin(azimuth)
         teilchen(:)%v(3) = - einc*cos(inclination)
     else
-        teilchen(:)%v = 0.0d0
+        teilchen(1)%v = 0.0d0
     end if
 
     do i = 1, n_l
@@ -343,11 +370,9 @@ subroutine simbox_init(teilchen,slab)
 
 
     deallocate(start_p)
-    deallocate(pos_l,d_l,start_l,v_l)
+    deallocate(pos_l,d_l,pos_p, d_p, d_ref,start_l,v_l)
 
 end subroutine simbox_init
-
-
 
 function ran1()  !returns random number between 0 - 1
  implicit none
@@ -355,8 +380,6 @@ function ran1()  !returns random number between 0 - 1
         call random_number(x) ! built in fortran 90 random number function
         ran1=x
 end function ran1
-
-
 
 function normal(mean,sigma) !returns a normal distribution
  implicit none

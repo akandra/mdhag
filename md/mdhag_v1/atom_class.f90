@@ -14,6 +14,7 @@ module atom_class
     real(8), parameter          :: sqrt3    = 1.73205080757d0
     real(8), parameter          :: pi       = 3.14159265359d0
     real(8), parameter          :: kB       = 0.0000861730d0
+    real(8), parameter          :: twelveth = 0.0833333333333333d0
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
 
     ! Unit conversion constants:

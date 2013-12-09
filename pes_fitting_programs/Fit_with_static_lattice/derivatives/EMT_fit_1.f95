@@ -145,7 +145,7 @@ program EMT_fit_1
     lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.192.Au.nml'
 
     particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.190.Au.nml' !stroem.00.Au.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.191.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -195,7 +195,7 @@ program EMT_fit_1
 
     rep = 1
     cell_b=(/2,2,4/)
-    control=201
+    control=200
     e_aimd_max=0.00
     just_l = .true.
 
@@ -223,11 +223,7 @@ program EMT_fit_1
         write(*,*) 'site X Y Z EMT DFT'
         Write(10,*) 'site X Y Z EMT DFT'
         sumsq = 0
-        allocate(r_l(time,3,n_l))
-        allocate(r_p(time,3))
-        r_l(1,:,:)=x_all(1,:,n_p+1:n_l+n_p)
-        !call emt(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref)
-        call emt_fit(a_lat, celli, x_all(1,:,:), n_l, n_p, particle_pars, lattice_pars, e_ref, Ablei)
+        call emt_fit(a_lat, celli, x_ref, n_l, n_p, particle_pars, lattice_pars, e_ref, Ablei)
         write(*,'(7f15.5)'), Ablei
 
 
@@ -237,14 +233,14 @@ program EMT_fit_1
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
 
 
-            if(q<10) write( *,'(1X, 5F15.8)') X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
-            write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy, Y(q)
-            write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy
+            if(q<10) write( *,'(1X, 5F15.8)') X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref, Y(q)
+            write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref, Y(q)
+            write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref
             if (q > 483) then
             !write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
 
             end if
-            sumsq=sumsq+(energy-Y(q))**2
+            sumsq=sumsq+(energy-e_ref-Y(q))**2
         end do
         write(*,*)
         write(10,*)
@@ -255,7 +251,7 @@ program EMT_fit_1
     end if
 
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
-!stop
+stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -300,7 +296,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 1000
+    max_iterations = 150
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -354,10 +350,11 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     call array2emt_parms( B(8:14), latt_new )
 
     sumsq=0.0d0
+    call emt(a_lat, celli, x_ref, n_l, n_p, part_new, latt_new, e_ref)
     do q=1,time
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, part_new, latt_new, energy)
-            !write( *,'(1X, 5F15.8)') energy-Y(q)
-            sumsq=sumsq+(energy-Y(q))**2
+            !write( *,'(1X, 5F15.8)') energy-e_ref-Y(q)
+            sumsq=sumsq+(energy-e_ref-Y(q))**2
     end do
     print*, sqrt(sumsq/time)*1000, 'meV'
     write(*,'(7f15.5)'), Ablei

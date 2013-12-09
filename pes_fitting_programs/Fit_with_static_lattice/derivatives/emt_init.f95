@@ -9,6 +9,7 @@ module emt_init_data
     logical  :: just_l
 !    integer :: rep
     real(8) :: E_pseudo
+    real(8), dimension(:,:), allocatable :: x_ref
 
 contains
 
@@ -58,7 +59,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8), dimension(:,:,:), allocatable :: aimd_l,  prae_read_l, read_l ! array of au after read in
     real(8), dimension(:,:),allocatable    :: aimd_p,  prae_d_p, read_p     ! array of h
     real(8), dimension(:,:,:), allocatable :: d_l, d_p     ! array after multiplying lattice image
-    real(8), dimension(:,:), allocatable :: fix_l, dfix ! array of au after read in
+    real(8), dimension(:,:), allocatable :: fix_l, dfix, d_ref, x_ref1 ! array of au after read in
     real(8), dimension(:,:),allocatable    :: fix_p     ! array of h
     real(8), dimension(:,:,:), allocatable:: r_l, r_p      ! Position of lattice atoms, position of particle
 
@@ -66,8 +67,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    !position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    !energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    energy_l_and_p =      'data/traj005/analyse_005.out'
 
     ! 187 config, some from aimd, some from dragging Au out
     !position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
@@ -80,8 +81,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 
 
     ! 388 config, all from aimd
-    position_of_l_and_p = 'data/trajjustau/XDATCAR_more_Au.out'
-    energy_l_and_p =      'data/trajjustau/energy_more_Au.dat'
+    !position_of_l_and_p = 'data/trajjustau/XDATCAR_more_Au.out'
+    !energy_l_and_p =      'data/trajjustau/energy_more_Au.dat'
 
 
     ! 137 config, all from aimd
@@ -153,8 +154,6 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     celli(1:2,4:5)=d_matrix(1:2,1:2)/(2*rep+1)
     celli(3,6)=d_matrix(3,3)
 
-
-
     fix_p=matmul(fix_p,transpose(d_matrix))     ! Turn H-positions into direct coordinates
 
     do i=1,npts
@@ -163,7 +162,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
         if (fix_p(i,3) < -0.001d0) fix_p(i,3)=fix_p(i,3)+1.0d0
     end do
 
-    fix_l=matmul(d_matrix,fix_l)
+    fix_l=matmul(d_matrix,fix_l)                ! Turn Au-positions into direct coordinates
     fix_l=Nint(fix_l*10000)/10000.0d0
 
     do i=1,k
@@ -171,6 +170,11 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 !        if (fix_l(2,i) < 0.0d0) fix_l(2,i)=fix_l(2,i)+1.0d0
         if (fix_l(3,i) < -0.0001d0) fix_l(3,i)=fix_l(3,i)+1.0d0
     end do
+
+    ! Define geometry for reference energy
+    allocate(d_ref(3,k+1))
+    d_ref(:,1) = (/0.0d0,0.0d0,0.29618952180d0/)
+    d_ref(:,2:k+1) = fix_l
 
 
 !---------------------------READ IN AIMD GEOMETRIES----------------------------
@@ -291,6 +295,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
         E_all=E_fix
 
     ! only AIMD points for fit
+    ! The first geometry here will be later used as a reference energy, but
+    ! to make things easier, it is calculated in this array
     else if (control == 201) then
         time=ende2
         allocate(read_l(time,3,k))
@@ -299,7 +305,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
         read_l=0.0
         read_p=0
         E_all=0
-        read_l = aimd_l(1:time,:,:)
+        read_l = aimd_l
         read_p = aimd_p(1:time,:)
         l_aimd = time
         E_all=E_dft1(1:time)
@@ -327,15 +333,17 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     temp=cell_in(1)*cell_in(2)*cell_in(3)
     n_l=temp*(2*rep+1)**2
     n_p = (2*rep+1)**2
-    E_all = E_all * (2*rep+1)**2 ! energy needs to be increased to account for all images.
-    E_pseudo = 25.019988* (2*rep+1)**2
+    !E_all = E_all * (2*rep+1)**2 ! energy needs to be increased to account for all images. From old times, when still with VASP reference energy
+    E_all = E_all + 24.995689
 
 
 ! allocate arrays
     allocate(d_l(ende,3,n_l))
     allocate(d_p(ende,3,n_p))
+    allocate(x_ref1(3,n_p+n_l))
     d_l=0.d0
     d_p = 0.0d0
+    x_ref1=0.0d0
 
 
 ! Translation of the entire story
@@ -354,7 +362,27 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
                 d_p(q,2,j) = read_p(q,2)+s
                 d_p(q,3,j) = read_p(q,3)
                 j = j + 1
+
            end do
+        end do
+    end do
+
+    ! Translation of Reference energy
+    i=1
+    j=1
+    do r =-rep, rep
+        do s=-rep, rep
+            ! Set the running parameters
+            x_ref1(1,n_p+i:n_p+n_l) = d_ref(1,2:k+1)+r
+            x_ref1(2,n_p+i:n_p+n_l) = d_ref(2,2:k+1)+s
+            x_ref1(3,n_p+i:n_p+n_l) = d_ref(3,2:k+1)
+            i = i+temp
+
+            x_ref1(1,j) = d_ref(1,1)+r
+            x_ref1(2,j) = d_ref(2,1)+s
+            x_ref1(3,j) = d_ref(3,1)
+            j=j+1
+
         end do
     end do
 
@@ -369,22 +397,31 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
             r_p(q,:,:) = matmul(c_matrix,d_p(q,:,:)) ! is this right?
      end do
 
+    ! transform reference coordinates into cartesian:
+    x_ref1=matmul(c_matrix,x_ref1)
+
+
 
 ! Sascha, you have commented that you understand what we did here and that it is right.
 ! Dont ask questions, just ACCEPT it.
     ! Write the overall array that contains both H and Au positions
+
+
     if (just_l .eqv. .false.) then
         k=n_l+n_p
-        allocate(x_all(ende,3,k))
+        allocate(x_all(time,3,k))
         x_all(:,:,1:n_p)=r_p
         x_all(:,:,n_p+1:k)=r_l
+        x_ref=x_ref1
     else if (just_l .eqv. .true.) then
         allocate(x_all(ende,3,n_l))
         x_all=r_l
+        x_ref=x_ref1(:,n_p+1:n_p+n_l)
         n_p = 0
     else
         print*,"There's something wrong with your allocation of x_all in emt_init"
     end if
+
 
 
     ! DON'T FORGET TO DEALLOCATE EVERYTHING!!!!!

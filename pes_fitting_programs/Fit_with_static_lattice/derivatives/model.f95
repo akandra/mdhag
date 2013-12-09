@@ -22,7 +22,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     real(8)             :: energy,  E_dref
     real(8), dimension(14):: denergy
     real(8), dimension(14) ::dE_ref
-    !real(8), dimension(7) ::dE_ref
     real(8)             :: Enew,dEnew(14)
 
     logical, save       :: first_run=.true.
@@ -70,19 +69,20 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
+        call emt(a_lat, celli, x_ref, n_l, n_p, particle_parms,lattice_parms, Eref)
         call emt(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
-        !energy=energy+E_pseudo
+        energy=energy-Eref
         F   = energy
         RES = YDAT(I) - F
 
 
-
     case(2)
+        call emt_fit(a_lat, celli, x_ref, n_l, n_p, particle_parms, lattice_parms, Eref, dE_ref)
         call emt_fit(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
 
-        !energy=energy+E_pseudo
-        !print *, energy-E_dref
-        !print *, 'bla'
+        energy=energy-Eref
+        denergy=denergy-dE_ref
+        !write(*,'(7f15.5)') denergy
         !stop
         F   = energy
         RES = YDAT(I) - F

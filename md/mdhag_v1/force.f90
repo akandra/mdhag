@@ -26,7 +26,7 @@ module force
 
 
 
-subroutine emt(teilchen, slab, Epot)
+subroutine pes(teilchen, slab, Epot)
 !
 ! Purpose
 !       emt calculates the energy according to the effective medium theory.
@@ -78,26 +78,30 @@ implicit none
 
     real(8) :: E_ref                    ! reference energy
     real(8) :: Ecoh_ref                  !cohesive reference energy
-    type(EMTparms)      :: particle_parms   ! parameters of particle
-    type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
-
 ! For the reference energy
     real(8)                 :: rn_ltemp(spec_l%n), r3temp1(3), rtemp1, teti
-    real(8), dimension(:,:) :: x_all
+    real(8), dimension(:,:), allocatable :: x_all
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 ! definition of a few values that appear frequently in calculation
+
     allocate(x_all(3,spec_l%n+spec_p%n))
-    x_all(:,1:spec_p%n) = teilchen(:)%r(:)
-    x_all(:,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(:)
-    betas0_l = beta * pars_l%s0
-    betas0_p = beta * pars_p%s0
-    kappadbeta_l = pars_l%kappa / beta
-    kappadbeta_p = pars_p%kappa / beta
+    x_all(1,1:spec_p%n) = teilchen(:)%r(1)
+    x_all(2,1:spec_p%n) = teilchen(:)%r(2)
+    x_all(3,1:spec_p%n) = teilchen(:)%r(3)
+    x_all(1,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(1)
+    x_all(2,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(2)
+    x_all(3,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(3)
+
+    betas0_l = beta * pars_l(7)
+    betas0_p = beta * pars_p(7)
+    kappadbeta_l = pars_l(6) / beta
+    kappadbeta_p = pars_p(6) / beta
 
 ! 'coupling' parameters between p and l
-    chilp = pars_p%n0 / pars_l%n0
+    chilp = pars_p(2) / pars_l(2)
     chipl = 1.0d0 / chilp
+
 
 
 !------------------------------------------------------------------------------
@@ -108,19 +112,19 @@ implicit none
 ! We only need one cut-off and we choose the one of the lattice atoms since s0
 ! is usually larger for them.
 
-    rcut = betas0_l * sqrt_3
-    rcut = a_lat * sqrt_3 * isqrt_2
-    rr = 4 * rcut / (sqrt_3 + 2.0d0)
+    rcut = betas0_l * sqrt3
+    !rcut = a_lat * sqrt3 * isqrt2
+    rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
 
 ! Distances to the considered neighbours
     rnnl(1) = betas0_l
-    rnnl(2) = rnnl(1) * sqrt_2
-    rnnl(3) = rnnl(1) * sqrt_3
+    rnnl(2) = rnnl(1) * sqrt2
+    rnnl(3) = rnnl(1) * sqrt3
     rnnp(1) = betas0_p
-    rnnp(2) = rnnp(1) * sqrt_2
-    rnnp(3) = rnnp(1) * sqrt_3
+    rnnp(2) = rnnp(1) * sqrt2
+    rnnp(3) = rnnp(1) * sqrt3
 
     xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
     xp = b * twelveth/ (1.0d0 + exp(acut*(rnnp-rcut)))
@@ -129,11 +133,11 @@ implicit none
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
     r3temp = rnnl-betas0_l
-    igamma1l = 1.0d0 / sum(xl*exp(-pars_l%eta2 * r3temp))
+    igamma1l = 1.0d0 / sum(xl*exp(-pars_l(1) * r3temp))
     igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
 
     r3temp = rnnp-betas0_p
-    igamma1p = 1.0d0 / sum(xp*exp(-pars_p%eta2 * r3temp))
+    igamma1p = 1.0d0 / sum(xp*exp(-pars_p(1) * r3temp))
     igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
 
 
@@ -153,6 +157,7 @@ implicit none
     V_lp = 0.0d0
     V_pl = 0.0d0
 
+
     do i = 1, spec_l%n+spec_p%n
         do j = i+1, spec_l%n+spec_p%n
 
@@ -165,13 +170,13 @@ implicit none
             r3temp(3) = x_all(3,i)-x_all(3,j)
 
             ! transform distances into direct coordinates
-            r3temp= matmul(cell(1:3,4:6),r3temp)
+            r3temp= matmul(celli(1:3,4:6),r3temp)
 
             r3temp(1)=r3temp(1)-Anint(r3temp(1))
             r3temp(2)=r3temp(2)-Anint(r3temp(2))
             r3temp(3)=r3temp(3)-Anint(r3temp(3))
 
-            r3temp=matmul(cell(1:3,1:3),r3temp)
+            r3temp=matmul(celli(1:3,1:3),r3temp)
 
             r =  sqrt(sum(r3temp**2))
             teti = teti+r
@@ -193,7 +198,7 @@ implicit none
                 ! others are summed up. To enforce the cut-off, it will be later
                 ! corrected by gamma.
 
-                rtemp = theta*exp(-pars_p%eta2 * (r - betas0_p) )
+                rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )
                 sigma_pp(i) = sigma_pp(i) + rtemp
                 sigma_pp(j) = sigma_pp(j) + rtemp
 
@@ -216,9 +221,9 @@ implicit none
                 ! Contributions of both particle and lattice to neutral sphere radius
                 ! To fully include the cut-off, we correct them later by gamma.
 
-                sigma_lp(k) = sigma_lp(k)+theta*exp(-pars_p%eta2 * (r - betas0_p) )
+                sigma_lp(k) = sigma_lp(k)+theta*exp(-pars_p(1) * (r - betas0_p) )
 
-                sigma_pl(i) = sigma_pl(i)+theta*exp(-pars_l%eta2 * (r - betas0_l) )
+                sigma_pl(i) = sigma_pl(i)+theta*exp(-pars_l(1) * (r - betas0_l) )
 
 
                 !--------------------MIXED PAIR POTENTIAL CONTRIUBUTION--------------------
@@ -240,7 +245,7 @@ implicit none
                 ! others are summed up. To enforce the cut-off, it will be later
                 ! corrected by gamma.
 
-                rtemp = theta*exp(-pars_l%eta2 * (r - betas0_l) )
+                rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )
                 sigma_ll(q) = sigma_ll(q) + rtemp
                 sigma_ll(k) = sigma_ll(k) + rtemp
 
@@ -270,10 +275,10 @@ implicit none
     sigma_lp = sigma_lp * igamma1l
     sigma_pl = sigma_pl * igamma1p
 
-    V_ll = V_ll * pars_l%V0 * igamma2l
-    V_pp = V_pp * pars_p%V0 * igamma2p
-    V_lp = V_lp *chilp * pars_l%V0 * igamma2l
-    V_pl = V_pl * pars_p%V0 * igamma2p * chipl
+    V_ll = V_ll * pars_l(5) * igamma2l
+    V_pp = V_pp * pars_p(5) * igamma2p
+    V_lp = V_lp *chilp * pars_l(5) * igamma2l
+    V_pl = V_pl * pars_p(5) * igamma2p * chipl
 
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
@@ -281,16 +286,16 @@ implicit none
 ! atom is included.
 
     s_l = -log( (sigma_ll + chilp * sigma_lp ) * twelveth ) &
-            / ( beta * pars_l%eta2)
+            / ( beta * pars_l(1))
     s_p = -log( (sigma_pp + chipl * sigma_pl ) * twelveth ) &
-           / ( beta * pars_p%eta2)
+           / ( beta * pars_p(1))
 
 !----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
 ! These contributions have to be substracted to account for the contributions
 ! that were included twice.
 
-    vref_l = 12.0d0 * pars_l%V0 * sum( exp( -pars_l%kappa * s_l) )
-    vref_p = 12.0d0 * pars_p%V0 * sum( exp( -pars_p%kappa * s_p) )
+    vref_l = 12.0d0 * pars_l(5) * sum( exp( -pars_l(6) * s_l) )
+    vref_p = 12.0d0 * pars_p(5) * sum( exp( -pars_p(6) * s_p) )
 
 
 !------------------------------------------------------------------------------
@@ -305,45 +310,346 @@ implicit none
 ! Pay attention: the -1.0d0 from Ecoh_l has been deleted, because we want the
 !                VASP-reference energy.
 
-    Ecoh =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)) &
-          * pars_l%E0 &
-          + sum( (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)) &
-          * pars_p%E0
+    Ecoh =  sum( (1.0d0 + pars_l(4)*s_l) * exp(-pars_l(4) * s_l)-1.0d0) &
+          * pars_l(3) &
+          + sum( (1.0d0 + pars_p(4)*s_p) * exp(-pars_p(4) * s_p)) &
+          * pars_p(3)
 
 !-------------------------------OVERALL ENERGY---------------------------------
 ! Summation over all contributions.
 
-    energy = Ecoh - V_ll - V_pp - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
+    Epot = Ecoh - V_ll - V_pp - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
     !energy=energy+E_pseudo
+    !write(*,'(3f15.5)') Ecoh,V_ll,V_pp, V_lp, V_pl,vref_l,vref_p
 
 
-end subroutine emt
+deallocate(x_all)
+end subroutine pes
 
 
+!subroutine ref_energy(x_ball, Epot)
+!!
+!! Purpose
+!!       emt calculates the energy according to the effective medium theory.
+!! Input variables are (in oder of appearance):
+!!           a_lat: lattice constant
+!!           cell : conversion matrix from and to cartesian/direct coordinates
+!!           x_all : particle and lattice coordinates
+!!           n_l: number of lattice atoms
+!!           n_p: number of particle atoms
+!!           pars_p  : emt-parameters of particle
+!!           pars_l  : emt-parameters of lattice
+!! Output variables are:
+!!           energy  : emt-energy
+!implicit none
+!
+!!------------------------------------------------------------------------------
+!!                                   PREAMBLE
+!!                                   ========
+!!------------------------------------------------------------------------------
+!
+!! declare variables and parameters that are passed down from the program
+!
+!    real(8), dimension(:,:), intent(in) :: x_ball        ! positions of lattice atoms
+!    real(8), intent(out)                :: Epot ! calc. reference energy
+!! declare the variables that appear in the subroutine
+!
+!    integer :: i,j, k,q                   ! running parameter
+!    real(8) :: r                        ! distance
+!    real(8) :: rcut, rr, acut     ! values to calculate cut-off
+!    real(8) :: igamma1p, igamma2p       ! inverse gamma for particle
+!    real(8) :: igamma1l, igamma2l       ! inverse gamma for lattice atoms
+!    real(8) :: theta                    ! variable for cut-off calculation
+!    real(8) :: chilp, chipl             ! mixing between lattice (l) and particle (p)
+!    real(8), dimension(spec_l%n) :: sigma_ll ! contribution to ns, l only
+!    real(8), dimension(spec_p%n) :: sigma_pp ! contribution to ns, l only
+!    real(8), dimension(spec_l%n) :: sigma_lp ! mixed contribution to ns
+!    real(8), dimension(spec_p%n) :: sigma_pl ! mixed contribution to ns
+!    real(8), dimension(spec_l%n) :: s_l      ! neutral sphere radius lattice atoms
+!    real(8), dimension(spec_p%n) :: s_p      ! neutral sphere radius lattice atoms
+!    real(8) :: V_pl, V_lp, V_ll, V_pp   ! Pair potential contributions
+!    real(8) :: vref_l, vref_p           ! reference pair pot. contrib.
+!    real(8) :: Ecoh                     ! cohesive energy of part & lattice atoms
+!    real(8), dimension(3) :: xl, xp     ! for cal. cut-off
+!    real(8), dimension(3) :: rnnl, rnnp ! next neighbour distance for cut-off
+!    real(8) :: betas0_l, betas0_p       ! beta * s0= for l and p
+!    real(8) :: kappadbeta_l, kappadbeta_p ! beta * kappa for l and p
+!    real(8), dimension(3) :: r3temp     ! temporary array variable
+!    real(8) :: rtemp                    ! temporary variable
+!
+!    real(8) :: E_ref                    ! reference energy
+!    real(8) :: Ecoh_ref                  !cohesive reference energy
+!! For the reference energy
+!    real(8)                 :: rn_ltemp(spec_l%n), r3temp1(3), rtemp1, teti
+!
+!!----------------------VALUES OF FREQUENT USE ---------------------------------
+!! definition of a few values that appear frequently in calculation
+!    !allocate(x_all(3,spec_l%n+spec_p%n))
+!    !x_all(1,1:spec_p%n) = teilchen(:)%r(1)
+!    !x_all(2,1:spec_p%n) = teilchen(:)%r(2)
+!    !x_all(3,1:spec_p%n) = teilchen(:)%r(3)
+!    !x_all(1,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(1)
+!    !x_all(2,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(2)
+!    !x_all(3,spec_p%n+1:spec_p%n+spec_l%n) = slab(:)%r(3)
+!
+!    betas0_l = beta * pars_l(7)
+!    betas0_p = beta * pars_p(7)
+!    kappadbeta_l = pars_l(6) / beta
+!    kappadbeta_p = pars_p(6) / beta
+!
+!! 'coupling' parameters between p and l
+!    chilp = pars_p(2) / pars_l(2)
+!    chipl = 1.0d0 / chilp
+!
+!
+!!------------------------------------------------------------------------------
+!!                                  CUT-OFF
+!!                                  =======
+!!------------------------------------------------------------------------------
+!! We use the distance to the next-next nearest neighbours as cut-off.
+!! We only need one cut-off and we choose the one of the lattice atoms since s0
+!! is usually larger for them.
+!
+!    rcut = betas0_l * sqrt3
+!    !rcut = a_lat * sqrt3 * isqrt2
+!    rr = 4 * rcut / (sqrt3 + 2.0d0)
+!    acut = 9.210240d0/(rr -rcut) ! ln(10000)
+!
+!
+!! Distances to the considered neighbours
+!    rnnl(1) = betas0_l
+!    rnnl(2) = rnnl(1) * sqrt2
+!    rnnl(3) = rnnl(1) * sqrt3
+!    rnnp(1) = betas0_p
+!    rnnp(2) = rnnp(1) * sqrt2
+!    rnnp(3) = rnnp(1) * sqrt3
+!
+!    xl = b * twelveth / (1.0d0 + exp(acut*(rnnl-rcut)))
+!    xp = b * twelveth/ (1.0d0 + exp(acut*(rnnp-rcut)))
+!
+!!-----------------------------------GAMMA--------------------------------------
+!! Gamma enforces the cut-off together with theta (see below)
+!! Gamma is defined as inverse.
+!    r3temp = rnnl-betas0_l
+!    igamma1l = 1.0d0 / sum(xl*exp(-pars_l(1) * r3temp))
+!    igamma2l = 1.0d0 /sum(xl*exp(-kappadbeta_l * r3temp))
+!
+!    r3temp = rnnp-betas0_p
+!    igamma1p = 1.0d0 / sum(xp*exp(-pars_p(1) * r3temp))
+!    igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
+!
+!
+!
+!!------------------------------------------------------------------------------
+!!                          INDIVIDUAL CONTRIBUTIONS
+!!                          ========================
+!!------------------------------------------------------------------------------
+!! The values for the sums are set to zero.
+!
+!    sigma_ll = 0.0d0
+!    sigma_pp = 0.0d0
+!    sigma_pl = 0.0d0
+!    sigma_lp = 0.0d0
+!    V_ll = 0.0d0
+!    V_pp = 0.0d0
+!    V_lp = 0.0d0
+!    V_pl = 0.0d0
+!    s_l=0.0d0
+!    s_p=0.0d0
+!
+!    do i = 1, spec_l%n+spec_p%n
+!        do j = i+1, spec_l%n+spec_p%n
+!
+!
+!        !-----------------PERIODIC BOUNDARY CONDITIONS LATTICE-----------------
+!        ! Because we want them.
+!
+!            r3temp(1) = x_ball(1,i)-x_ball(1,j)
+!            r3temp(2) = x_ball(2,i)-x_ball(2,j)
+!            r3temp(3) = x_ball(3,i)-x_ball(3,j)
+!
+!            ! transform distances into direct coordinates
+!            r3temp= matmul(celli(1:3,4:6),r3temp)
+!
+!            r3temp(1)=r3temp(1)-Anint(r3temp(1))
+!            r3temp(2)=r3temp(2)-Anint(r3temp(2))
+!            r3temp(3)=r3temp(3)-Anint(r3temp(3))
+!
+!            r3temp=matmul(celli(1:3,1:3),r3temp)
+!
+!            r =  sqrt(sum(r3temp**2))
+!            !teti = teti+r
+!
+!        !---------------------------THETA PARTICLE------------------------------
+!        ! Theta enforces the cut-off together with gamma (see above). This
+!        ! function enacts cutoff by reducing contributions of atoms outside the
+!        ! cut-off to zero.
+!
+!            theta = 1.0d0 / (1.0d0 + exp( acut * (r - rcut) ) )
+!
+!
+!            if (i <= spec_p%n .and. j <= spec_p%n) then
+!                ! This loop deals with the contributions only due to the particle
+!
+!                !----------------------------SIGMA PARTICLE-----------------------------
+!                ! Sigma is a contribution to the neutral sphere radius.
+!                ! It is a list in which for each lattice atom, the contributions of the
+!                ! others are summed up. To enforce the cut-off, it will be later
+!                ! corrected by gamma.
+!
+!                rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )
+!                sigma_pp(i) = sigma_pp(i) + rtemp
+!                sigma_pp(j) = sigma_pp(j) + rtemp
+!
+!
+!
+!                !-----------------------PAIR POTENTIAL PARTICLE-------------------------
+!                ! Will later be subjected to gamma to complete the cut-off.
+!
+!                rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
+!                V_pp = V_pp + rtemp
+!
+!
+!            else if (i <= spec_p%n .and. j > spec_p%n ) then
+!                ! This loop deals with the coupled terms
+!                k=j-spec_p%n
+!
+!
+!
+!                !-------------------------------MIXED SIGMA--------------------------------
+!                ! Contributions of both particle and lattice to neutral sphere radius
+!                ! To fully include the cut-off, we correct them later by gamma.
+!
+!                sigma_lp(k) = sigma_lp(k)+theta*exp(-pars_p(1) * (r - betas0_p) )
+!
+!                sigma_pl(i) = sigma_pl(i)+theta*exp(-pars_l(1) * (r - betas0_l) )
+!
+!
+!                !--------------------MIXED PAIR POTENTIAL CONTRIUBUTION--------------------
+!
+!                rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))
+!                V_lp= V_lp + rtemp
+!                rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
+!                V_pl = V_pl + rtemp
+!
+!
+!            else if (i > spec_p%n .and. j > spec_p%n) then
+!                ! This loop deals with the contributions only due to the lattice
+!                k=j-spec_p%n
+!                q=i-spec_p%n
+!
+!                !----------------------------SIGMA LATTICE-----------------------------
+!                ! Sigma is a contribution to the neutral sphere radius.
+!                ! It is a list in which for each lattice atom, the contributions of the
+!                ! others are summed up. To enforce the cut-off, it will be later
+!                ! corrected by gamma.
+!
+!                rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )
+!                sigma_ll(q) = sigma_ll(q) + rtemp
+!                sigma_ll(k) = sigma_ll(k) + rtemp
+!
+!
+!
+!                !-----------------------PAIR POTENTIAL LATTICE-------------------------
+!                ! Will later be subjected to gamma to complete the cut-off.
+!
+!                rtemp = theta*exp(-kappadbeta_l * (r - betas0_l))
+!                V_ll = V_ll + rtemp
+!
+!            else
+!                print *, 'Your selection between n_p and n_l is wrong'
+!
+!
+!            end if
+!        end do
+!    end do
+!
+!
+!
+!!-------------------------------CUT-OFF ENACTION-------------------------------
+!! Don't forget the gamma!
+!
+!    sigma_ll = sigma_ll * igamma1l
+!    sigma_pp = sigma_pp * igamma1p
+!    sigma_lp = sigma_lp * igamma1l
+!    sigma_pl = sigma_pl * igamma1p
+!
+!    V_ll = V_ll * pars_l(5) * igamma2l
+!    V_pp = V_pp * pars_p(5) * igamma2p
+!    V_lp = V_lp *chilp * pars_l(5) * igamma2l
+!    V_pl = V_pl * pars_p(5) * igamma2p * chipl
+!
+!
+!!-----------------------------NEUTRAL SPHERE RADIUS----------------------------
+!! The neutral sphere radius is the radius in which the entire density of the
+!! atom is included.
+!
+!    s_l = -log( (sigma_ll + chilp * sigma_lp ) * twelveth ) &
+!            / ( beta * pars_l(1))
+!    s_p = -log( (sigma_pp + chipl * sigma_pl ) * twelveth ) &
+!           / ( beta * pars_p(1))
+!
+!!----------------MIXED REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------
+!! These contributions have to be substracted to account for the contributions
+!! that were included twice.
+!
+!    vref_l = 12.0d0 * pars_l(5) * sum( exp( -pars_l(6) * s_l) )
+!    vref_p = 12.0d0 * pars_p(5) * sum( exp( -pars_p(6) * s_p) )
+!
+!
+!!------------------------------------------------------------------------------
+!!                           CALCULATING THE ENERGY
+!!                           ======================
+!!------------------------------------------------------------------------------
+!
+!
+!!---------------------------COHESIVE ENERGY FUNCTION---------------------------
+!! Calculates and sums the contributions to the cohesive energy for both lattice
+!! and particle.
+!! Pay attention: the -1.0d0 from Ecoh_l has been deleted, because we want the
+!!                VASP-reference energy.
+!
+!    Ecoh =  sum( (1.0d0 + pars_l(4)*s_l) * exp(-pars_l(4) * s_l)-1.0d0) &
+!          * pars_l(3) &
+!          + sum( (1.0d0 + pars_p(4)*s_p) * exp(-pars_p(4) * s_p)) &
+!          * pars_p(3)
+!
+!!-------------------------------OVERALL ENERGY---------------------------------
+!! Summation over all contributions.
+!
+!    Epot = Ecoh - V_ll - V_pp - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
+!    !energy=energy+E_pseudo
+!
+!end subroutine ref_energy
+!
+!
+!
+!
+!
+!subroutine fric_coef(r,fric_key,zeta)
+!    !
+!    ! Purpose:
+!    !       Here, the friction coefficient is calculated
+!    !       DON'T FORGET TO DEVIDE THE FRICTION THROUGH THE MASS!!!!
+!    !
+!
+!    real(8), dimension(:,:), allocatable, intent(in) :: r
+!    integer, intent(in) :: fric_key
+!    real(8),intent(out) :: zeta ! Zeta is the friction coefficient.
+!    real(8) :: mass
+!
+!    mass = spec_l%mass
+!
+!    select case(fric_key)
+!    case(1)
+!        zeta = 1.0
+!    case default
+!        print *, 'This is not the friction you are looking for'
+!    end select
+!
+!end subroutine fric_coef
 
-subroutine fric_coef(r,fric_key,zeta)
-    !
-    ! Purpose:
-    !       Here, the friction coefficient is calculated
-    !       DON'T FORGET TO DEVIDE THE FRICTION THROUGH THE MASS!!!!
-    !
-
-    real(8), dimension(:,:), allocatable, intent(in) :: r
-    integer, intent(in) :: fric_key
-    real(8),intent(out) :: zeta ! Zeta is the friction coefficient.
-    real(8) :: mass
-
-    mass = spec_l%mass
-
-    select case(fric_key)
-    case(1)
-        zeta = 1.0
-    case default
-        print *, 'This is not the friction you are looking for'
-    end select
-
-end subroutine fric_coef
-!subroutine pes (teilchen,slab,Epot)
+!subroutine emt (teilchen,slab,Epot)
 !!
 !! Purpose:
 !!       Calculates the energy according to the potential chosen
@@ -800,7 +1106,7 @@ end subroutine fric_coef
 !Epot = energy
 !teilchen(1)%f = force_p
 !
-!end subroutine pes
+!end subroutine emt
 
 
 

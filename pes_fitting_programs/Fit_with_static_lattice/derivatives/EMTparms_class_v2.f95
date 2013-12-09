@@ -113,7 +113,6 @@ implicit none
     chilp = pars_p%n0 / pars_l%n0
     chipl = 1.0d0 / chilp
 
-
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
 !                                  =======
@@ -319,7 +318,7 @@ implicit none
 ! Pay attention: the -1.0d0 from Ecoh_l has been deleted, because we want the
 !                VASP-reference energy.
 
-    Ecoh =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)) &
+    Ecoh =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0) &
           * pars_l%E0 &
           + sum( (1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)) &
           * pars_p%E0
@@ -856,7 +855,7 @@ implicit none
 ! Calculates and sums the contributions to the cohesive energy for both lattice
 ! and particle.
 
-    Ecoh =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)) &
+    Ecoh =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0) &
           * pars_l%E0 &
           + sum(( 1.0d0 + pars_p%lambda*s_p) * exp(-pars_p%lambda * s_p)) &
           * pars_p%E0
@@ -869,7 +868,7 @@ implicit none
                     + sum(pars_p%lambda*rn_ptemp*ds_p_l(1,:))
         dEcoh_l(2) =  sum(pars_l%lambda*rn_ltemp*ds_l_l(2,:))&
                     + sum(pars_p%lambda*rn_ptemp*ds_p_l(2,:))
-        dEcoh_l(3) =  sum( (1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l))
+        dEcoh_l(3) =  sum((1.0d0 + pars_l%lambda*s_l) * exp(-pars_l%lambda * s_l)-1.0d0)
         dEcoh_l(4) =  sum(s_l*rn_ltemp)
         dEcoh_l(7) =  sum(pars_l%lambda*rn_ltemp*ds_l_l(7,:))&
                     + sum(pars_p%lambda*rn_ptemp*ds_p_l(7,:))

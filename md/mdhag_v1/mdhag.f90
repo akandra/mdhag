@@ -20,7 +20,7 @@ program mdhag
     real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp
     real(8),dimension(:), allocatable    :: imass
     integer :: i,j, iter=3, q, bl, itraj, tw, s
-    real(8) :: Epot, rtemp, rdummy
+    real(8) :: Epot, rtemp, rdummy, E_ref
     real(8) :: zeta, norm
     real(8) :: delta = 0.0010d0     ! dr at numerical calculation of the forces
     character(len=100)  :: filename
@@ -33,6 +33,11 @@ program mdhag
 
     ! Call up procedure that gets us geometries
     call simbox_init(teilchen,slab)
+    !call pes(teilchen,slab,E_ref)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !Call procedure that calcuates reference energy?
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! REMINDER:
     ! Print out what kind of potential has been chosen, the parameters and the
@@ -62,6 +67,7 @@ program mdhag
             ff(:,i)     = teilchen(i)%f
             imass(i)   = rtemp
         enddo
+
         rtemp=1.0d0/spec_l%mass
         do i=spec_p%n+1, bl
             j=i-spec_p%n
@@ -75,24 +81,30 @@ program mdhag
         enddo
 
         if (confname == 'POSCAR') then
-            rr(1:2,1) = 0.0d0
-            rr(3,1) = 6.0d0
+            !rr(1:2,1) = 0.0d0
+            !rr(3,1) = 6.0d0
         else
             ! Seed random number generator
-            call random_seed(size=randk)
-            call random_seed(put = itraj*randseed)
+            do i=1,spec_p%n
 
-            ! Initialize particle position
-            call random_number(xy_p)
-            xy_p =  matmul(celli(1:2,1:2),xy_p)
-            rr(1:2,1) = rr(1:2,1)+xy_p
+                call random_seed(size=randk)
+                call random_seed(put = itraj*randseed*i)
+
+                ! Initialize particle position
+                call random_number(xy_p)
+                xy_p =  matmul(celli(1:2,1:2),xy_p)
+                rr(1:2,i) = rr(1:2,i)+xy_p
+
+            enddo
         end if
 
         s=1
+
         call pes(teilchen, slab, Epot)
 
-        ke_p(s) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0*spec_p%mass
-        ke_l(s) = (sum(vv(1,2:bl)**2)+sum(vv(2,2:bl)**2)+sum(vv(3,2:bl)**2))*0.5d0*spec_l%mass
+
+        ke_p(s) = (sum(vv(1,1:spec_p%n)**2+vv(2,1:spec_p%n)**2+vv(3,1:spec_p%n)**2))*0.5d0*spec_p%mass
+        ke_l(s) = (sum(vv(1,spec_p%n+1:bl)**2)+sum(vv(2,spec_p%n+1:bl)**2)+sum(vv(3,spec_p%n+1:bl)**2))*0.5d0*spec_l%mass
         pe(s)   = Epot
         rt(:,s) = rr(:,1)
         vt(:,s) = vv(:,1)
@@ -100,16 +112,18 @@ program mdhag
 
         do q = 1, nsteps
             !print *, q
-
         !    call beeman_1(rr,vv,aa,aao)
         !    call  predict(vv,vp,aa,aao)
             rr(1,:) = rr(1,:) + vv(1,:)*step + 0.5d0*step**2*aa(1,:)*imass
             rr(2,:) = rr(2,:) + vv(2,:)*step + 0.5d0*step**2*aa(2,:)*imass
             rr(3,:) = rr(3,:) + vv(3,:)*step + 0.5d0*step**2*aa(3,:)*imass
 
+
             do i=1,spec_p%n
+                !write(*,'(3f15.5)') rr(:,i)
                 teilchen(i)%r = rr(:,i)
             enddo
+
             do i=spec_p%n+1, bl
                 j=i-spec_p%n
                 slab(j)%r = rr(:,i)
@@ -119,13 +133,14 @@ program mdhag
 
             do j = 1, 3
             do i = 1, spec_l%n
-                    slab(i)%r(j) = rr(j,i+1)-delta
+                    slab(i)%r(j) = rr(j,i+spec_p%n)-delta
                     call pes(teilchen, slab, rtemp)
-                    ff(j,i+1) = -(Epot-rtemp)/delta
-                    slab(i)%r(j) = rr(j,i+1)
+
+                    ff(j,i+spec_p%n) = -(Epot-rtemp)/delta
+                    slab(i)%r(j) = rr(j,i+spec_p%n)
             enddo
             if (confname == 'POSCAR') then
-                ff(:,1) = 0.0d0
+                ff(:,1:spec_p%n) = 0.0d0
             else
                 do i = 1, spec_p%n
                     teilchen(i)%r(j) = rr(j,i)-delta
@@ -136,6 +151,7 @@ program mdhag
             end if
 
             enddo
+
 
             do j=1,3
                 vv(j,:) = vv(j,:) + 0.5d0*step*(ff(j,:) + aa(j,:))*imass
@@ -176,6 +192,7 @@ program mdhag
                 rt(:,s) = rr(:,1)
                 vt(:,s) = vv(:,1)
 
+
                 if (confname == 'POSCAR') then
                     write(*,'(4f12.3)') q*step, 2.0d0*ke_l(s)/(kB*3.0d0*(spec_l%n-36)),&
                              ke_p(s)+ke_l(s)+pe(s)-(ke_p(1)+ke_l(1)+pe(1)), pe(s)
@@ -184,8 +201,8 @@ program mdhag
                         call open_for_write(1,filename)
                         write(1,'(3f18.8)') celli
                         write(1,'(2I5)') spec_l%n,spec_l%n
-                        write(1,'(3f18.8)') rr(:,2:bl)
-                        write(1,'(3f18.8)') vv(:,2:bl)
+                        write(1,'(3f18.8)') rr(:,spec_p%n:bl)
+                        write(1,'(3f18.8)') vv(:,spec_p%n:bl)
                         write(1,'(f18.8)') Epot
                        print*,'print the configuration to', filename
                     end if
