@@ -23,6 +23,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     real(8), dimension(14):: denergy
     real(8), dimension(14) ::dE_ref
     real(8)             :: Enew,dEnew(14)
+    real(8)             :: c44, para, diff
 
     logical, save       :: first_run=.true.
 
@@ -58,20 +59,60 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     allocate(r_p(time,3))
     allocate(denergy1(time,14))
 
-    ! This loop is to reset parameters that have become lower than 0.0d0
-!    do J = 1,14
-!        if (B(J) .lt. 0.d0 .and. J/=3 .and. J/=10 .and. J/=5 .and. J/=12) then
-            !print *, 'Parameter', J, 'turned negative. Resetting value.'
-!            B(J) = 10.
+    diff=1.0d0/(2.0d0*rep+1.0d0)**2.0d0
+
+
+!    ! This loop calculates the parameters that are dependend on the fitting parameter. It should only
+!    ! be enacted when all but one parameter are held fixed.
+!    ! This is for fitting the gold surface only.
+!    c44=2.6210d0*10**9      !C44-constant of Au
+!    para=2.35890d0       ! c44 times parameter=9*10^-10
+!
+!    if (IP == 13) then
+!
+!        if (105-sum(IB) == 8) then
+!            ! correct kappa
+!            B(13) = B(8)*beta/1.07
+!            ! correct lambda
+!            B(11) = B(13)/1.446
+!            ! correct vo
+!            B(12) = para*B(14)/(B(13)*B(8)*beta-B(13)**2)
 !        end if
-!    end do
+!        if (105-sum(IB) == 11) then
+!            ! correct kappa
+!            B(13) = B(11)*1.446
+!            ! correct eta
+!            B(8) = B(13)*1.07/beta
+!            ! correct vo
+!            B(12) = para*B(14)/(B(13)*B(8)*beta-B(13)**2)
+!
+!        end if
+!        if (105-sum(IB) == 12) then
+!            ! correct eta
+!            B(8) = Sqrt( para*B(14)*1.07/(B(12)*beta*beta*(1-1/1.07)) )
+!            ! correct kappa
+!            B(13) = B(8)*beta/1.07
+!            ! correct lambda
+!            B(11) = B(13)/1.446
+!
+!        end if
+!        if (105-sum(IB) == 13) then
+!            ! correct eta
+!            B(8) = B(13)*1.07/beta
+!            ! correct lambda
+!            B(11) = B(13)/1.446
+!            ! correct vo
+!            B(12) = para*B(14)/(B(13)*B(8)*beta-B(13)**2)
+!        end if
+!
+!    end if
 
     ! Select if derivatives shall be called or not.
     select case(jp)
     case(1)
         call emt(a_lat, celli, x_ref, n_l, n_p, particle_parms,lattice_parms, Eref)
         call emt(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms,lattice_parms, energy)
-        energy=energy-Eref
+        energy=(energy-Eref)*diff
         F   = energy
         RES = YDAT(I) - F
 
@@ -80,8 +121,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         call emt_fit(a_lat, celli, x_ref, n_l, n_p, particle_parms, lattice_parms, Eref, dE_ref)
         call emt_fit(a_lat, celli, XDAT(I,:,:), n_l, n_p, particle_parms, lattice_parms, energy, denergy)
 
-        energy=energy-Eref
-        denergy=denergy-dE_ref
+        energy=(energy-Eref)*diff
+        denergy=(denergy-dE_ref)*diff
         !write(*,'(7f15.5)') denergy
         !stop
         F   = energy

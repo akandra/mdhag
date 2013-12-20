@@ -8,7 +8,7 @@ module EMTparms_class
     real(8), private, parameter                 :: sqrt_3  = 1.73205080756888d0
     real(8), private, parameter                 :: isqrt_2 = 0.707106781186548d0
     real(8), private, parameter                 :: pi      = 3.14159265358979d0
-    real(8), private, parameter                 :: beta    = 1.8093997906d0
+    real(8),  parameter                 :: beta    = 1.8093997906d0
     real(8), private, parameter                 :: twelveth= 0.0833333333333333d0
     integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
@@ -949,8 +949,6 @@ subroutine array2emt_parms (array, emt_parms)
 end subroutine array2emt_parms
 
 
-end module
-
 !subroutine emt_mixed (a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy)
 !!
 !! Purpose:
@@ -1008,8 +1006,8 @@ end module
 !
 !    real(8) :: E_ref                    ! reference energy
 !    real(8) :: Ecoh_ref                  !cohesive reference energy
-!    type(EMTparms)      :: particle_parms   ! parameters of particle
-!    type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
+!!    type(EMTparms)      :: particle_parms   ! parameters of particle
+!!    type(EMTparms)      :: lattice_parms    ! parameters of lattice atoms
 !
 !! For the reference energy
 !    real(8)                 :: rn_ltemp(n_l), r3temp1(3), rtemp1
@@ -1235,6 +1233,12 @@ end module
 !
 !
 !end subroutine emt_mixed
+
+
+
+
+end module
+
 !
 !subroutine emt_fit_mixed (a_lat, cell, r_part, r_lat, n_l, pars_p, pars_l, energy, denergy)
 !!subroutine emt_fit (cell, a_lat, n_l, r_lat, r_part, pars_p, pars_l, energy, denergy_l, denergy_p)

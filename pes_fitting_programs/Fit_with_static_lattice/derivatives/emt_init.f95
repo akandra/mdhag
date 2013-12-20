@@ -7,7 +7,8 @@ module emt_init_data
     integer :: n_l, n_p
     real(8), dimension(3,6) :: celli
     logical  :: just_l
-!    integer :: rep
+    logical :: one_p
+    integer :: rep
     real(8) :: E_pseudo
     real(8), dimension(:,:), allocatable :: x_ref
 
@@ -18,8 +19,8 @@ contains
 !           by passing a deferred-array to a subroutine
 
 
-subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l_aimd, n_l, &
-                                                                    n_p,celli, x_all, E_all)
+subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, time,  &
+                                                l_aimd, n_l,n_p,celli, x_all, E_all)
 !
 ! Purpose:
 !           Reads in the gold and hydrogen positions from AIMD
@@ -43,7 +44,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8), dimension(:,:,:), allocatable, intent(out) :: x_all
     integer , intent(in)                        :: control
     real(8), intent(in) :: e_aimd_max
-    logical :: just_l
+    logical :: just_l, one_p
 
 
 ! other variables
@@ -67,8 +68,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
-    energy_l_and_p =      'data/traj005/analyse_005.out'
+    position_of_l_and_p = 'data/traj832/XDATCAR_832.dat'
+    energy_l_and_p =      'data/traj832/analyse_832.out'
 
     ! 187 config, some from aimd, some from dragging Au out
     !position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
@@ -175,6 +176,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     allocate(d_ref(3,k+1))
     d_ref(:,1) = (/0.0d0,0.0d0,0.29618952180d0/)
     d_ref(:,2:k+1) = fix_l
+
 
 
 !---------------------------READ IN AIMD GEOMETRIES----------------------------
@@ -333,8 +335,9 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     temp=cell_in(1)*cell_in(2)*cell_in(3)
     n_l=temp*(2*rep+1)**2
     n_p = (2*rep+1)**2
+    if (one_p .eqv. .true.) n_p = 1
     !E_all = E_all * (2*rep+1)**2 ! energy needs to be increased to account for all images. From old times, when still with VASP reference energy
-    E_all = E_all + 24.995689
+    E_all = E_all + 24.995689 !(E_all + 24.995689)* (2*rep+1)**2
 
 
 ! allocate arrays
@@ -346,7 +349,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
     x_ref1=0.0d0
 
 
-! Translation of the entire story
+! Translation of array under consideration.
     do q=1, ende
         i = 1
         j= 1
@@ -358,16 +361,21 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
                 d_l(q,3,i:i+temp-1) = read_l(q,3,:)
                 i = i+temp
 
-                d_p(q,1,j) = read_p(q,1)+r
-                d_p(q,2,j) = read_p(q,2)+s
-                d_p(q,3,j) = read_p(q,3)
-                j = j + 1
+                if (one_p .eqv. .false.) then
+                    d_p(q,1,j) = read_p(q,1)+r
+                    d_p(q,2,j) = read_p(q,2)+s
+                    d_p(q,3,j) = read_p(q,3)
+                    j = j + 1
+                end if
 
            end do
         end do
+        if (one_p .eqv. .true.) d_p(q,:,1) = read_p(q,:)
     end do
 
-    ! Translation of Reference energy
+
+
+        ! Translation of array for reference energy
     i=1
     j=1
     do r =-rep, rep
@@ -378,14 +386,16 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
             x_ref1(3,n_p+i:n_p+n_l) = d_ref(3,2:k+1)
             i = i+temp
 
-            x_ref1(1,j) = d_ref(1,1)+r
-            x_ref1(2,j) = d_ref(2,1)+s
-            x_ref1(3,j) = d_ref(3,1)
-            j=j+1
+            if (one_p .eqv. .false.) then
+                x_ref1(1,j) = d_ref(1,1)+r
+                x_ref1(2,j) = d_ref(2,1)+s
+                x_ref1(3,j) = d_ref(3,1)
+                j=j+1
+            end if
 
         end do
     end do
-
+    if (one_p .eqv. .true.) x_ref1(:,1) = d_ref(:,1)
 
 
  !allocate important arrays
@@ -399,7 +409,6 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, time, l
 
     ! transform reference coordinates into cartesian:
     x_ref1=matmul(c_matrix,x_ref1)
-
 
 
 ! Sascha, you have commented that you understand what we did here and that it is right.

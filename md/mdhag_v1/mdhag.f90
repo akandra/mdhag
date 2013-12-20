@@ -194,16 +194,16 @@ program mdhag
 
 
                 if (confname == 'POSCAR') then
-                    write(*,'(4f12.3)') q*step, 2.0d0*ke_l(s)/(kB*3.0d0*(spec_l%n-36)),&
+                    write(*,'(4f12.3)') q*step, ke_l(s)/(kB*3.0d0*(spec_l%n-36)),&
                              ke_p(s)+ke_l(s)+pe(s)-(ke_p(1)+ke_l(1)+pe(1)), pe(s)
                     if (q > 0/step) then
-                        write(filename,'(A,I7.7,A)') './traj191/conf',q,'.dat'
+                        write(filename,'(A,I7.7,A)') './traj237/conf',q,'.dat'
                         call open_for_write(1,filename)
                         write(1,'(3f18.8)') celli
                         write(1,'(2I5)') spec_l%n,spec_l%n
-                        write(1,'(3f18.8)') rr(:,spec_p%n:bl)
-                        write(1,'(3f18.8)') vv(:,spec_p%n:bl)
-                        write(1,'(f18.8)') Epot
+                        write(1,'(3f18.8)') rr(:,spec_p%n+1:bl)
+                        write(1,'(3f18.8)') vv(:,spec_p%n+1:bl)
+                        !write(1,'(f18.8)') Epot
                        print*,'print the configuration to', filename
                     end if
                 end if
