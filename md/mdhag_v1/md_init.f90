@@ -288,6 +288,8 @@ subroutine simbox_init(slab, teilchen)
         vel_l(2,1:n_l0) = vel_l(2,1:n_l0) - sum(vel_l(2,1:n_l0))/n_l0
         vel_l(3,1:n_l0) = vel_l(3,1:n_l0) - sum(vel_l(3,1:n_l0))/n_l0
 
+
+
     else
 
         read(38,*) cell_mat
@@ -365,7 +367,7 @@ end function ran1
 function normal(mean,sigma) !returns a normal distribution
  implicit none
         real(8) normal,tmp
-        real(8) mean,sigma
+        real(8) mean,sigma   ! Sigma is the velocity we want to achieve
         integer flag
         real(8) fac,gsave,rsq,r1,r2
         save flag,gsave
@@ -378,8 +380,8 @@ function normal(mean,sigma) !returns a normal distribution
                 rsq=r1*r1+r2*r2
             enddo
             fac=sqrt(-2.0d0*log(rsq)/rsq)
-            gsave=r1*fac
-            tmp=r2*fac
+            gsave=r1*fac        ! shouldn't those two values be below zero?
+            tmp=r2*fac          !
             flag=1
         else
             tmp=gsave

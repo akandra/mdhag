@@ -96,16 +96,16 @@ program EMT_fit_1
     real(8), dimension(14) :: denergy, dE_ref
     real(8) :: e_ref ! reference energy with particle at infinity
     real(8) :: e_max ! maximum DFT to use in the fit
-    real(8) :: sumsq ! used to calculate rms error
+    real(8) :: sumsq,se ! used to calculate rms error
 
     integer :: i,j,k ! loop indicies
     integer :: ios ! io status
 
 ! For AIMD readin
 !    integer                  :: time            ! number of different configurations
-    real(8), dimension(:,:,:), allocatable:: x_all      ! Position of all the atoms. Is the same as x(:)
+    real(8), dimension(:,:,:), allocatable:: x_all,x_ball      ! Position of all the atoms. Is the same as x(:)
     real(8),allocatable, dimension(:)     :: E_all    ! energy from AIMD and DFT calc
-    integer                 :: rep      ! Repetitions of lattice (1,2,3) 2 should be sufficient.
+    !integer                 :: rep      ! Repetitions of lattice (1,2,3) 2 should be sufficient.
     integer, dimension(3):: cell_b  ! contains cell geometry (2x2x4)
 !    real(8), dimension(:,:), allocatable :: celli       ! extension of cell once it's expanded
 !    integer :: n_l ! number of gold atoms in extended slab
@@ -140,12 +140,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.192.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.192.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.192.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.237.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.237.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.237.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.191.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.233.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.233.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -195,21 +195,38 @@ program EMT_fit_1
 
     rep = 1
     cell_b=(/2,2,4/)
-    control=200
+    control=2
     e_aimd_max=0.00
-    just_l = .true.
+    just_l = .false.
+    one_p = .false.
 
 
-    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, just_l, time, l_aimd, n_l, &
-                                                                n_p,celli, x_all, E_all)
+    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, just_l, one_p, time, &
+                                                l_aimd, n_l,n_p,celli, x_all, E_all)
 
     print *, 'l_aimd', l_aimd
 
-
+    !time = time-1
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
     Y(1:time)=E_all(1:time)!+E_pseudo
+    !write(*,'(3f15.5)') x(47,:,1:n_l+1)
+    !stop
+
+!    allocate(x_ball(time,3,n_l+1))
+
 
     call open_for_write(10, fit_results_fname)
+
+!    write(*,*) 'q   ', 'EDFT-E_multiple_H   ', 'EDFT-E_single_H'
+!    do q=1,30
+!        x_ball(q,:,1) = x_all(q,:,5)
+!        X(q,:,1)= x_all(q,:,5)
+!        x_ball(q,:,2:n_l+1) = x_all(q,:,n_p+1:n_p+n_l)
+!        X(q,:,2:n_l+1) = x_all(q,:,n_p+1:n_p+n_l)
+!        call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
+!        call emt_mixed(a_lat, celli, x_all(q,:,5), x_all(q,:,n_p+1:n_p+n_l), n_l, particle_pars, lattice_pars, e_ref)
+!        write(*,'(I5,5f15.5)') q, x_all(q,3,5), energy-18.14163, e_ref-18.14163, Y(q)+24.99569, Y(q)* (2*rep+1)**2+224.9612
+!    end do
 
     !------------------------------------------------------------------------------------------------------------------
     ! CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
@@ -233,14 +250,15 @@ program EMT_fit_1
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
 
 
-            if(q<10) write( *,'(1X, 5F15.8)') X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref, Y(q)
-            write(10,'(1X, 5F15.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref, Y(q)
-            write(7, '(1X, 4F16.8)')  X(q,1,5), X(q,2,5), X(q,3,5), energy-e_ref
+            if(q<10) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/(2*rep+1)**2, Y(q)
+            write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/(2*rep+1)**2, Y(q)
+            write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/(2*rep+1)**2
             if (q > 483) then
             !write( *,'(1X, 5F15.10)') X(q,1,1), X(q,2,1), X(q,3,1), energy-E_ref, Y(q)
 
             end if
-            sumsq=sumsq+(energy-e_ref-Y(q))**2
+            sumsq=sumsq+((energy-e_ref)/(2*rep+1)**2-Y(q))**2
+            !sumsq=sumsq+(energy-e_ref-Y(q))**2
         end do
         write(*,*)
         write(10,*)
@@ -251,7 +269,7 @@ program EMT_fit_1
     end if
 
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
-stop
+!stop
     !------------------------------------------------------------------------------------------------------------------
     ! SETUP FOR NLLSQ
     !------------------------------------------------------------------------------------------------------------------
@@ -282,21 +300,21 @@ stop
     ! Name part lat H Au (be careful! Changed with regard to old procedure!)
     !
     ! eta2      1 8
-    ! n0        2 9     ? ? may destabilize fit
-    ! E0        3 10    x x destabilizes fit
+    ! n0        2 9
+    ! E0        3 10
     ! lambda    4 11
-    ! V0        5 12      x shouldn't be <0
+    ! V0        5 12    x x shouldn't be <0
     ! kappa     6 13
     ! s0        7 14    x x shouldn't change
-    IB = (/1,2,3,4,5,6,7,14,0,0,0,0,0,0/) ! indicies of parameters held constant
-    IP = 8 ! number of parameters held constant
+    IB = (/3,7,10,14,0,0,0,0,0,0,0,0,0,0/) ! indicies of parameters held constant
+    IP = 4 ! number of parameters held constant
 
 
     !--------------------------------------------------------------------------
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 150
+    max_iterations = 200
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -350,13 +368,17 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     call array2emt_parms( B(8:14), latt_new )
 
     sumsq=0.0d0
+    se=0.0d0
     call emt(a_lat, celli, x_ref, n_l, n_p, part_new, latt_new, e_ref)
+    call open_for_write(1234,'deviation_199.dat')
     do q=1,time
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, part_new, latt_new, energy)
-            !write( *,'(1X, 5F15.8)') energy-e_ref-Y(q)
-            sumsq=sumsq+(energy-e_ref-Y(q))**2
+            write(1234,'(1X, I5, 5F15.8)') q, energy-e_ref-Y(q)
+            sumsq=sumsq+((energy-e_ref)/(2*rep+1)**2-Y(q))**2
+            se = se+Sqrt(((energy-e_ref)/(2*rep+1)**2-Y(q))**2)
     end do
-    print*, sqrt(sumsq/time)*1000, 'meV'
+    print *, 'rms =',  sqrt(sumsq/time)*1000, 'meV'
+    print*,  'SE =', (se/time)*1000, 'meV'
     write(*,'(7f15.5)'), Ablei
 
 end program
