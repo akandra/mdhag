@@ -17,7 +17,7 @@ program mdhag
 
     type(atoms) :: slab, teilchen   ! hold r, v and f for atoms in the box
 
-    real(8) :: delta = 0.010d0      ! dr at numerical calculation of the forces
+    real(8) :: delta = 0.0010d0      ! dr at numerical calculation of the forces
     real(8) :: E_ref, rtemp
 
 !    real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp

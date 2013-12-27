@@ -35,7 +35,7 @@ subroutine pes(slab, teilchen, Epot)
 
     real(8) :: betas0_l, kappadbeta_l, chipl
     real(8) :: betas0_p, kappadbeta_p, chilp
-    real(8) :: r, rcut, rr, acut, theta, rtemp
+    real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1
     real(8) :: igamma1p, igamma2p, igamma1l, igamma2l
     real(8) :: V_pl, V_lp, V_ll, V_pp, vref_l, vref_p, Ecoh
 
@@ -46,7 +46,8 @@ subroutine pes(slab, teilchen, Epot)
     real(8), dimension(:), allocatable :: sigma_ll, sigma_lp, s_l
     real(8), dimension(:), allocatable :: sigma_pp, sigma_pl, s_p
 
-    real(8), dimension(:,:), allocatable :: dsigma_ll, dsigma_pp
+    real(8), dimension(:,:), allocatable :: dsigma_ll, dsigma_lp
+    real(8), dimension(:,:), allocatable :: dsigma_pp, dsigma_pl
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 
@@ -106,6 +107,7 @@ subroutine pes(slab, teilchen, Epot)
     allocate(sigma_lp(slab%n_atoms), sigma_pl(teilchen%n_atoms))
     allocate(s_l(slab%n_atoms), s_p(teilchen%n_atoms))
     allocate(dsigma_ll(3,slab%n_atoms), dsigma_pp(3,teilchen%n_atoms))
+    allocate(dsigma_lp(3,slab%n_atoms), dsigma_pl(3,teilchen%n_atoms))
 
     ! initialize some accumulators
     sigma_ll = 0.0d0
@@ -118,6 +120,8 @@ subroutine pes(slab, teilchen, Epot)
     V_pl     = 0.0d0
     dsigma_ll= 0.0d0
     dsigma_pp= 0.0d0
+    dsigma_lp= 0.0d0
+    dsigma_pl= 0.0d0
 
     ! slab-slab
     do i = 1, slab%n_atoms
@@ -138,7 +142,7 @@ subroutine pes(slab, teilchen, Epot)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
-            dtheta = (pars_l(1) + acut*rtemp*theta)*theta*r3temp
+            dtheta = (pars_l(1) + acut*rtemp*theta)*r3temp
 
             rtemp = theta*exp(-pars_l(1)*(r - betas0_l))    ! sigma_ij*gamma1
             sigma_ll(i) = sigma_ll(i) + rtemp
@@ -173,7 +177,7 @@ subroutine pes(slab, teilchen, Epot)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
-            dtheta = (pars_p(1) + acut*rtemp*theta)*theta*r3temp
+            dtheta = (pars_p(1) + acut*rtemp*theta)*r3temp
 
             rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
             sigma_pp(i) = sigma_pp(i) + rtemp
@@ -208,15 +212,17 @@ subroutine pes(slab, teilchen, Epot)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
-            dtheta = (pars_p(1) + acut*rtemp*theta)*theta*r3temp
+            dtheta = (pars_p(1) + acut*rtemp*theta)*r3temp
 
-            rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
-            sigma_lp(j) = sigma_lp(j) + rtemp
-            dsigma_lp(:,j) = dsigma_lp(:,j) - dtheta*rtemp
+            rtemp1 = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
+            sigma_lp(j) = sigma_lp(j) + rtemp1
+            dsigma_lp(:,j) = dsigma_lp(:,j) - dtheta*rtemp1
 
             dtheta = (pars_l(1) + acut*rtemp*theta)*theta*r3temp
 
-            sigma_pl(i) = sigma_pl(i) + theta*exp(-pars_l(1)*(r - betas0_l))
+            rtemp1 = theta*exp(-pars_l(1) * (r - betas0_l) )     ! sigma_ij*gamma1
+            sigma_pl(i) = sigma_pl(i) + rtemp1
+            dsigma_pl(:,i) = dsigma_pl(:,i) + dtheta*rtemp1
 
             ! V_ij*gamma2*V_0
             V_lp = V_lp + theta*exp(-kappadbeta_p*(r - betas0_p))
@@ -237,8 +243,11 @@ subroutine pes(slab, teilchen, Epot)
 
     dsigma_ll = dsigma_ll*igamma1l
     dsigma_pp = dsigma_pp*igamma1p
+    dsigma_lp = dsigma_lp*igamma1l
+    dsigma_pl = dsigma_pl*igamma1p
 
-    print *, dsigma_pp(:,1), sigma_pp(1)
+    print *, sigma_pl(1)
+    print *, dsigma_pl(:,1)
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 ! The neutral sphere radius is the radius in which the entire density of the
@@ -261,9 +270,8 @@ subroutine pes(slab, teilchen, Epot)
 
     Epot = Ecoh - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
 
-    deallocate(dsigma_pp, dsigma_ll)
-    deallocate(s_p, s_l)
-    deallocate(sigma_pl, sigma_lp, sigma_pp, sigma_ll)
+    deallocate(dsigma_pl, dsigma_lp,dsigma_pp, dsigma_ll)
+    deallocate(s_p, s_l,sigma_pl, sigma_lp, sigma_pp, sigma_ll)
 
 end subroutine pes
 
