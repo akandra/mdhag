@@ -17,7 +17,7 @@ program mdhag
 
     type(atoms) :: slab, teilchen   ! hold r, v and f for atoms in the box
 
-    real(8) :: delta = 0.0010d0      ! dr at numerical calculation of the forces
+    real(8) :: delta = 0.001d0      ! dr at numerical calculation of the forces
     real(8) :: E_ref, rtemp
 
 !    real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp
@@ -37,11 +37,14 @@ program mdhag
 
     call pes(slab, teilchen, E_ref)
 
-    slab%r(3,1) = slab%r(3,1) + delta
+!    slab%r(3,1) = slab%r(3,1) + delta
+    teilchen%r(3,1) = teilchen%r(3,1) + delta
     call pes(slab, teilchen, rtemp)
-    slab%r(3,1) = slab%r(3,1) - 2*delta
+!    slab%r(3,1) = slab%r(3,1) - 2*delta
+    teilchen%r(3,1) = teilchen%r(3,1) - 2*delta
     call pes(slab, teilchen, rtemp)
-    slab%r(3,1) = slab%r(3,1) + delta
+!    slab%r(3,1) = slab%r(3,1) + delta
+    teilchen%r(3,1) = teilchen%r(3,1) + delta
 
 !    print *, E_ref, rtemp, (rtemp - E_ref)/delta
 !

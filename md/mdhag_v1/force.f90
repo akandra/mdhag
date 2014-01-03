@@ -33,11 +33,11 @@ subroutine pes(slab, teilchen, Epot)
 
     integer :: i,j
 
-    real(8) :: betas0_l, kappadbeta_l, chipl
-    real(8) :: betas0_p, kappadbeta_p, chilp
+    real(8) :: betas0_l, betaeta2_l, kappadbeta_l, chipl
+    real(8) :: betas0_p, betaeta2_p, kappadbeta_p, chilp
     real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1
     real(8) :: igamma1p, igamma2p, igamma1l, igamma2l
-    real(8) :: V_pl, V_lp, V_ll, V_pp, vref_l, vref_p, Ecoh
+    real(8) :: V_pl, V_lp, V_ll, V_pp, Ecoh_l, Ecoh_p, vref_l, vref_p
 
     real(8), dimension(3) :: rnnl, rnnp         ! nnn-distances
     real(8), dimension(3) :: xl, xp, r3temp
@@ -46,14 +46,17 @@ subroutine pes(slab, teilchen, Epot)
     real(8), dimension(:), allocatable :: sigma_ll, sigma_lp, s_l
     real(8), dimension(:), allocatable :: sigma_pp, sigma_pl, s_p
 
-    real(8), dimension(:,:), allocatable :: dsigma_ll, dsigma_lp
-    real(8), dimension(:,:), allocatable :: dsigma_pp, dsigma_pl
+    real(8), dimension(:,:,:), allocatable :: dsigma_ll, dsigma_lp_l, dsigma_lp_p
+    real(8), dimension(:,:,:), allocatable :: dsigma_pp, dsigma_pl_l, dsigma_pl_p
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 
     ! beta * s0
     betas0_l = beta * pars_l(7)
     betas0_p = beta * pars_p(7)
+    ! beta * eta2
+    betaeta2_l = beta * pars_l(1)
+    betaeta2_p = beta * pars_p(1)
     ! kappa / beta
     kappadbeta_l = pars_l(6) / beta
     kappadbeta_p = pars_p(6) / beta
@@ -105,23 +108,27 @@ subroutine pes(slab, teilchen, Epot)
 
     allocate(sigma_ll(slab%n_atoms), sigma_pp(teilchen%n_atoms))
     allocate(sigma_lp(slab%n_atoms), sigma_pl(teilchen%n_atoms))
-    allocate(s_l(slab%n_atoms), s_p(teilchen%n_atoms))
-    allocate(dsigma_ll(3,slab%n_atoms), dsigma_pp(3,teilchen%n_atoms))
-    allocate(dsigma_lp(3,slab%n_atoms), dsigma_pl(3,teilchen%n_atoms))
+    allocate(     s_l(slab%n_atoms),      s_p(teilchen%n_atoms))
+    allocate(  dsigma_ll(3,     slab%n_atoms,     slab%n_atoms))
+    allocate(dsigma_lp_l(3,     slab%n_atoms,     slab%n_atoms))
+    allocate(dsigma_lp_p(3, teilchen%n_atoms,     slab%n_atoms))
+    allocate(dsigma_pl_l(3,     slab%n_atoms, teilchen%n_atoms))
+    allocate(dsigma_pl_p(3, teilchen%n_atoms, teilchen%n_atoms))
+    allocate(  dsigma_pp(3, teilchen%n_atoms, teilchen%n_atoms))
 
-    ! initialize some accumulators
-    sigma_ll = 0.0d0
-    sigma_pp = 0.0d0
-    sigma_pl = 0.0d0
-    sigma_lp = 0.0d0
-    V_ll     = 0.0d0
-    V_pp     = 0.0d0
-    V_lp     = 0.0d0
-    V_pl     = 0.0d0
-    dsigma_ll= 0.0d0
-    dsigma_pp= 0.0d0
-    dsigma_lp= 0.0d0
-    dsigma_pl= 0.0d0
+    ! initialize accumulators
+    sigma_ll  = 0.0d0
+    sigma_pp  = 0.0d0
+    sigma_pl  = 0.0d0
+    sigma_lp  = 0.0d0
+    V_ll      = 0.0d0
+    V_pp      = 0.0d0
+    V_lp      = 0.0d0
+    V_pl      = 0.0d0
+    dsigma_ll = 0.0d0
+!    dsigma_pp = 0.0d0
+!    dsigma_lp = 0.0d0
+!    dsigma_pl = 0.0d0
 
     ! slab-slab
     do i = 1, slab%n_atoms
@@ -149,8 +156,10 @@ subroutine pes(slab, teilchen, Epot)
             sigma_ll(j) = sigma_ll(j) + rtemp
 
             dtheta = dtheta*rtemp
-            dsigma_ll(:,i) = dsigma_ll(:,i) - dtheta
-            dsigma_ll(:,j) = dsigma_ll(:,j) + dtheta
+            dsigma_ll(:,i,i) = dsigma_ll(:,i,i) - dtheta    ! dsigma_i/dr_i
+            dsigma_ll(:,j,j) = dsigma_ll(:,j,j) + dtheta
+            dsigma_ll(:,j,i) =-dtheta                       ! dsigma_i/dr_j
+            dsigma_ll(:,i,j) = dtheta                       ! dsigma_j/dr_i
 
             rtemp = theta*exp(-kappadbeta_l*(r - betas0_l)) ! V_ij*gamma2*V_0
             V_ll = V_ll + rtemp
@@ -184,8 +193,10 @@ subroutine pes(slab, teilchen, Epot)
             sigma_pp(j) = sigma_pp(j) + rtemp
 
             dtheta = dtheta*rtemp
-            dsigma_pp(:,i) = dsigma_pp(:,i) - dtheta
-            dsigma_pp(:,j) = dsigma_pp(:,j) + dtheta
+            dsigma_pp(:,i,i) = dsigma_pp(:,i,i) - dtheta    ! dsigma_i/dr_i
+            dsigma_pp(:,j,j) = dsigma_pp(:,j,j) + dtheta
+            dsigma_pp(:,j,i) =-dtheta                       ! dsigma_i/dr_j
+            dsigma_pp(:,i,j) = dtheta                       ! dsigma_j/dr_i
 
             rtemp = theta*exp(-kappadbeta_p * (r - betas0_p))   ! V_ij*gamma2*V_0
             V_pp = V_pp + rtemp
@@ -212,17 +223,18 @@ subroutine pes(slab, teilchen, Epot)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
-            dtheta = (pars_p(1) + acut*rtemp*theta)*r3temp
+            rtemp1 = acut*rtemp*theta
+            dtheta = (pars_p(1) + rtemp1)*r3temp
 
-            rtemp1 = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
-            sigma_lp(j) = sigma_lp(j) + rtemp1
-            dsigma_lp(:,j) = dsigma_lp(:,j) - dtheta*rtemp1
+            rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
+            sigma_lp(j) = sigma_lp(j) + rtemp
+            dsigma_lp(:,j) = dsigma_lp(:,j) + dtheta*rtemp
 
-            dtheta = (pars_l(1) + acut*rtemp*theta)*theta*r3temp
+            dtheta = (pars_l(1) + rtemp1)*theta*r3temp
 
-            rtemp1 = theta*exp(-pars_l(1) * (r - betas0_l) )     ! sigma_ij*gamma1
-            sigma_pl(i) = sigma_pl(i) + rtemp1
-            dsigma_pl(:,i) = dsigma_pl(:,i) + dtheta*rtemp1
+            rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )     ! sigma_ij*gamma1
+            sigma_pl(i) = sigma_pl(i) + rtemp
+            dsigma_pl(:,i) = dsigma_pl(:,i) - dtheta*rtemp
 
             ! V_ij*gamma2*V_0
             V_lp = V_lp + theta*exp(-kappadbeta_p*(r - betas0_p))
@@ -231,8 +243,11 @@ subroutine pes(slab, teilchen, Epot)
         end do
     end do
 
+    print *, sigma_pp(1)
+    print *, dsigma_pp(:,1,1)
+
     ! divide by cut-off scaling factors
-    sigma_ll =  sigma_ll*igamma1l
+    sigma_ll = sigma_ll*igamma1l
     V_ll     =     V_ll*igamma2l*pars_l(5)
     sigma_pp = sigma_pp*igamma1p
     V_pp     =     V_pp*igamma2p*pars_p(5)
@@ -243,35 +258,43 @@ subroutine pes(slab, teilchen, Epot)
 
     dsigma_ll = dsigma_ll*igamma1l
     dsigma_pp = dsigma_pp*igamma1p
-    dsigma_lp = dsigma_lp*igamma1l
-    dsigma_pl = dsigma_pl*igamma1p
-
-    print *, sigma_pl(1)
-    print *, dsigma_pl(:,1)
+!    dsigma_lp = dsigma_lp*igamma1l
+!    dsigma_pl = dsigma_pl*igamma1p
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
-! The neutral sphere radius is the radius in which the entire density of the
-! atom is included.
 
-    s_l = -log((sigma_ll + chilp*sigma_lp)*twelveth)/(beta*pars_l(1))
-    s_p = -log((sigma_pp + chipl*sigma_pl)*twelveth)/(beta*pars_p(1))
+
+
+    s_l = sigma_ll + chilp*sigma_lp
+    s_p = sigma_pp + chipl*sigma_pl
+
+!    ds_l(1,:) = -(dsigma_ll(1,:) + chilp*dsigma_lp(1,:))/(betaeta2_l*s_l)
+!    ds_l(2,:) = -(dsigma_ll(2,:) + chilp*dsigma_lp(2,:))/(betaeta2_l*s_l)
+!    ds_l(3,:) = -(dsigma_ll(3,:) + chilp*dsigma_lp(3,:))/(betaeta2_l*s_l)
+!    ds_p(1,:) = -(dsigma_pp(1,:) + chipl*dsigma_pl(1,:))/(betaeta2_p*s_p)
+!    ds_p(2,:) = -(dsigma_pp(2,:) + chipl*dsigma_pl(2,:))/(betaeta2_p*s_p)
+!    ds_p(3,:) = -(dsigma_pp(3,:) + chipl*dsigma_pl(3,:))/(betaeta2_p*s_p)
+
+    s_l = -log(s_l*twelveth)/betaeta2_l
+    s_p = -log(s_p*twelveth)/betaeta2_p
+
+!---------------------------COHESIVE FUNCTION-----------------------------------
+
+    Ecoh_l = sum((1.0d0 + pars_l(4)*s_l)*exp(-pars_l(4)*s_l) - 1.0d0)*pars_l(3)
+    Ecoh_p = sum((1.0d0 + pars_p(4)*s_p)*exp(-pars_p(4)*s_p) - 1.0d0)*pars_p(3)
 
 !----------------REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------------
 
     vref_l = 12.0d0 * pars_l(5)*sum(exp(-pars_l(6)*s_l))*igamma2l
     vref_p = 12.0d0 * pars_p(5)*sum(exp(-pars_p(6)*s_p))*igamma2p
 
-!---------------------------COHESIVE FUNCTION-----------------------------------
-
-    Ecoh = sum((1.0d0 + pars_l(4)*s_l)*exp(-pars_l(4)*s_l) - 1.0d0)*pars_l(3) &
-         + sum((1.0d0 + pars_p(4)*s_p)*exp(-pars_p(4)*s_p) - 1.0d0)*pars_p(3)
-
 !-------------------------------TOTAL ENERGY---------------------------------
 
-    Epot = Ecoh - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
+!    Epot = Ecoh - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
 
-    deallocate(dsigma_pl, dsigma_lp,dsigma_pp, dsigma_ll)
-    deallocate(s_p, s_l,sigma_pl, sigma_lp, sigma_pp, sigma_ll)
+    deallocate(dsigma_pl_p, dsigma_pl_l, dsigma_lp_p, dsigma_lp_l)
+    deallocate(dsigma_pp, dsigma_ll)
+    deallocate( s_p,  s_l,  sigma_pl,  sigma_lp, sigma_pp,  sigma_ll)
 
 end subroutine pes
 
