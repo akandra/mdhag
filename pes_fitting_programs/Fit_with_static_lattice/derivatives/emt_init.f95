@@ -68,8 +68,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
 
-    position_of_l_and_p = 'data/traj832/XDATCAR_832.dat'
-    energy_l_and_p =      'data/traj832/analyse_832.out'
+    position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
+    energy_l_and_p =      'data/traj005/analyse_005.out'
 
     ! 187 config, some from aimd, some from dragging Au out
     !position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'

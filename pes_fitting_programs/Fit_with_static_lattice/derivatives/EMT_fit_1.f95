@@ -140,12 +140,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.237.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.237.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.237.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.245.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.245.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.245.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.233.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.233.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.244.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.244.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -195,7 +195,7 @@ program EMT_fit_1
 
     rep = 1
     cell_b=(/2,2,4/)
-    control=2
+    control=200
     e_aimd_max=0.00
     just_l = .false.
     one_p = .false.
@@ -206,7 +206,7 @@ program EMT_fit_1
 
     print *, 'l_aimd', l_aimd
 
-    !time = time-1
+    time = time-1
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
     Y(1:time)=E_all(1:time)!+E_pseudo
     !write(*,'(3f15.5)') x(47,:,1:n_l+1)
@@ -314,7 +314,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 200
+    max_iterations = 150
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
