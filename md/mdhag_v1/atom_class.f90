@@ -4,6 +4,11 @@ module atom_class
     !           This module containes the definitions of all the types and all
     !           constants that are used in the program.
     !
+    ! Date          Author          History of Revison
+    ! ====          ======          ==================
+    ! 07.01.2014    Sascha&Svenja   Dan's data structure
+    ! 09.10.2013    Sascha&Svenja   Original
+    !
 
     implicit none
     public         ! public for performance in accessing components
@@ -29,29 +34,6 @@ module atom_class
     !           Angle  : radian = 180 deg
     real(8), parameter          :: amu2mass = 103.6382d0
     real(8), parameter          :: deg2rad  = pi/180.0d0
-
-    !  Type atom (obsolete)
-    !   structure to hold the position, velocity, force etc. for a single atom
-    type atom
-        real(8), dimension(3)    :: r       = 0.0d0 ! position
-        real(8), dimension(3)    :: v       = 0.0d0 ! velocity
-        real(8), dimension(3)    :: vp      = 0.0d0 ! predicted velocity
-        real(8), dimension(3)    :: a       = 0.0d0 ! acceleration
-        real(8), dimension(3)    :: aalt    = 0.0d0 ! old acceleration
-        real(8), dimension(3)    :: auralt  = 0.0d0 ! old acceleration
-        real(8), dimension(3)    :: f       = 0.0d0 ! force
-    end type atom
-
-    !  Type species (obsolete)
-    !   structure to hold the species-specific parameters
-    type species
-        character(len=10)           :: name     ! Element symbole
-        real(8)                     :: mass     ! mass
-        integer                     :: n        ! Number of atoms
-        character(len=10)           :: pot      ! Name of Potential
-        integer                     :: n_pars   ! Number of Parameters
-        integer                     :: fric     ! Type of Friction
-    end type species
 
     !  Type atoms
     !   structure to hold the position, velocity, force etc. for multiple atoms

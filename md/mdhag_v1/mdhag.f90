@@ -11,42 +11,15 @@ program mdhag
     use md_init
     use force
 !    use mdalgo
-!    use open_file
 
     implicit none
 
     type(atoms) :: slab, teilchen   ! hold r, v and f for atoms in the box
 
-    real(8) :: delta = 0.001d0      ! dr at numerical calculation of the forces
-    real(8) :: E_ref, rtemp
 
-!    real(8), dimension(:,:), allocatable :: rr,vv,aa,aao, aauo,ff,vp,vc, ac_temp
-!    real(8),dimension(:), allocatable    :: imass
-!    integer :: i,j, iter=3, q, bl, itraj, tw, s
-!    real(8) :: Epot, rtemp, rdummy
-!    real(8) :: zeta, norm
-!    character(len=100)  :: filename
-!    integer             :: randk = 13
-!    real(8), dimension(2) :: xy_p
-!    real(8),dimension(:), allocatable :: pe, ke_p, ke_l
-!    real(8),dimension(:,:), allocatable :: rt, vt
-
-
-    ! Call up procedure that gets us geometries
+    ! Construct simulation block and initialize everything
     call simbox_init(slab, teilchen)
 
-    call pes(slab, teilchen, E_ref)
-
-!    slab%r(3,1) = slab%r(3,1) + delta
-    teilchen%r(3,1) = teilchen%r(3,1) + delta
-    call pes(slab, teilchen, rtemp)
-!    slab%r(3,1) = slab%r(3,1) - 2*delta
-    teilchen%r(3,1) = teilchen%r(3,1) - 2*delta
-    call pes(slab, teilchen, rtemp)
-!    slab%r(3,1) = slab%r(3,1) + delta
-    teilchen%r(3,1) = teilchen%r(3,1) + delta
-
-!    print *, E_ref, rtemp, (rtemp - E_ref)/delta
 !
 !    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !    !Call procedure that calcuates reference energy?
