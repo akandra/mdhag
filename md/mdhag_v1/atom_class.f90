@@ -46,9 +46,10 @@ module atom_class
         real(8), dimension(:,:), allocatable   :: v        ! velocities
         real(8), dimension(:,:), allocatable   :: f        ! forces
         real(8), dimension(:,:), allocatable   :: a        ! accelerations
-        real(8), dimension(:,:), allocatable   :: ao       ! old accelerations
         real(8), dimension(:,:), allocatable   :: vp       ! predicted velocities
         real(8), dimension(:,:), allocatable   :: vc       ! corrected velocities
+        real(8), dimension(:,:), allocatable   :: ao       ! old accelerations
+        real(8), dimension(:,:), allocatable   :: au       ! very old accelerations
     end type atoms
 
     !-------------------------------------------------------------------------|
@@ -72,10 +73,22 @@ contains
         allocate(new_atoms%r(3,n_atoms))    !   allocate
         allocate(new_atoms%v(3,n_atoms))
         allocate(new_atoms%f(3,n_atoms))
+        allocate(new_atoms%a(3,n_atoms))
+
+        allocate(new_atoms%vp(3,n_atoms))
+        allocate(new_atoms%vc(3,n_atoms))
+        allocate(new_atoms%ao(3,n_atoms))
+        allocate(new_atoms%au(3,n_atoms))
 
         new_atoms%r = 0.0d0                 !   initialize
         new_atoms%v = 0.0d0
         new_atoms%f = 0.0d0
+        new_atoms%a = 0.0d0
+
+        new_atoms%vp = 0.0d0
+        new_atoms%vc = 0.0d0
+        new_atoms%ao = 0.0d0
+        new_atoms%au = 0.0d0
 
         new_atoms%n_atoms = n_atoms
 

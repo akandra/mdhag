@@ -25,13 +25,13 @@ module force
 contains
 
 
-subroutine emt(slab, teilchen, Epot)
+subroutine emt(slab, teil, Epot)
 
 !   Calculates energy and forces with EMT potential
 
     implicit none
 
-    type(atoms), intent(inout)    :: teilchen, slab
+    type(atoms), intent(inout)    :: teil, slab
     real(8),     intent(out)      :: Epot
 
     integer :: i,j
@@ -115,26 +115,26 @@ subroutine emt(slab, teilchen, Epot)
 !                          =================================
 !------------------------------------------------------------------------------
 
-    allocate(sigma_ll(slab%n_atoms), sigma_pp(teilchen%n_atoms))
-    allocate(sigma_lp(slab%n_atoms), sigma_pl(teilchen%n_atoms))
-    allocate(     s_l(slab%n_atoms),      s_p(teilchen%n_atoms))
-    allocate(  dsigma_ll(3,     slab%n_atoms,     slab%n_atoms))
-    allocate(dsigma_lp_l(3,     slab%n_atoms))
-    allocate(dsigma_lp_p(3, teilchen%n_atoms,     slab%n_atoms))
-    allocate(dsigma_pl_l(3,     slab%n_atoms, teilchen%n_atoms))
-    allocate(dsigma_pl_p(3, teilchen%n_atoms))
-    allocate(  dsigma_pp(3, teilchen%n_atoms, teilchen%n_atoms))
-    allocate(ds_l_l(3,     slab%n_atoms,     slab%n_atoms))
-    allocate(ds_p_p(3, teilchen%n_atoms, teilchen%n_atoms))
-    allocate(ds_l_p(3, teilchen%n_atoms,     slab%n_atoms))
-    allocate(ds_p_l(3,     slab%n_atoms, teilchen%n_atoms))
-    allocate(dEcoh_l_l(3,slab%n_atoms), dEcoh_p_p(3, teilchen%n_atoms))
-    allocate(dEcoh_p_l(3,slab%n_atoms), dEcoh_l_p(3, teilchen%n_atoms))
-    allocate(  dV_ll_l(3,slab%n_atoms),   dV_pp_p(3, teilchen%n_atoms))
-    allocate(  dV_lp_l(3,slab%n_atoms),   dV_lp_p(3, teilchen%n_atoms))
-    allocate(  dV_pl_l(3,slab%n_atoms),   dV_pl_p(3, teilchen%n_atoms))
-    allocate(dvref_l_l(3,slab%n_atoms), dvref_p_p(3, teilchen%n_atoms))
-    allocate(dvref_p_l(3,slab%n_atoms), dvref_l_p(3, teilchen%n_atoms))
+    allocate(sigma_ll(slab%n_atoms), sigma_pp(teil%n_atoms))
+    allocate(sigma_lp(slab%n_atoms), sigma_pl(teil%n_atoms))
+    allocate(     s_l(slab%n_atoms),      s_p(teil%n_atoms))
+    allocate(  dsigma_ll(3, slab%n_atoms, slab%n_atoms))
+    allocate(dsigma_lp_l(3, slab%n_atoms))
+    allocate(dsigma_lp_p(3, teil%n_atoms, slab%n_atoms))
+    allocate(dsigma_pl_l(3, slab%n_atoms, teil%n_atoms))
+    allocate(dsigma_pl_p(3, teil%n_atoms))
+    allocate(  dsigma_pp(3, teil%n_atoms, teil%n_atoms))
+    allocate(     ds_l_l(3, slab%n_atoms, slab%n_atoms))
+    allocate(     ds_p_p(3, teil%n_atoms, teil%n_atoms))
+    allocate(     ds_l_p(3, teil%n_atoms, slab%n_atoms))
+    allocate(     ds_p_l(3, slab%n_atoms, teil%n_atoms))
+    allocate(dEcoh_l_l(3,slab%n_atoms), dEcoh_p_p(3, teil%n_atoms))
+    allocate(dEcoh_p_l(3,slab%n_atoms), dEcoh_l_p(3, teil%n_atoms))
+    allocate(  dV_ll_l(3,slab%n_atoms),   dV_pp_p(3, teil%n_atoms))
+    allocate(  dV_lp_l(3,slab%n_atoms),   dV_lp_p(3, teil%n_atoms))
+    allocate(  dV_pl_l(3,slab%n_atoms),   dV_pl_p(3, teil%n_atoms))
+    allocate(dvref_l_l(3,slab%n_atoms), dvref_p_p(3, teil%n_atoms))
+    allocate(dvref_p_l(3,slab%n_atoms), dvref_l_p(3, teil%n_atoms))
 
     ! initialize accumulators
     sigma_ll    = 0.0d0
@@ -204,11 +204,11 @@ subroutine emt(slab, teilchen, Epot)
     end do
 
     ! projectile-projectile
-    do i = 1, teilchen%n_atoms
-        do j = i+1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
+        do j = i+1, teil%n_atoms
 
             ! Applying PBCs
-            r3temp = teilchen%r(:,i) - teilchen%r(:,j)   ! distance vector
+            r3temp = teil%r(:,i) - teil%r(:,j)   ! distance vector
             r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
 
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
@@ -245,11 +245,11 @@ subroutine emt(slab, teilchen, Epot)
     end do
 
     ! projectile-slab
-    do i = 1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
         do j = 1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = teilchen%r(:,i) - slab%r(:,j)   ! distance vector
+            r3temp = teil%r(:,i) - slab%r(:,j)   ! distance vector
             r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
 
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
@@ -338,7 +338,7 @@ subroutine emt(slab, teilchen, Epot)
     end do
 
     ds_p_p =-dsigma_pp
-    do i = 1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
 
         ds_p_p(:,i,i) = ds_p_p(:,i,i) - chipl*dsigma_pl_p(:,i)
         ds_p_p(1,i,:) = ds_p_p(1,i,:)/(betaeta2_p*s_p)
@@ -375,7 +375,7 @@ subroutine emt(slab, teilchen, Epot)
     dEcoh_p_l = pars_p(3)*pars_p(4)*pars_p(4)*dEcoh_p_l
 
     ! dEcoh_l_p and dEcoh_p_p
-    do i = 1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
 
         dEcoh_l_p(1,i) = sum(s_l*exp(-pars_l(4)*s_l)*ds_l_p(1,i,:))
         dEcoh_l_p(2,i) = sum(s_l*exp(-pars_l(4)*s_l)*ds_l_p(2,i,:))
@@ -401,7 +401,7 @@ subroutine emt(slab, teilchen, Epot)
 
     end do
 
-    do i=1,teilchen%n_atoms
+    do i=1,teil%n_atoms
 
         rtemp = exp(-pars_p(6)*s_p(i))
         vref_p = vref_p + rtemp
@@ -427,9 +427,9 @@ subroutine emt(slab, teilchen, Epot)
     Epot = Ecoh_l + Ecoh_p + V_ll + V_pp + 0.50d0*(V_lp + V_pl + vref_l + vref_p)
 
     ! minus sign was taken into account in calculation of separate contributions
-    slab%f     = dEcoh_l_l + dEcoh_p_l + dV_ll_l &
+    slab%f = dEcoh_l_l + dEcoh_p_l + dV_ll_l &
                  + 0.50d0*(dV_lp_l + dV_pl_l + dvref_l_l + dvref_p_l)
-    teilchen%f = dEcoh_l_p + dEcoh_p_p + dV_pp_p &
+    teil%f = dEcoh_l_p + dEcoh_p_p + dV_pp_p &
                  + 0.50d0*(dV_lp_p + dV_pl_p + dvref_l_p + dvref_p_p)
 
     deallocate(dvref_l_p, dvref_p_l, dvref_p_p, dvref_l_l)
@@ -442,13 +442,13 @@ subroutine emt(slab, teilchen, Epot)
 
 end subroutine emt
 
-subroutine emt_e(slab, teilchen, Epot)
+subroutine emt_e(slab, teil, Epot)
 
 ! Calculates EMT-energy only
 
     implicit none
 
-    type(atoms), intent(inout)    :: teilchen, slab
+    type(atoms), intent(inout)    :: teil, slab
     real(8),     intent(out)      :: Epot
 
     integer :: i,j
@@ -523,9 +523,9 @@ subroutine emt_e(slab, teilchen, Epot)
 !                          =================================
 !------------------------------------------------------------------------------
 
-    allocate(sigma_ll(slab%n_atoms), sigma_pp(teilchen%n_atoms))
-    allocate(sigma_lp(slab%n_atoms), sigma_pl(teilchen%n_atoms))
-    allocate(     s_l(slab%n_atoms),      s_p(teilchen%n_atoms))
+    allocate(sigma_ll(slab%n_atoms), sigma_pp(teil%n_atoms))
+    allocate(sigma_lp(slab%n_atoms), sigma_pl(teil%n_atoms))
+    allocate(     s_l(slab%n_atoms),      s_p(teil%n_atoms))
 
     ! initialize accumulators
     sigma_ll    = 0.0d0
@@ -570,11 +570,11 @@ subroutine emt_e(slab, teilchen, Epot)
     end do
 
     ! projectile-projectile
-    do i = 1, teilchen%n_atoms
-        do j = i+1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
+        do j = i+1, teil%n_atoms
 
             ! Applying PBCs
-            r3temp = teilchen%r(:,i) - teilchen%r(:,j)   ! distance vector
+            r3temp = teil%r(:,i) - teil%r(:,j)   ! distance vector
             r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
 
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
@@ -600,11 +600,11 @@ subroutine emt_e(slab, teilchen, Epot)
     end do
 
     ! projectile-slab
-    do i = 1, teilchen%n_atoms
+    do i = 1, teil%n_atoms
         do j = 1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = teilchen%r(:,i) - slab%r(:,j)   ! distance vector
+            r3temp = teil%r(:,i) - slab%r(:,j)   ! distance vector
             r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
 
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
@@ -666,7 +666,7 @@ subroutine emt_e(slab, teilchen, Epot)
         vref_l = vref_l + rtemp
     end do
 
-    do i=1,teilchen%n_atoms
+    do i=1,teil%n_atoms
         rtemp = exp(-pars_p(6)*s_p(i))
         vref_p = vref_p + rtemp
     end do

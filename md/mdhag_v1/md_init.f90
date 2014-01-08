@@ -27,6 +27,7 @@ module md_init
     real(8) :: step         = 0.1   ! time step in fs
     integer :: nsteps       = 100   ! number of steps
     integer :: wstep        = 1     ! interval to save data
+    integer :: md_algo      = 0     ! md propagation algorithm: beeman (0)
 
     character(len=80) :: name_p, pot_p, key_p
     character(len=80) :: name_l, pot_l, key_l
@@ -44,7 +45,7 @@ module md_init
 
 contains
 
-subroutine simbox_init(slab, teilchen)
+subroutine simbox_init(slab, teil)
 !
 ! Purpose:
 !           Initialise the entire system:
@@ -54,12 +55,13 @@ subroutine simbox_init(slab, teilchen)
 !
     implicit none
 
-    type(atoms), intent(out) :: slab, teilchen   ! hold r, v and f for atoms in the box
+    type(atoms), intent(out) :: slab, teil   ! hold r, v and f for atoms in the box
 
     character(len=80) :: pos_init_file, confname_file
     character(len=80) :: buffer, label
     character(len= 7) :: confname
     character(len= 1) :: coord_sys
+    character(len=80) :: mdpa_name
 
     integer :: pos1, ios = 0, line = 0
     integer :: rep = 2  ! number of repetition layers arounf an original cell
@@ -129,6 +131,20 @@ subroutine simbox_init(slab, teilchen)
                 read(buffer,*,iostat=ios) nsteps
             case('wstep')
                 read(buffer,*,iostat=ios) wstep
+            case('algorithm')
+                read(buffer,*,iostat=ios) mdpa_name
+                call lower_case(mdpa_name)
+                select case (mdpa_name(1:3))
+                    case ('ver')
+                        md_algo = 0
+                    case ('bee')
+                        md_algo = 1
+                    case ('lan')
+                        md_algo = 1
+                    case default
+                        print *, 'algorithm ', trim(mdpa_name), ' unknown'
+                        stop
+                end select
             case ('projectile')
                 read(buffer, *, iostat=ios) name_p, mass_p, pot_p, npars_p, key_p, fric_p
                 mass_p=mass_p*amu2mass
@@ -329,20 +345,20 @@ subroutine simbox_init(slab, teilchen)
 !    print '(f16.8)', pars_p
 
     ! Create slab and projectile objects
-    slab     = atoms(n_l)
-    teilchen = atoms(n_p)
+    slab = atoms(n_l)
+    teil = atoms(n_p)
 
     ! Assign positions and velocities
 
     slab%r = pos_l
     slab%v = vel_l
 
-    teilchen%r = pos_p
+    teil%r = pos_p
     if (confname .ne. 'POSCAR') then
         vinc = sqrt(2.0d0*einc/mass_p)
-        teilchen%v(1,:) =  vinc*sin(inclination)*cos(azimuth)
-        teilchen%v(2,:) =  vinc*sin(inclination)*sin(azimuth)
-        teilchen%v(3,:) = -vinc*cos(inclination)
+        teil%v(1,:) =  vinc*sin(inclination)*cos(azimuth)
+        teil%v(2,:) =  vinc*sin(inclination)*sin(azimuth)
+        teil%v(3,:) = -vinc*cos(inclination)
     end if
 
     ! Create a directory for trajectory data
@@ -390,6 +406,18 @@ function normal(mean,sigma) !returns a normal distribution
         normal=tmp*sigma+mean
         return
 end function normal
+
+subroutine lower_case(str)
+    character(*), intent(in out) :: str
+    integer :: i
+
+    do i = 1, len(str)
+       select case(str(i:i))
+         case("A":"Z")
+           str(i:i) = achar(iachar(str(i:i))+32)
+       end select
+    end do
+end subroutine lower_case
 
 end module md_init
 
