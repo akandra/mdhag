@@ -53,16 +53,16 @@ subroutine beeman_1(r,v,a,aold)
 
 
 end subroutine beeman_1
-!
-!subroutine predict(v,vp,a,aold)
-!
-!    real(8), dimension(:,:), allocatable :: r,v,vp,a,aold
-!
-!    vp = v + 0.5d0*step * (3.0d0 * a - aold)
-!
-!
-!
-!end subroutine predict
+
+subroutine predict(v,vp,a,aold)
+
+    real(8), dimension(:,:), allocatable :: r,v,vp,a,aold
+
+    vp = v + 0.5d0*step * (3.0d0 * a - aold)
+
+
+
+end subroutine predict
 !
 !subroutine beeman_2(v,vc,a,aold,avold)
 !
