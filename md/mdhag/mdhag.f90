@@ -88,6 +88,8 @@ do itraj = start_tr, ntrajs+start_tr-1
 
     s=1
     call pes(teilchen, slab, Epot)
+    print *, Epot
+    stop
 
     ke_p(s) = (vv(1,1)**2+vv(2,1)**2+vv(3,1)**2)*0.5d0*spec_p%mass
     ke_l(s) = (sum(vv(1,2:bl)**2)+sum(vv(2,2:bl)**2)+sum(vv(3,2:bl)**2))*0.5d0*spec_l%mass

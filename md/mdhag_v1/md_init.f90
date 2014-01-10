@@ -140,7 +140,7 @@ subroutine simbox_init(slab, teil)
                     case ('bee')
                         md_algo = 1
                     case ('lan')
-                        md_algo = 1
+                        md_algo = 2
                     case default
                         print *, 'algorithm ', trim(mdpa_name), ' unknown'
                         stop
@@ -346,6 +346,7 @@ subroutine simbox_init(slab, teil)
 
     ! Create slab and projectile objects
     slab = atoms(n_l)
+!    n_p = 1 ! set the number of projectiles to 1
     teil = atoms(n_p)
 
     ! Assign positions and velocities
@@ -353,7 +354,7 @@ subroutine simbox_init(slab, teil)
     slab%r = pos_l
     slab%v = vel_l
 
-    teil%r = pos_p
+    teil%r = pos_p(:,1:n_p)
     if (confname .ne. 'POSCAR') then
         vinc = sqrt(2.0d0*einc/mass_p)
         teil%v(1,:) =  vinc*sin(inclination)*cos(azimuth)

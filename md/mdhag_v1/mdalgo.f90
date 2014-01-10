@@ -45,6 +45,54 @@ subroutine verlet_2(s)
 
 end subroutine verlet_2
 
+subroutine beeman_1(s)
+    !
+    ! Purpose:
+    !           1st and 2nd steps of Refson-Beeman algorithm,
+    !           K. Refson, Physica 131B, (1985), 256.
+    !           Moldy User's Manual.
+    !
+    type(atoms) :: s
+    real(8) :: step_sq
+
+    step_sq = step * step / 6.0d0
+
+    ! new positions
+    s%r = s%r + step*s%v + step_sq*(4.0*s%ao - s%au)
+    ! predicted velocities
+    s%vp = s%v + 0.5d0*step*(3.0d0*s%ao - s%au)
+
+end subroutine beeman_1
+
+subroutine beeman_2(s)
+    !
+    ! Purpose:
+    !           4th step of Refson-Beeman algorithm,
+    !           K. Refson, Physica 131B, (1985), 256.
+    !           Moldy User's Manual.
+    !
+    type(atoms) :: s
+
+    s%vc = s%v + step/6.0d0*(2.0d0*s%a + 5.0d0*s%ao - s%au)
+
+end subroutine beeman_2
+
+subroutine langevin_1(s)
+    !
+    ! Purpose:
+    !           1st and 2nd steps of Langevin Dynamics algorithm,
+    !           Allen & Tildesley, Computer Simulation of Liquids (1987).
+    !
+
+    type(atoms) :: s
+
+    ! new positions
+    s%r = s%r + c1*s%v + c2*s%a + rrandom
+    ! half-step velocities
+    s%v = s%v + 0.5d0*step*s%a
+
+end subroutine langevin_1
+
 subroutine newton(s, minv)
     !
     ! Purpose:
@@ -78,38 +126,5 @@ subroutine norm_dist(vec1, vec2, length, norm)
     end if
 
 end subroutine norm_dist
-
-subroutine beeman_1(s)
-    !
-    ! Purpose:
-    !           1st and 2nd steps of Refson-Beeman algorithm,
-    !           K. Refson, Physica 131B, (1985), 256.
-    !           Moldy User's Manual.
-    !
-    type(atoms) :: s
-    real(8) :: step_sq
-
-    step_sq = step * step / 6.0d0
-
-    ! new positions
-    s%r = s%r + step*s%v + step * step / 6.0d0*(4.0*s%ao - s%au)
-    ! predicted velocities
-    s%vp = s%v + 0.5d0*step*(3.0d0*s%ao - s%au)
-
-end subroutine beeman_1
-
-subroutine beeman_2(s)
-    !
-    ! Purpose:
-    !           4th step of Refson-Beeman algorithm,
-    !           K. Refson, Physica 131B, (1985), 256.
-    !           Moldy User's Manual.
-    !
-    type(atoms) :: s
-
-    s%vc = s%v + step/6.0d0*(2.0d0*s%a + 5.0d0*s%ao - s%au)
-
-end subroutine beeman_2
-
 
 end module mdalgo

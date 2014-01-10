@@ -6,10 +6,10 @@ azimuth 0
 Tsurf 300
 step 0.1
 nsteps 10000
-wstep 100
-algorithm bee
+wstep 10
+algorithm lan
 projectile H 1.0079 emt 7 stroem.00.H.nml 0
 lattice Au 196.96657 emt 7 stroem.00.Au.nml 0
 celldim 2 2 4
-rep 1
+rep 2
 conf POSCAR au111_2x2x4.POSCAR

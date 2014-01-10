@@ -411,12 +411,12 @@ subroutine emt(slab, teil, Epot)
 
     end do
 
-    rtemp = 12.0d0 * pars_l(5)*igamma2l
+    rtemp = 12.0d0 * pars_l(5)
     vref_l    =    vref_l*rtemp
     dvref_l_l = dvref_l_l*rtemp*pars_l(6)
     dvref_l_p = dvref_l_p*rtemp*pars_l(6)
 
-    rtemp = 12.0d0 * pars_p(5)*igamma2p
+    rtemp = 12.0d0 * pars_p(5)
     vref_p    =    vref_p*rtemp
     dvref_p_l = dvref_p_l*rtemp*pars_p(6)
     dvref_p_p = dvref_p_p*rtemp*pars_p(6)
@@ -424,13 +424,13 @@ subroutine emt(slab, teil, Epot)
 
 !-------------------------------TOTAL ENERGY---------------------------------
 
-    Epot = Ecoh_l + Ecoh_p + V_ll + V_pp + 0.50d0*(V_lp + V_pl + vref_l + vref_p)
+    Epot = Ecoh_l + Ecoh_p - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
 
     ! minus sign was taken into account in calculation of separate contributions
-    slab%f = dEcoh_l_l + dEcoh_p_l + dV_ll_l &
-                 + 0.50d0*(dV_lp_l + dV_pl_l + dvref_l_l + dvref_p_l)
-    teil%f = dEcoh_l_p + dEcoh_p_p + dV_pp_p &
-                 + 0.50d0*(dV_lp_p + dV_pl_p + dvref_l_p + dvref_p_p)
+    slab%f = dEcoh_l_l + dEcoh_p_l - dV_ll_l &
+                 - 0.50d0*(dV_lp_l + dV_pl_l - dvref_l_l - dvref_p_l)
+    teil%f = dEcoh_l_p + dEcoh_p_p - dV_pp_p &
+                 - 0.50d0*(dV_lp_p + dV_pl_p - dvref_l_p - dvref_p_p)
 
     deallocate(dvref_l_p, dvref_p_l, dvref_p_p, dvref_l_l)
     deallocate(dV_pl_p, dV_pl_l, dV_lp_p, dV_lp_l, dV_pp_p, dV_ll_l)
@@ -671,15 +671,15 @@ subroutine emt_e(slab, teil, Epot)
         vref_p = vref_p + rtemp
     end do
 
-    rtemp = 12.0d0 * pars_l(5)*igamma2l
+    rtemp = 12.0d0 * pars_l(5)
     vref_l    =    vref_l*rtemp
-    rtemp = 12.0d0 * pars_p(5)*igamma2p
+    rtemp = 12.0d0 * pars_p(5)
     vref_p    =    vref_p*rtemp
 
 
 !-------------------------------TOTAL ENERGY---------------------------------
 
-    Epot = Ecoh_l + Ecoh_p + V_ll + V_pp + 0.50d0*(V_lp + V_pl + vref_l + vref_p)
+    Epot = Ecoh_l + Ecoh_p - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
 
     deallocate( s_p,  s_l,  sigma_pl,  sigma_lp, sigma_pp,  sigma_ll)
 
