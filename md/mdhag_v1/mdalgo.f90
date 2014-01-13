@@ -15,87 +15,125 @@ module mdalgo
 
 contains
 
-!subroutine norm_dist(vec1,vec2,norm)
-!
-!    real(8),allocatable, dimension(:,:) :: vec1, vec2
-!    real(8) :: norm, n1 = 0.0d0, n2 = 0.0d0
-!    integer :: i
-!    norm = 0.0d0
-!
-!    do i=1,3
-!        norm = norm + dot_product(vec1(i,:),vec2(i,:))
-!        n1   = n1   + dot_product(vec1(i,:),vec1(i,:))
-!        n2   = n2   + dot_product(vec2(i,:),vec2(i,:))
-!    enddo
-!
-!    n1 = max(n1,n2)
-!    norm=Sqrt(norm/n1)
-!
-!end subroutine norm_dist
-!
-!
-subroutine beeman_1(r,v,a,aold)
+subroutine verlet_1(s)
     !
     ! Purpose:
-    !           1st step of Refson-Beeman algorithm,
+    !           1st and 2nd steps of velocity Verlet algorithm,
+    !           Allen & Tildesley, Computer Simulation of Liquids (1987).
+    !
+
+    type(atoms) :: s
+
+    ! new positions
+    s%r = s%r + step*s%v + 0.5d0*step*step*s%a
+    ! half-step velocities
+    s%v = s%v + 0.5d0*step*s%a
+
+end subroutine verlet_1
+
+subroutine verlet_2(s)
+    !
+    ! Purpose:
+    !           3rd step of velocity Verlet algorithm,
+    !           Allen & Tildesley, Computer Simulation of Liquids (1987).
+    !
+
+    type(atoms) :: s
+
+    ! new velocities
+    s%v = s%v + 0.5d0*step*s%a
+
+end subroutine verlet_2
+
+subroutine beeman_1(s)
+    !
+    ! Purpose:
+    !           1st and 2nd steps of Refson-Beeman algorithm,
     !           K. Refson, Physica 131B, (1985), 256.
     !           Moldy User's Manual.
     !
-
-!    type(atom), dimension(:), allocatable :: slab, teilchen
-
-    real(8), dimension(:,:), allocatable :: r,v,a,aold
+    type(atoms) :: s
     real(8) :: step_sq
 
     step_sq = step * step / 6.0d0
 
-    r = r + step*v + step_sq*(4.0*a - aold)
-
+    ! new positions
+    s%r = s%r + step*s%v + step_sq*(4.0*s%ao - s%au)
+    ! predicted velocities
+    s%vp = s%v + 0.5d0*step*(3.0d0*s%ao - s%au)
 
 end subroutine beeman_1
 
-subroutine predict(v,vp,a,aold)
 
-    real(8), dimension(:,:), allocatable :: r,v,vp,a,aold
+subroutine beeman_2(s)
+    !
+    ! Purpose:
+    !           4th step of Refson-Beeman algorithm,
+    !           K. Refson, Physica 131B, (1985), 256.
+    !           Moldy User's Manual.
+    !
+    type(atoms) :: s
 
-    vp = v + 0.5d0*step * (3.0d0 * a - aold)
+    s%vc = s%v + step/6.0d0*(2.0d0*s%a + 5.0d0*s%ao - s%au)
 
+end subroutine beeman_2
 
+subroutine langevin_1(s)
+    !
+    ! Purpose:
+    !           1st and 2nd steps of Langevin Dynamics algorithm,
+    !           Allen & Tildesley, Computer Simulation of Liquids (1987).
+    !           Li & Wahnström, Phys. Rev. B (1992).
+    !
 
-end subroutine predict
-!
-!subroutine beeman_2(v,vc,a,aold,avold)
-!
-!    real(8), dimension(:,:), allocatable :: v,vc,a,aold,avold
-!
-!    vc = v + step/6.0d0 * (2.0d0 * a + 5.0d0 * aold - avold)
-!
-!
-!
-!end subroutine beeman_2
-!
-!
-!subroutine newton(f, a, minv)
-!
-!    real(8), dimension(:,:), allocatable :: f, a
-!    real(8), dimension(:), allocatable :: minv
-!
-!    a(1,:) = f(1,:) * minv
-!    a(2,:) = f(2,:) * minv
-!    a(3,:) = f(3,:) * minv
-!
-!
-!end subroutine newton
-!
-!subroutine fric(a, v, zetadmass)
-!
-!    real(8), dimension(:,:), allocatable :: a, v
-!    real(8), intent(in) :: zetadmass ! zetadmass is the friction coefficient devided by the mass
-!
-!    a = a - zetadmass * v
-!
-!
-!end subroutine fric
+    type(atoms) :: s
+    real(8) :: zeta
+    real(8) :: c0, c1, c2, rrandom, vg
 
+    vg= 0.0d0
+    rrandom = 0.0d0
+    c0 = exp(-zeta*step)
+    c1=(1-c0)/zeta
+    c2= (1-c1)/zeta
+    ! new positions
+    s%r = s%r + c1*s%v + c2*step*s%a + rrandom
+    ! half-step velocities
+    s%v = c0*s%v + (c1-c2)*s%ao + c2*s%a + vg
+
+end subroutine langevin_1
+
+subroutine newton(s, minv)
+    !
+    ! Purpose:
+    !           Newton equation
+    !
+    type(atoms) :: s
+    real(8) :: minv
+
+    s%a = s%f*minv
+
+end subroutine newton
+
+subroutine norm_dist(vec1, vec2, length, norm)
+    !
+    ! Purpose: normalised distance between 2 vectors
+    !
+
+    integer :: length
+    real(8), dimension(length) :: vec1, vec2
+    real(8) :: norm, n1, n2
+
+    norm = dot_product(vec1 - vec2, vec1 - vec2)
+    n1   = dot_product(vec1,vec1)
+    n2   = dot_product(vec2,vec2)
+
+    n1 = max(n1,n2)
+    if (n1 .eq. 0.0d0) then
+        norm = 0.0d0
+    else
+        norm=Sqrt(norm/n1)
+    end if
+
+end subroutine norm_dist
 
 end module mdalgo

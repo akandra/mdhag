@@ -140,12 +140,12 @@ program EMT_fit_1
 
 
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.245.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.245.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.245.Au.nml'
+    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.249.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.249.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.249.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.244.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.244.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.247.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.247.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -314,7 +314,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 150
+    max_iterations = 200
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters

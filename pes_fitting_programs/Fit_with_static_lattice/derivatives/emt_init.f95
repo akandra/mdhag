@@ -100,16 +100,17 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
 
 ! -------------------------READ IN FIXED LATTICE-------------------------------
 ! read in energies
-    e_max=-15.0
+    e_max=10.0
 
     call open_for_read(39,fix_energy)
     i=1
     do
         read(39,*,iostat=ios) empty, empty, empty, empty, empty
         if(ios <0) exit
-        if (empty<=e_max .and. empty > e_max*2) i=i+1
+        if (Abs(empty+ 24.995689)<=e_max ) i=i+1
     end do
     npts = i-1
+
 
     allocate(E_fix(npts),fix_p(npts,3))
 
@@ -120,7 +121,8 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
         read(39,*,iostat=ios) empty, empty3(1), empty3(2), empty3(3), empty
         if(ios <0) exit
         !if (abs(empty)<=e_max) then
-        if (empty<=e_max .and. empty > e_max*2) then
+        !if (empty<=e_max .and. empty > e_max*2) then
+        if (Abs(empty+ 24.995689)<=e_max ) then
             E_fix(j) = empty
             fix_p(j,:) = empty3
             j=j+1

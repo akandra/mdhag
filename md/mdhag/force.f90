@@ -389,7 +389,7 @@ select case(spec_l%pot)
 
         ! Cohesive energy contribution due to the particle
         rtemp = exp(-pars_p(4) * s_p)* pars_p(3)
-        Ecoh = (1.0d0 + pars_p(4)*s_p) * rtemp
+        Ecoh = ((1.0d0 + pars_p(4)*s_p) * rtemp - pars_p(3))
 
         f_p = (s_p * rtemp * pars_p(4)**2 + 0.5d0 * vref_p * pars_p(6)) &
               / (sigma_pl*beta*pars_p(1))
@@ -464,9 +464,8 @@ select case(spec_l%pot)
     ! Summation over all contributions.
 
     energy = energy+Ecoh - V_ll - 0.50d0 * ( V_lp + V_pl - vref_l - vref_p)
-
-
-
+print *, energy
+stop
     case('morse')
     ! EMPTY
 
