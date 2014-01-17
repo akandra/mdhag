@@ -20,7 +20,8 @@ module atom_class
     real(8), parameter          :: sqrt3    = 1.73205080757d0
     real(8), parameter          :: pi       = 3.14159265359d0
     real(8), parameter          :: kB       = 0.0000861730d0
-    real(8), parameter          :: twelveth = 1./12.
+    real(8), parameter          :: hbar     = 0.6582119280967d0
+    real(8), parameter          :: twelfth  = 1./12.
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
 
     ! Conversion constants to program units
@@ -32,8 +33,10 @@ module atom_class
     ! Program derived units
     !           Mass   : eV fs^2 / A^2 = 1/103.6382 amu
     !           Angle  : radian = 180 deg
+    !           bohr   : bohr = 0.5291772 Angstroem
     real(8), parameter          :: amu2mass = 103.6382d0
     real(8), parameter          :: deg2rad  = pi/180.0d0
+    real(8), parameter          :: bohr2ang = 0.529177211d0
 
     !  Type atoms
     !   structure to hold the position, velocity, force etc. for multiple atoms
@@ -42,6 +45,7 @@ module atom_class
     !       each array should be allocated (3,n_atom)
     type atoms
         integer                                :: n_atoms  ! number of atoms
+        real(8), dimension(:),   allocatable   :: dens     ! embedded electron density
         real(8), dimension(:,:), allocatable   :: r        ! positions
         real(8), dimension(:,:), allocatable   :: v        ! velocities
         real(8), dimension(:,:), allocatable   :: f        ! forces
@@ -70,6 +74,7 @@ contains
         integer, intent(in) :: n_atoms
         type(atoms) new_atoms
 
+        allocate(new_atoms%dens(n_atoms))
         allocate(new_atoms%r(3,n_atoms))    !   allocate
         allocate(new_atoms%v(3,n_atoms))
         allocate(new_atoms%f(3,n_atoms))
@@ -80,17 +85,17 @@ contains
         allocate(new_atoms%ao(3,n_atoms))
         allocate(new_atoms%au(3,n_atoms))
 
-        new_atoms%r = 0.0d0                 !   initialize
-        new_atoms%v = 0.0d0
-        new_atoms%f = 0.0d0
-        new_atoms%a = 0.0d0
+        new_atoms%n_atoms = n_atoms         !   initialize
+        new_atoms%dens = 0.0d0
+        new_atoms%r    = 0.0d0
+        new_atoms%v    = 0.0d0
+        new_atoms%f    = 0.0d0
+        new_atoms%a    = 0.0d0
 
         new_atoms%vp = 0.0d0
         new_atoms%vc = 0.0d0
         new_atoms%ao = 0.0d0
         new_atoms%au = 0.0d0
-
-        new_atoms%n_atoms = n_atoms
 
     end function
 

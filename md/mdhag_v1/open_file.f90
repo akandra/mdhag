@@ -57,7 +57,7 @@ subroutine open_for_write(lun,file_name)
     print '( "error message: ", (a) )', error_message
 !    write (*, '( "overwrite existing file (y/n)? ")',advance='no')
 !    read(*,*) answer
-    if (answer /='y' .and. answer/='Y') STOP 102
+!    if (answer /='y' .and. answer/='Y') STOP 102
     print '((a)/)', 'OVERWRITING EXISTING FILES'
     open(unit=lun, file=file_name, status='replace', action='write', iostat=ios, iomsg=error_message)
 

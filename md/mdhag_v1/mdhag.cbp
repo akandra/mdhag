@@ -33,12 +33,7 @@
 		<Unit filename="md_init.f90">
 			<Option weight="1" />
 		</Unit>
-<<<<<<< HEAD
-		<Unit filename="mdalgo.f90" />
-		<Unit filename="mdhag.f90">
-=======
 		<Unit filename="mdalgo.f90">
->>>>>>> d0306c8617992db22328f214335a046c7226722f
 			<Option weight="3" />
 		</Unit>
 		<Unit filename="mdhag.f90">
@@ -46,6 +41,9 @@
 		</Unit>
 		<Unit filename="mdhag.inp" />
 		<Unit filename="open_file.f90">
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="useful_things.f90">
 			<Option weight="0" />
 		</Unit>
 		<Extensions>
