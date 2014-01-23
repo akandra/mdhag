@@ -24,15 +24,13 @@ module force
 contains
 
 
-subroutine emt(slab, teil, Epot)
+subroutine emt(slab, teil)
 
 !   Calculates energy and forces with EMT potential
 
     implicit none
 
     type(atoms), intent(inout)    :: teil, slab
-    real(8),     intent(out)      :: Epot
-
     integer :: i,j
 
     real(8) :: betas0_l, betaeta2_l, kappadbeta_l, chipl
@@ -272,6 +270,8 @@ subroutine emt(slab, teil, Epot)
 
             ! sigma_pl
             rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )     ! sigma_ij*gamma1
+
+
             sigma_pl(i) = sigma_pl(i) + rtemp
             dtheta = (pars_l(1) + rtemp1)*rtemp*r3temp
             dsigma_pl_p(:,i) = dsigma_pl_p(:,i) - dtheta ! dsigma_i/dr_i
@@ -352,12 +352,14 @@ subroutine emt(slab, teil, Epot)
     s_l = -log(s_l*twelfth)/betaeta2_l
     s_p = -log(s_p*twelfth)/betaeta2_p
 
+
 !----------------------EMBEDDED ELECTRON DENSITY-------------------------------
 
     rtemp = 0.5d0/bohr2ang - betaeta2_l     ! -eta_l
     slab%dens = pars_l(2)*exp(rtemp*s_l)
     rtemp = 0.5d0/bohr2ang - betaeta2_p     ! -eta_l
     teil%dens = pars_p(2)*exp(rtemp*s_p)
+
 
 !---------------------------COHESIVE FUNCTION-----------------------------------
 
@@ -437,6 +439,7 @@ subroutine emt(slab, teil, Epot)
     teil%f = dEcoh_l_p + dEcoh_p_p - dV_pp_p &
                  - 0.50d0*(dV_lp_p + dV_pl_p - dvref_l_p - dvref_p_p)
 
+
     deallocate(dvref_l_p, dvref_p_l, dvref_p_p, dvref_l_l)
     deallocate(dV_pl_p, dV_pl_l, dV_lp_p, dV_lp_l, dV_pp_p, dV_ll_l)
     deallocate(dEcoh_p_l, dEcoh_l_p, dEcoh_p_p, dEcoh_l_l)
@@ -447,14 +450,13 @@ subroutine emt(slab, teil, Epot)
 
 end subroutine emt
 
-subroutine emt_e(slab, teil, Epot)
+subroutine emt_e(slab, teil)
 
 ! Calculates EMT-energy only
 
     implicit none
 
     type(atoms), intent(inout)    :: teil, slab
-    real(8),     intent(out)      :: Epot
 
     integer :: i,j
 
@@ -698,7 +700,7 @@ subroutine emt_e(slab, teil, Epot)
 
 end subroutine emt_e
 
-subroutine emt1(s, Epot)
+subroutine emt1(s)
 
 !   Calculates energy and forces with EMT potential
 !   in case of single species
@@ -706,7 +708,6 @@ subroutine emt1(s, Epot)
     implicit none
 
     type(atoms), intent(inout)    :: s
-    real(8),     intent(out)      :: Epot
 
     integer :: i,j
 
@@ -881,7 +882,7 @@ subroutine emt1(s, Epot)
 
 end subroutine emt1
 
-subroutine emt1_e(s, Epot)
+subroutine emt1_e(s)
 
 !   Calculates EMT-energy only
 !   in case of single species
@@ -889,7 +890,6 @@ subroutine emt1_e(s, Epot)
     implicit none
 
     type(atoms), intent(inout)    :: s
-    real(8),     intent(out)      :: Epot
 
     integer :: i,j
 
@@ -1020,19 +1020,22 @@ subroutine num_emt(s,t)
 
     type(atoms) :: s, t
     integer :: i,j
-    real(8) :: Epot, delta = 0.001d0
+    real(8) :: delta = 0.001d0, Epoti
 
+    Epoti = Epot
     do j=1, 3
     do i=1, s%n_atoms
         s%r(j,i) = s%r(j,i) - delta
-        call emt_e(s, t, Epot)
+        call emt_e(s, t)
         s%f(j,i) = Epot/(2*delta)
         s%r(j,i) = s%r(j,i) + 2*delta
-        call emt_e(s, t, Epot)
+        call emt_e(s, t)
         s%r(j,i) = s%r(j,i) - delta
         s%f(j,i) =  s%f(j,i) - Epot/(2*delta)
     end do
     end do
+
+    Epot = Epoti
 
 end subroutine num_emt
 
@@ -1043,19 +1046,21 @@ subroutine num_emt1(s)
 
     type(atoms) :: s
     integer :: i,j
-    real(8) :: Epot, delta = 0.001d0
+    real(8) :: delta = 0.001d0, Epoti
 
+    Epoti=Epot
     do j=1, 3
     do i=1, s%n_atoms
         s%r(j,i) = s%r(j,i) - delta
-        call emt1_e(s, Epot)
+        call emt1_e(s)
         s%f(j,i) = Epot/(2*delta)
         s%r(j,i) = s%r(j,i) + 2*delta
-        call emt1_e(s, Epot)
+        call emt1_e(s)
         s%r(j,i) = s%r(j,i) - delta
         s%f(j,i) =  s%f(j,i) - Epot/(2*delta)
     end do
     end do
+    Epot=Epoti
 
 end subroutine num_emt1
 
@@ -1078,6 +1083,7 @@ subroutine ldfa(s)
 
     !	12th order cubic spline fit interpolated from DFT data points of friction
     !   coefficient vs. electron density (calculated from DFT with VASP)
+
 	do i = 1, s%n_atoms
         fric = s%dens(i)
         ! hbar*xi in eV
@@ -1091,7 +1097,7 @@ subroutine ldfa(s)
         else if (fric > 0.36) then
             fric = 0.001*(4.7131-exp(-4.41305*fric))
         else
-            print *, fric, s%dens(i), i
+            print *, fric, s%dens(i), i, shape(s%dens)
             stop 'Error: dens takes negative values!'
         end if
         s%dens(i)=fric

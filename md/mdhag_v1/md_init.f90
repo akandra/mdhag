@@ -27,23 +27,28 @@ module md_init
     real(8) :: Tsurf        = 300   ! surface temperature (Kelvin)
     real(8) :: step         = 0.1   ! time step in fs
     integer :: nsteps       = 100   ! number of steps
-    integer :: wstep        = 1     ! interval to save data
     integer :: md_algo_l    = 1     ! md propagation algorithm: 1 - verlet
                                     !                           2 - beeman
                                     !                           3 - langevin
                                     !                           4 - langevin (series)
     integer :: md_algo_p    = 0     ! 0 means no projectile
+    integer, dimension(2) :: wstep   = (/-1,1/)   ! way and interval to save data
     character(len=80) :: name_p = 'Elerium'
     character(len=80) :: pot_p = 'emt'
     character(len=80) :: key_p = 'empty'
     real(8) :: mass_p = 1.0d0
     integer :: npars_p = 0
     character(len=80) :: name_l, pot_l, key_l
+    character(len= 7) :: confname
     integer :: npars_l
     real(8) :: mass_l
+    real(8) :: Epot = 0.0d0
 
     real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
     real(8), dimension(:), allocatable :: pars_l, pars_p ! potential parameters
+    character(len=80) :: confname_file
+
+    logical :: Tsurf_key = .false., md_algo_l_key = .false., md_algo_p_key = .false.
 
 
 contains
@@ -60,17 +65,16 @@ subroutine simbox_init(slab, teil)
 
     type(atoms), intent(out) :: slab, teil   ! hold r, v and f for atoms in the box
 
-    character(len=80) :: pos_init_file, confname_file
-    character(len=80) :: buffer, label
-    character(len= 7) :: confname
+    character(len=80) :: pos_init_file
+    character(len=80) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
     character(len= 1) :: coord_sys
-    character(len=80) :: mdpa_name
 
     integer :: pos1, ios = 0, line = 0
     integer :: rep = 2  ! number of repetition layers arounf an original cell
-    integer :: n_l0, n_l, n_p, n_p0=0, itemp
+    integer :: n_l0, n_l=1, n_p, n_p0=0, itemp
     integer :: i, j, k, l, s, r
     integer :: randk = 13
+    integer :: nlnofix, nlno = -1
 
     integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
 
@@ -83,6 +87,8 @@ subroutine simbox_init(slab, teil)
 !    real(8), dimension(:,:), allocatable :: d_ref
 
     logical :: exists
+
+    integer :: itraj, q, nspec, npnofix
 
     if (iargc() == 0) stop " I need an input file"
     call getarg(1, pos_init_file)
@@ -128,18 +134,21 @@ subroutine simbox_init(slab, teil)
                 azimuth = azimuth*deg2rad
             case('Tsurf')
                 read(buffer,*,iostat=ios) Tsurf
+                Tsurf_key = .true.
             case('step')
                 read(buffer,*,iostat=ios) step
             case('nsteps')
                 read(buffer,*,iostat=ios) nsteps
             case('wstep')
                 read(buffer,*,iostat=ios) wstep
+                if (wstep(1)==-1) wstep(2) = nsteps + 1
             case ('projectile')
                 read(buffer, *, iostat=ios) name_p, mass_p, pot_p, npars_p, &
-                                            key_p, mdpa_name, n_p0
+                                            key_p, mdpa_name_p, n_p0
+                md_algo_p_key = .true.
                 mass_p=mass_p*amu2mass
-                call lower_case(mdpa_name)
-                select case (mdpa_name(1:3))
+                call lower_case(mdpa_name_p)
+                select case (mdpa_name_p(1:3))
                     case ('ver')
                         md_algo_p = 1
                     case ('bee')
@@ -149,16 +158,24 @@ subroutine simbox_init(slab, teil)
                     case ('sla')
                         md_algo_p = 4
                    case default
-                        print *, 'algorithm ', trim(mdpa_name), ' unknown'
+                        print *, 'algorithm ', trim(mdpa_name_p), ' unknown'
                         stop
                 end select
+                allocate(pars_p(npars_p))
+                call open_for_read(23,key_p)
+                read(23,'(/)')
+                do i = 1, npars_p
+                    read(23,*) biffer, pars_p(i)
+                end do
+                close(23)
 
             case ('lattice')
                 read(buffer, *, iostat=ios) name_l, mass_l, pot_l, npars_l, &
-                                            key_l, mdpa_name
+                                            key_l, mdpa_name_l, nlno
+                md_algo_l_key = .true.
                 mass_l=mass_l*amu2mass
-                call lower_case(mdpa_name)
-                select case (mdpa_name(1:3))
+                call lower_case(mdpa_name_l)
+                select case (mdpa_name_l(1:3))
                     case ('ver')
                         md_algo_l = 1
                     case ('bee')
@@ -168,9 +185,16 @@ subroutine simbox_init(slab, teil)
                      case ('sla')
                         md_algo_l = 4
                    case default
-                        print *, 'algorithm ', trim(mdpa_name), ' unknown'
+                        print *, 'algorithm ', trim(mdpa_name_l), ' unknown'
                         stop
                 end select
+                allocate(pars_l(npars_l))
+                call open_for_read(23,key_l)
+                read(23,'(/)')
+                do i = 1, npars_l
+                    read(23,*) biffer, pars_l(i)
+                end do
+                close(23)
             case ('celldim')
                 read(buffer, *, iostat=ios) celldim
             case ('rep')
@@ -190,9 +214,10 @@ subroutine simbox_init(slab, teil)
 !                       =====================
 !------------------------------------------------------------------------------
 
-    call open_for_read(38, confname_file)
+
 
     if (confname == 'POSCAR') then
+        call open_for_read(38, confname_file)
 
         read(38,*) buffer
         read(38,*) cellscale
@@ -272,21 +297,28 @@ subroutine simbox_init(slab, teil)
         allocate(pos_l(3,n_l), vel_l(3,n_l))
         pos_l = matmul(c_matrix,d_l)
 
+        ! Exclude fixed atoms
+        if (nlno == -1) then
+            nlnofix = n_l/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
+        else
+            nlnofix = n_l - nlno                       ! whatever number nlno of atoms fixed
+        end if
+
         ! Sample velocities of lattice atoms from thermal distribution
         ! assuming the minimum energy configuration
         v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
-        n_l0 = n_l/celldim(3)*(celldim(3)-1)    ! Exclude fixed atoms
+
 
         vel_l = 0.0d0
-        do i=1,n_l0
+        do i=1,nlnofix
             vel_l(1,i) = normal(0.0d0,v_pdof)
             vel_l(2,i) = normal(0.0d0,v_pdof)
             vel_l(3,i) = normal(0.0d0,v_pdof)
         enddo
         ! Set c.-of-m. velocity to zero
-        vel_l(1,1:n_l0) = vel_l(1,1:n_l0) - sum(vel_l(1,1:n_l0))/n_l0
-        vel_l(2,1:n_l0) = vel_l(2,1:n_l0) - sum(vel_l(2,1:n_l0))/n_l0
-        vel_l(3,1:n_l0) = vel_l(3,1:n_l0) - sum(vel_l(3,1:n_l0))/n_l0
+        vel_l(1,1:nlnofix) = vel_l(1,1:nlnofix) - sum(vel_l(1,1:nlnofix))/nlnofix
+        vel_l(2,1:nlnofix) = vel_l(2,1:nlnofix) - sum(vel_l(2,1:nlnofix))/nlnofix
+        vel_l(3,1:nlnofix) = vel_l(3,1:nlnofix) - sum(vel_l(3,1:nlnofix))/nlnofix
 
         if (md_algo_p > 0 .and. n_p == 0 .and. n_p0 == 0) then
             md_algo_p = 0
@@ -335,81 +367,128 @@ subroutine simbox_init(slab, teil)
 
         n_p = n_p0
 
+        close(38)
+
+        ! Create slab objects
+        slab = atoms(n_l)
+        ! Assign slab positions and velocities
+        slab%r = pos_l
+        slab%v = vel_l
+        ! Assign the number of non-fixed atom
+        slab%nofix = nlnofix
+
+        ! Create projectile objects
+        if (n_p > 0) then
+            teil = atoms(n_p)
+        else
+            teil = atoms(1)
+            teil%n_atoms = 0
+            teil%nofix = 0
+        end if
+
+        if (n_p > 0) then
+            teil%r = pos_p(:,1:n_p)
+            deallocate(pos_p, d_p, start_p)
+        end if
+
+        deallocate(vel_l, pos_l, d_l, start_l)
     else
 
-        read(38,*) cell_mat
-        read(38,*) cell_imat
-        read(38,*) n_l, n_p
-
-        allocate(pos_l(3,n_l),vel_l(3,n_l),start_p(3,n_p))
-
-        read(38,*) start_p
-        read(38,*) pos_l
-        read(38,*) vel_l
+        ! Create projectile objects
+        if (md_algo_p_key) teil = atoms(n_p0)
 
     endif
 
-    close(38)
 
-    !   Read in potential parameters
-
-    allocate(pars_l(npars_l))
-
-    call open_for_read(23,key_l)
-    read(23,'(/)')
-    do i = 1, npars_l
-        read(23,*) buffer, pars_l(i)
-    end do
-    close(23)
-
-    if (n_p > 0) then
-
-        allocate(pars_p(npars_p))
-
-        call open_for_read(23,key_p)
-        read(23,'(/)')
-        do i = 1, npars_p
-            read(23,*) buffer, pars_p(i)
-        end do
-        close(23)
-    end if
-
-    ! Create slab objects
-    slab = atoms(n_l)
-    ! Assign slab positions and velocities
-    slab%r = pos_l
-    slab%v = vel_l
-
-    ! Create projectile objects
-    if (n_p > 0) then
-        teil = atoms(n_p)
-    else
-        teil = atoms(1)
-        teil%n_atoms = 0
-    end if
-
-    ! Assign projectile positions and velocities
-    if (n_p > 0) then
-
-        teil%r = pos_p(:,1:n_p)
-        if (confname .ne. 'POSCAR') then
-            vinc = sqrt(2.0d0*einc/mass_p)
-            teil%v(1,:) =  vinc*sin(inclination)*cos(azimuth)
-            teil%v(2,:) =  vinc*sin(inclination)*sin(azimuth)
-            teil%v(3,:) = -vinc*cos(inclination)
-        end if
-        deallocate(pos_p, d_p, start_p)
-    end if
-
-    ! Create a directory for trajectory data
-    inquire(file='trajs',exist=exists)
+    ! Create a directory for configuration data
+    inquire(directory='conf',exist=exists)
     if (.not. exists) then
-        call system('mkdir trajs')
+        call system('mkdir conf')
     end if
-
-    deallocate(vel_l, pos_l, d_l, start_l)
+    ! Create a directory for trajectory data
+    inquire(directory='traj',exist=exists)
+    if (.not. exists) then
+        call system('mkdir traj')
+    end if
 
 end subroutine simbox_init
+
+subroutine traj_init(slab, teil)
+!
+! Purpose:
+!           Initialise the entire system:
+!               1. Geometry
+!               2. Interaction Potential
+!               3. Velocities
+!
+    implicit none
+
+    type(atoms), intent(inout) :: slab, teil   ! hold r, v and f for atoms in the box
+
+    integer :: traj_no, nspec, n_l, nlnofix, n_p, npnofix
+    real(8) :: dum
+    integer :: ymm
+
+
+!------------------------------------------------------------------------------
+!                       READ IN CONFIGURATION
+!                       =====================
+!------------------------------------------------------------------------------
+
+    open(unit=38, file='conf/'//confname_file, form='unformatted' )
+
+    read(38) traj_no
+    read(38) step
+    read(38) Epot
+    read(38) dum
+    if (.not. Tsurf_key) Tsurf = dum
+    read(38) nspec
+
+    read(38) name_l, n_l, nlnofix, mass_l, pot_l, npars_l, key_l
+
+    if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
+
+
+    read(38) pars_l, ymm
+    if (.not. md_algo_l_key) md_algo_l = ymm
+
+    read(38) cell_mat     ! Cell matrix
+    read(38) cell_imat    ! inverse cell matrix
+
+    slab = atoms(n_l)
+
+    read(38) slab%r, slab%v, slab%a, slab%dens
+
+    slab%nofix = nlnofix
+
+    if (.not.md_algo_p_key) then
+        if (nspec > 1) then
+
+            read(38) name_p, n_p, npnofix, mass_p, pot_p, npars_p, key_p
+            if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
+            read(38) pars_p, ymm
+            if (.not. md_algo_p_key) md_algo_p = ymm
+            teil = atoms(n_p)
+            read(38) teil%r, teil%v, teil%a, teil%dens
+            teil%nofix = npnofix
+
+        else
+
+            n_p = 1
+            teil = atoms(n_p)
+            teil%n_atoms = 0
+            teil%nofix = 0
+
+        end if
+    end if
+
+    close(38)
+
+
+end subroutine traj_init
+
+
+
 
 end module md_init
 

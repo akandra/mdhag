@@ -14,8 +14,6 @@ module mdalgo
     use force
     implicit none
 
-    real(8):: xi=1.0d0
-
 contains
 
 subroutine propagator_1(s, md_algo, imass)
@@ -28,8 +26,6 @@ subroutine propagator_1(s, md_algo, imass)
     integer :: md_algo
     real(8) :: imass
 
-
-
     select case (md_algo)
 
         case (1) ! velocity Verlet Algorithm
@@ -40,6 +36,7 @@ subroutine propagator_1(s, md_algo, imass)
 
         case (3) ! Langevin
             call langevin_1(s,imass)
+
 
         case (4) ! Langevin up to 2nd order
             call langevins_1(s,imass)
@@ -55,8 +52,8 @@ subroutine propagator_2(s, md_algo, imass)
     !
 
     type(atoms) :: s
-    integer :: md_algo
-    real(8) :: imass, norm
+    integer     :: md_algo
+    real(8)     :: imass, norm
 
         select case (md_algo)
 
@@ -80,6 +77,7 @@ subroutine propagator_2(s, md_algo, imass)
                 end do
 
             case (3) ! Langevin
+
                 call ldfa(s)
                 call newton(s, imass)
                 call langevin_2(s,imass)
@@ -103,11 +101,14 @@ subroutine verlet_1(s)
     !
 
     type(atoms) :: s
+    integer     :: nf     ! skip fixed atoms
+
+    nf = s%nofix
 
     ! half-step velocities
-    s%v = s%v + 0.5d0*step*s%a
+    s%v(:,1:nf) = s%v(:,1:nf) + 0.5d0*step*s%a(:,1:nf)
     ! new positions
-    s%r = s%r + step*s%v
+    s%r(:,1:nf) = s%r(:,1:nf) + step*s%v(:,1:nf)
 
 end subroutine verlet_1
 
@@ -119,9 +120,12 @@ subroutine verlet_2(s)
     !
 
     type(atoms) :: s
+    integer     :: nf     ! skip fixed atoms
+
+    nf = s%nofix
 
     ! new velocities
-    s%v = s%v + 0.5d0*step*s%a
+    s%v(:,1:nf) = s%v(:,1:nf) + 0.5d0*step*s%a(:,1:nf)
 
 end subroutine verlet_2
 
@@ -133,14 +137,19 @@ subroutine beeman_1(s)
     !           Moldy User's Manual.
     !
     type(atoms) :: s
-    real(8) :: step_sq
+    real(8)     :: step_sq
+    integer     :: nf     ! skip fixed atoms
+
+    nf = s%nofix
 
     step_sq = step * step / 6.0d0
 
     ! new positions
-    s%r = s%r + step*s%v + step_sq*(4.0*s%ao - s%au)
+    s%r(:,1:nf) = s%r(:,1:nf) + step*s%v(:,1:nf) &
+                + step_sq*(4.0*s%ao(:,1:nf) - s%au(:,1:nf))
     ! predicted velocities
-    s%vp = s%v + 0.5d0*step*(3.0d0*s%ao - s%au)
+    s%vp(:,1:nf) = s%v(:,1:nf) + 0.5d0*step*(3.0d0*s%ao(:,1:nf)&
+                                                 - s%au(:,1:nf))
 
 end subroutine beeman_1
 
@@ -153,8 +162,12 @@ subroutine beeman_2(s)
     !           Moldy User's Manual.
     !
     type(atoms) :: s
+    integer     :: nf     ! skip fixed atoms
 
-    s%vc = s%v + step/6.0d0*(2.0d0*s%a + 5.0d0*s%ao - s%au)
+    nf = s%nofix
+
+    s%vc(:,1:nf) = s%v(:,1:nf) + step/6.0d0*(2.0d0*s%a(:,1:nf)&
+                           + 5.0d0*s%ao(:,1:nf) - s%au(:,1:nf))
 
 end subroutine beeman_2
 
@@ -165,24 +178,34 @@ subroutine langevin_1(s, imass)
     !           Dellago et al. JCP 108 (1998) 1964
     !
 
-    type(atoms) :: s
-    real(8) :: imass, temp
-    real(8), dimension(  s%n_atoms) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
-    real(8), dimension(3,s%n_atoms) :: randy, cofm
-    integer :: i
+    type(atoms)                   :: s
+    real(8)                       :: imass, temp
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(3,s%nofix) :: randy, cofm
+    integer                       :: i
+    integer     :: nf     ! skip fixed atoms
 
-    xidt = (s%dens*step)
+    nf = s%nofix
+    xidt = (s%dens(1:nf)*step)
     c0 = exp(-xidt)
 
-    c1 = (1.0d0 - c0)/s%dens
+    c1 = (1.0d0 - c0)/s%dens(1:nf)
     c2 = (step - c1)/xidt
 
     temp = kB*Tsurf*imass
-    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens
+    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens(1:nf)
     sigma_v = sqrt(temp*(1.d0 - c0*c0))
-    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens)
+    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens(1:nf))
 
-    do i =1, s%n_atoms
+    do i = 1, nf                    ! prevent negative values from too low density
+        if (xidt(i) < 1.0d-5) then
+            sigma_r = 0.0d0
+            sigma_v = 0.0d0
+            c_rv = 0.0d0
+        end if
+    end do
+
+    do i =1, s%nofix
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)
@@ -192,27 +215,19 @@ subroutine langevin_1(s, imass)
     cofm(2,:) = sigma_r*randy(2,:)
     cofm(3,:) = sigma_r*randy(3,:)
 
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
-
     ! propagate positions
-    s%r(1,:) = s%r(1,:) + c1*s%v(1,:) + c2*step*s%a(1,:) + cofm(1,:)
-    s%r(2,:) = s%r(2,:) + c1*s%v(2,:) + c2*step*s%a(2,:) + cofm(2,:)
-    s%r(3,:) = s%r(3,:) + c1*s%v(3,:) + c2*step*s%a(3,:) + cofm(3,:)
+    s%r(1,1:nf) = s%r(1,1:nf) + c1*s%v(1,1:nf) + c2*step*s%a(1,1:nf) + cofm(1,:)
+    s%r(2,1:nf) = s%r(2,1:nf) + c1*s%v(2,1:nf) + c2*step*s%a(2,1:nf) + cofm(2,:)
+    s%r(3,1:nf) = s%r(3,1:nf) + c1*s%v(3,1:nf) + c2*step*s%a(3,1:nf) + cofm(3,:)
 
     cofm(1,:) = sigma_v*c_rv*randy(1,:)
     cofm(2,:) = sigma_v*c_rv*randy(2,:)
     cofm(3,:) = sigma_v*c_rv*randy(3,:)
 
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
-
     ! partially propagate velocities
-    s%v(1,:) = c0*s%v(1,:) + (c1 - c2)*s%a(1,:) + cofm(1,:)
-    s%v(2,:) = c0*s%v(2,:) + (c1 - c2)*s%a(2,:) + cofm(2,:)
-    s%v(3,:) = c0*s%v(3,:) + (c1 - c2)*s%a(3,:) + cofm(3,:)
+    s%v(1,1:nf) = c0*s%v(1,1:nf) + (c1 - c2)*s%a(1,1:nf) + cofm(1,:)
+    s%v(2,1:nf) = c0*s%v(2,1:nf) + (c1 - c2)*s%a(2,1:nf) + cofm(2,:)
+    s%v(3,1:nf) = c0*s%v(3,1:nf) + (c1 - c2)*s%a(3,1:nf) + cofm(3,:)
 
 end subroutine langevin_1
 
@@ -223,23 +238,34 @@ subroutine langevin_2(s, imass)
     !           Dellago et al. JCP 108 (1998) 1964
     !
 
-    type(atoms) :: s
-    real(8) :: imass, temp
-    real(8), dimension(  s%n_atoms) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
-    real(8), dimension(3,s%n_atoms) :: randy, cofm
-    integer :: i
+    type(atoms)                   :: s
+    real(8)                       :: imass, temp
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(3,s%nofix) :: randy, cofm
+    integer                       :: i
+    integer     :: nf     ! skip fixed atoms
 
-    xidt = (s%dens*step)
+    nf = s%nofix
+
+    xidt = (s%dens(1:nf)*step)
     c0 = exp(-xidt)
-    c1 = (1.0d0 - c0)/s%dens
+    c1 = (1.0d0 - c0)/s%dens(1:nf)
     c2 = (step - c1)/xidt
 
     temp = kB*Tsurf*imass
-    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens
+    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens(1:nf)
     sigma_v = sqrt(temp*(1.d0 - c0*c0))
-    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens)
+    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens(1:nf))
 
-    do i =1, s%n_atoms
+    do i = 1, nf                    ! prevent negative values from too low density
+        if (xidt(i) < 1.0d-5) then
+            sigma_r = 0.0d0
+            sigma_v = 0.0d0
+            c_rv = 0.0d0
+        end if
+    end do
+
+    do i =1, s%nofix
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)
@@ -249,14 +275,11 @@ subroutine langevin_2(s, imass)
     cofm(2,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(2,:)
     cofm(3,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(3,:)
 
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
 
     ! partially propagate velocities
-    s%v(1,:) = s%v(1,:) + c2*s%a(1,:) + cofm(1,:)
-    s%v(2,:) = s%v(2,:) + c2*s%a(2,:) + cofm(2,:)
-    s%v(3,:) = s%v(3,:) + c2*s%a(3,:) + cofm(3,:)
+    s%v(1,1:nf) = s%v(1,1:nf) + c2*s%a(1,1:nf) + cofm(1,:)
+    s%v(2,1:nf) = s%v(2,1:nf) + c2*s%a(2,1:nf) + cofm(2,:)
+    s%v(3,1:nf) = s%v(3,1:nf) + c2*s%a(3,1:nf) + cofm(3,:)
 
 end subroutine langevin_2
 
@@ -269,13 +292,16 @@ subroutine langevins_1(s, imass)
     !           Li & Wahnström, Phys. Rev. B (1992).
     !
 
-    type(atoms) :: s
-    real(8) :: c0, c1, c2
-    real(8) :: xidt, imass, sigma_r, sigma_v, c_rv,temp
-    real(8), dimension(3,s%n_atoms) :: randy, cofm
-    integer :: i
+    type(atoms)                   :: s
+    real(8)                       :: imass, temp
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(3,s%nofix) :: randy, cofm
+    integer                       :: i
+    integer     :: nf     ! skip fixed atoms
 
-    xidt = (xi*step)
+    nf = s%nofix
+
+    xidt = (s%dens(1:nf)*step)
     c0 = 1.0d0 - xidt + 0.50d0*xidt*xidt
     c1 = (1.0d0 - 0.50d0*xidt + 2.0d0*twelfth*xidt*xidt)*step
     c2 = (0.5d0 - 2.0d0*twelfth*xidt + 0.5d0*twelfth*xidt*xidt)*step
@@ -285,25 +311,31 @@ subroutine langevins_1(s, imass)
     sigma_v = sqrt(temp*2.0d0*(1.0d0 - xidt)*xidt)
     c_rv = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt)
 
-    do i =1, s%n_atoms
+    do i =1, s%nofix
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)
     end do
 
-    cofm = sigma_r*randy
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
-    ! propagate positions
-    s%r = s%r + c1*s%v + c2*step*s%a + cofm
+    cofm(1,:) = sigma_r*randy(1,:)
+    cofm(2,:) = sigma_r*randy(2,:)
+    cofm(3,:) = sigma_r*randy(3,:)
 
-    cofm = sigma_v*c_rv*randy
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
+    ! propagate positions
+    s%r(1,1:nf) = s%r(1,1:nf) + c1*s%v(1,1:nf) + c2*step*s%a(1,1:nf) + cofm(1,:)
+    s%r(2,1:nf) = s%r(2,1:nf) + c1*s%v(2,1:nf) + c2*step*s%a(2,1:nf) + cofm(2,:)
+    s%r(3,1:nf) = s%r(3,1:nf) + c1*s%v(3,1:nf) + c2*step*s%a(3,1:nf) + cofm(3,:)
+
+    cofm(1,:) = sigma_v*c_rv*randy(1,:)
+    cofm(2,:) = sigma_v*c_rv*randy(2,:)
+    cofm(3,:) = sigma_v*c_rv*randy(3,:)
+
     ! partially propagate velocities
-    s%v = c0*s%v + (c1 - c2)*s%a + cofm
+    s%v(1,1:nf) = c0*s%v(1,1:nf) + (c1 - c2)*s%a(1,1:nf) + cofm(1,:)
+    s%v(2,1:nf) = c0*s%v(2,1:nf) + (c1 - c2)*s%a(2,1:nf) + cofm(2,:)
+    s%v(3,1:nf) = c0*s%v(3,1:nf) + (c1 - c2)*s%a(3,1:nf) + cofm(3,:)
+
+
 end subroutine langevins_1
 
 subroutine langevins_2(s, imass)
@@ -314,14 +346,16 @@ subroutine langevins_2(s, imass)
     !           Li & Wahnström, Phys. Rev. B (1992).
     !Ŕ
 
-    type(atoms) :: s
-    real(8) :: c0, c1, c2
-    real(8) :: xidt, ixidt, imass, sigma_r, sigma_v, c_rv, temp
-    real(8), dimension(3,s%n_atoms) :: randy, cofm
-    integer :: i
+    type(atoms)                   :: s
+    real(8)                       :: imass, temp
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(3,s%nofix) :: randy, cofm
+    integer                       :: i
+    integer     :: nf     ! skip fixed atoms
 
-    xidt = (xi*step)
-    ixidt = 1.0d0/xidt
+    nf = s%nofix
+
+    xidt = (s%dens(1:nf)*step)
     c0 = 1.0d0 - xidt + 0.50d0*xidt*xidt
     c1 = (1.0d0 - 0.50d0*xidt + 2.0d0*twelfth*xidt*xidt)*step
     c2 = (0.5d0 - 2.0d0*twelfth*xidt + 0.5d0*twelfth*xidt*xidt)*step
@@ -331,19 +365,21 @@ subroutine langevins_2(s, imass)
     sigma_v = sqrt(temp*2.0d0*(1.0d0 - xidt)*xidt)
     c_rv = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt)
 
-    do i =1, s%n_atoms
+    do i =1, s%nofix
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)
     end do
 
-    cofm = sigma_v*sqrt(1 - c_rv*c_rv)*randy
+    cofm(1,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(1,:)
+    cofm(2,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(2,:)
+    cofm(3,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(3,:)
 
-    cofm(1,:) = cofm(1,:) - sum(cofm(1,:))/s%n_atoms
-    cofm(2,:) = cofm(2,:) - sum(cofm(2,:))/s%n_atoms
-    cofm(3,:) = cofm(3,:) - sum(cofm(3,:))/s%n_atoms
+    ! partially propagate velocities
+    s%v(1,1:nf) = s%v(1,1:nf) + c2*s%a(1,1:nf) + cofm(1,:)
+    s%v(2,1:nf) = s%v(2,1:nf) + c2*s%a(2,1:nf) + cofm(2,:)
+    s%v(3,1:nf) = s%v(3,1:nf) + c2*s%a(3,1:nf) + cofm(3,:)
 
-    s%v = s%v + c2*s%a + cofm
 
 end subroutine langevins_2
 
@@ -353,9 +389,12 @@ subroutine newton(s, minv)
     !           Newton equation
     !
     type(atoms) :: s
-    real(8) :: minv
+    real(8)     :: minv
+    integer     :: nf     ! skip fixed atoms
 
-    s%a = s%f*minv
+    nf = s%nofix
+
+    s%a(:,1:nf) = s%f(:,1:nf)*minv
 
 end subroutine newton
 

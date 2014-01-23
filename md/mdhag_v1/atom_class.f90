@@ -16,10 +16,10 @@ module atom_class
 
     ! Various useful constants
     real(8), parameter          :: sqrt2    = 1.41421356237d0
-    real(8), parameter          :: isqrt2   = 0.70710678118d0
+    real(8), parameter          :: isqrt2   = 0.7071067811865d0
     real(8), parameter          :: sqrt3    = 1.73205080757d0
     real(8), parameter          :: pi       = 3.14159265359d0
-    real(8), parameter          :: kB       = 0.0000861730d0
+    real(8), parameter          :: kB       = 8.61733238496d-5
     real(8), parameter          :: hbar     = 0.6582119280967d0
     real(8), parameter          :: twelfth  = 1./12.
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
@@ -45,6 +45,7 @@ module atom_class
     !       each array should be allocated (3,n_atom)
     type atoms
         integer                                :: n_atoms  ! number of atoms
+        integer                                :: nofix    ! number of non-fixed atoms
         real(8), dimension(:),   allocatable   :: dens     ! embedded electron density
         real(8), dimension(:,:), allocatable   :: r        ! positions
         real(8), dimension(:,:), allocatable   :: v        ! velocities
@@ -86,7 +87,8 @@ contains
         allocate(new_atoms%au(3,n_atoms))
 
         new_atoms%n_atoms = n_atoms         !   initialize
-        new_atoms%dens = 0.0d0
+        new_atoms%nofix   = n_atoms
+        new_atoms%dens = 1.0d0
         new_atoms%r    = 0.0d0
         new_atoms%v    = 0.0d0
         new_atoms%f    = 0.0d0

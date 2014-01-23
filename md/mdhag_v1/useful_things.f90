@@ -1,5 +1,6 @@
 module useful_things
 
+use atom_class
 
     contains
 
@@ -73,5 +74,15 @@ subroutine norm_dist(vec1, vec2, length, norm)
     end if
 
 end subroutine norm_dist
+
+function E_kin(s,mass)
+
+    type(atoms) :: s
+    real(8) :: mass, E_kin
+
+     E_kin = 0.5d0*sum(s%v*s%v)*mass
+
+
+end function E_kin
 
 end module useful_things
