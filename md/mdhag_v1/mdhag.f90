@@ -17,7 +17,7 @@ implicit none
 
 integer :: i, j, k, itraj, q, nwrites, ndata
 
-real(8) :: imass_l, imass_p
+real(8) :: imass_l, imass_p, rtemp
 real(8), dimension(:,:), allocatable :: output_info
 real(8), dimension(:,:), allocatable :: rmin_p              ! lowest particle position
 integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
@@ -52,21 +52,23 @@ do itraj = start_tr, ntrajs+start_tr-1
 !
 !------------------------------------------------------------------------------
 
-    call random_seed(put=randseed*itraj)
+!    call random_seed(put=randseed*itraj)
+    do i = 1,itraj
+        call random_number(rtemp)
+    end do
+
     exit_key  = .false.
     overwrite = .true.
     rmin_p    = 6.1d0
     col_start = 0
     col_end   = 0
     nwrites   = 0
+    ndata     = 0
 
     ! Continue run from given configuration
     if (confname == 'mxt') then
         call traj_init(slab, teil)
-        do i=1,teil%n_atoms
-            teil%r(1:2,i) = matmul((/ran1(), ran1()/),cell_mat(1:2,1:2))
-            teil%r(3,i) = 4.0d0
-        end do
+        if (teil%n_atoms > 0) call particle_init(teil)
     end if
     if (confname == 'POSCAR') then
 
@@ -161,17 +163,18 @@ do itraj = start_tr, ntrajs+start_tr-1
             select case(wstep(1))
 
                 case(0) ! save trajectory info
-                        ! Epot, Ekinl, Ekinp, density, r, v
+                        ! Epot, Ekinl, Ekinp, Etotal, density, r, v
                     nwrites = nwrites+1
                     output_info(1,nwrites) = Epot
-                    output_info(2,nwrites) = E_kin(slab,imass_l)
-                    output_info(3,nwrites) = E_kin(teil,imass_p)
-                    output_info(4,nwrites) = Epot + output_info(nwrites,2)&
-                                                  + output_info(nwrites,3)
+                    output_info(2,nwrites) = E_kin(slab,mass_l)
+                    output_info(3,nwrites) = E_kin(teil,mass_p)
+                    output_info(4,nwrites) = Epot + output_info(2,nwrites)&
+                                                  + output_info(3,nwrites)
                     j = teil%n_atoms
                     output_info(5    :4+  j,nwrites) = teil%dens
                     output_info(5+  j:4+4*j,nwrites) = reshape(teil%r,(/3*j/))
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
+                    ndata = ndata + 1
 
                 case default ! full configuration of system
                     call full_conf(slab, teil,itraj)
@@ -190,7 +193,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     col_end = col_end - col_start
     ! final state
     if (wstep(1)==-1) call out_short (slab, teil, Epot, itraj, q, rmin_p, col_end)
-    if (wstep(1)== 0) call out_detail(output_info, teil%n_atoms)
+    if (wstep(1)== 0) call out_detail(output_info, ndata, itraj)
 
 
     !timing

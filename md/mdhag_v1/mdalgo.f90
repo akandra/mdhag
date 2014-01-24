@@ -55,6 +55,7 @@ subroutine propagator_2(s, md_algo, imass)
     integer     :: md_algo
     real(8)     :: imass, norm
 
+
         select case (md_algo)
 
             case (1) ! velocity Verlet Algorithm
@@ -187,6 +188,7 @@ subroutine langevin_1(s, imass)
 
     nf = s%nofix
     xidt = (s%dens(1:nf)*step)
+    !xidt =1.0d-5
     c0 = exp(-xidt)
 
     c1 = (1.0d0 - c0)/s%dens(1:nf)
@@ -204,6 +206,7 @@ subroutine langevin_1(s, imass)
             c_rv = 0.0d0
         end if
     end do
+
 
     do i =1, s%nofix
         randy(1,i) = normal(0.0d0,1.0d0)

@@ -1,9 +1,10 @@
 start 1
-ntrajs 5
+ntrajs 1000
 Einc 5
 inclination 60
 azimuth 0
-nsteps 100
+nsteps 1
 wstep 0 10
-projectile H   1.0079  emt 7 stroem.00.H.nml  ver  3
+projectile H   1.0079  emt 7 stroem.00.H.nml  lan  111
 conf mxt mxt_conf00000001.bin
+pip 0 top

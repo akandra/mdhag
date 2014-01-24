@@ -46,6 +46,7 @@ subroutine full_conf(slab, teil, itraj)
                mass_l, pot_l, npars_l,key_l
     write(753 )pars_l, md_algo_l
 
+    write(753) a_lat        ! lattice constant
     write(753) cell_mat     ! Cell matrix
     write(753) cell_imat    ! inverse cell matrix
     write(753) slab%r, slab%v, slab%a, slab%dens
@@ -109,17 +110,31 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int)
 
 end subroutine out_short
 
-subroutine out_detail(output_info, n_p)
+subroutine out_detail(output_info, n, itraj)
     !
     ! Purpose :
     !           Prints out a lot of trajectory information
     !
 
     real(8), dimension(:,:), allocatable :: output_info
-    integer :: n_p
+    integer :: n, i
+    integer :: itraj
+    character(len=8) str
+    character(len=80) filename
 
-    print *, shape(output_info)
-    stop
+    write(str,'(I8.8)') itraj
+    filename = 'traj/mxt_trj'//str//'.dat'
+
+    call open_for_write(753,filename)
+    write(753,'(1000A15)') 'time (fs)', 'E_pot (eV)', 'E_kin_l (eV)','E_kin_p (eV)',&
+                           'E_total (eV)', 'dens (A^-3)', 'r_p (A)', 'v_p (A/fs)'
+
+    do i = 1, n
+        write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)
+    end do
+
+    close(753)
+
 
 end subroutine out_detail
 

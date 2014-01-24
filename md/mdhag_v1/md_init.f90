@@ -32,8 +32,14 @@ module md_init
                                     !                           3 - langevin
                                     !                           4 - langevin (series)
     integer :: md_algo_p    = 0     ! 0 means no projectile
+    integer :: pip_sign     =-1     ! -1 : assign random positions
+                                    !  0 : coordinates for projectile via key word: top, fcc, hcp
+                                    !  1 : take positions from file
+    real(8) :: height = 6.0d0       ! Read-in height projectile
     integer, dimension(2) :: wstep   = (/-1,1/)   ! way and interval to save data
+    real(8) :: a_lat                ! lattice constant
     character(len=80) :: name_p = 'Elerium'
+    character(len=80) :: key_p_pos = 'top'
     character(len=80) :: pot_p = 'emt'
     character(len=80) :: key_p = 'empty'
     real(8) :: mass_p = 1.0d0
@@ -197,6 +203,49 @@ subroutine simbox_init(slab, teil)
                 close(23)
             case ('celldim')
                 read(buffer, *, iostat=ios) celldim
+            case ('pip')
+                read(buffer, *, iostat=ios) pip_sign
+                pos1 = scan(buffer, ' ')
+                label = buffer(1:pos1)
+                buffer = buffer(pos1+1:)
+               select case(pip_sign)
+                    case(-1)
+                        read(buffer, *, iostat=ios) height
+                        if (ios .ne. 0) then
+                            print *, 'Warning: You have not specified a &
+                                               projectile height.'
+                            print *, '         Projectile height set to 6.0 A.'
+                        end if
+
+                    case(0)
+                        read(buffer, *, iostat=ios) key_p_pos, height
+                        if (ios .ne. 0) then
+                            read(buffer, *, iostat=ios) key_p_pos
+                            if (ios == 0) then
+                                print *, 'Warning: You have not specified a &
+                                          projectile height.'
+                                print *, '         Height set to 6.0 A.'
+                            else
+                                print *, 'Warning: You have not specified a &
+                                                   projectile position.'
+                                print *, '         Projectile position assigned to top &
+                                                at 6.0 A'
+                            end if
+                        end if
+
+                    case(1)
+                        if (ios == 0) then
+                            read(buffer, *, iostat=ios) key_p_pos
+                        else
+                            print *, 'Warning: You have not specified a &
+                                               projectile position.'
+                            print *, '         Projectile position assigned to top &
+                                                at 6.0 A.'
+                            pip_sign = 0
+                        end if
+
+                end select
+
             case ('rep')
                 read(buffer, *, iostat=ios) rep
             case ('conf')
@@ -207,6 +256,13 @@ subroutine simbox_init(slab, teil)
             end select
         end if
     end do ! ios
+
+    if (pip_sign == 0) then
+        print *, 'Warning: You have selected option ', trim(key_p_pos),&
+                 '         Your number of projectiles will be reduced to one.'
+        n_p0 = 1
+    end if
+
     close(38)
 
 !------------------------------------------------------------------------------
@@ -227,6 +283,8 @@ subroutine simbox_init(slab, teil)
         read(buffer, *, iostat=ios) n_l0, n_p
         read(38,*) coord_sys
 
+
+        a_lat = c_matrix(1,1)/celldim(1)*sqrt2
 
         ! Construct simulation cell matrix and its inverse
         d_matrix = 0.0d0
@@ -452,6 +510,7 @@ subroutine traj_init(slab, teil)
     read(38) pars_l, ymm
     if (.not. md_algo_l_key) md_algo_l = ymm
 
+    read(38) a_lat        ! lattice constant makes us happy
     read(38) cell_mat     ! Cell matrix
     read(38) cell_imat    ! inverse cell matrix
 
@@ -487,8 +546,48 @@ subroutine traj_init(slab, teil)
 
 end subroutine traj_init
 
+subroutine particle_init(s)
+    !
+    ! Purpose:
+    !           Assign random positions to the particle atom
+    !           Furthermore set velocities
+    !
 
+    type(atoms) :: s
+    integer :: i, j, n
+    real(8), dimension(2) :: c1, c2
 
+    c1 = (/a_lat*isqrt2,0.0d0/)
+    c2 = 0.5d0*c1(1)*(/-1.0d0,sqrt3/)
+
+    select case(pip_sign)
+    case(-1)
+
+        do i=1,s%n_atoms
+            s%r(1:2,i) = matmul((/ran1(), ran1()/),cell_mat(1:2,1:2))
+            s%r(3,i)   = height
+        end do
+
+    case(0)
+
+        call lower_case(key_p_pos)
+        select case (key_p_pos)
+        case('top')
+            s%r(1:2,1) = (/0.,0./)
+        case('fcc')
+            s%r(1:2,1) = (c1 + 2.0d0*c2)/3.0d0
+        case('hcp')
+            s%r(1:2,1) = (2.0d0*c1 + c2)/3.0d0
+        case('bri')
+            s%r(1:2,1) = (c1 + c2)*0.5d0
+        end select
+        s%r(3,:) = height
+
+    case(1)
+
+    end select
+
+end subroutine particle_init
 
 end module md_init
 
