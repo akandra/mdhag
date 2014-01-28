@@ -24,6 +24,13 @@ module atom_class
     real(8), parameter          :: twelfth  = 1./12.
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
 
+    ! highest permitted projectile position
+    real(8), parameter          :: proj_upgone = 6.1
+
+    ! Criteria for number of bounces
+    real(8), parameter          :: crit_imp = cos(pi/36)
+    integer, parameter          :: step_imp = 10
+
     ! Conversion constants to program units
     !
     ! Program basic units
@@ -88,7 +95,7 @@ contains
 
         new_atoms%n_atoms = n_atoms         !   initialize
         new_atoms%nofix   = n_atoms
-        new_atoms%dens = 1.0d0
+        new_atoms%dens = 0.0001d0
         new_atoms%r    = 0.0d0
         new_atoms%v    = 0.0d0
         new_atoms%f    = 0.0d0

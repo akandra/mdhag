@@ -37,7 +37,6 @@ subroutine propagator_1(s, md_algo, imass)
         case (3) ! Langevin
             call langevin_1(s,imass)
 
-
         case (4) ! Langevin up to 2nd order
             call langevins_1(s,imass)
 
@@ -181,37 +180,49 @@ subroutine langevin_1(s, imass)
 
     type(atoms)                   :: s
     real(8)                       :: imass, temp
-    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, ixidt, sigma_r, sigma_v, c_rv
     real(8), dimension(3,s%nofix) :: randy, cofm
-    integer                       :: i
-    integer     :: nf     ! skip fixed atoms
+    integer                       :: nf, i
 
     nf = s%nofix
-    xidt = (s%dens(1:nf)*step)
-    !xidt =1.0d-5
-    c0 = exp(-xidt)
-
-    c1 = (1.0d0 - c0)/s%dens(1:nf)
-    c2 = (step - c1)/xidt
 
     temp = kB*Tsurf*imass
-    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens(1:nf)
-    sigma_v = sqrt(temp*(1.d0 - c0*c0))
-    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens(1:nf))
+    xidt = (s%dens(1:nf)*step)
+    ixidt = step/xidt
 
-    do i = 1, nf                    ! prevent negative values from too low density
-        if (xidt(i) < 1.0d-5) then
-            sigma_r = 0.0d0
-            sigma_v = 0.0d0
-            c_rv = 0.0d0
+    do i = 1, nf
+
+        ! Preventing problems due to precision issues
+        if (xidt(i) > 1.0d-2) then                      ! use precise expressions
+
+            c0(i) = exp(-xidt(i))
+            c1(i) = (1.0d0 - c0(i))*ixidt(i)
+            c2(i) = (1.0d0 - c1(i)/step)*ixidt(i)
+
+            sigma_r(i) = ixidt(i)*sqrt(temp*(2.d0*xidt(i) - 3.d0 + 4.d0*c0(i) - c0(i)**2))
+            sigma_v(i) = sqrt(temp*(1.d0 - c0(i)**2))
+            c_rv(i)    = ixidt(i)*temp*(1.d0 - c0(i))**2/(sigma_r(i)*sigma_v(i))
+
+            randy(1,i) = normal(0.0d0,1.0d0)
+            randy(2,i) = normal(0.0d0,1.0d0)
+            randy(3,i) = normal(0.0d0,1.0d0)
+
+        else                                            ! use series up to 2nd order in xi*dt
+
+            c0(i) = 1.0d0 - xidt(i) + 0.50d0*xidt(i)**2
+            c1(i) = (1.0d0 - 0.50d0*xidt(i) + 2.0d0*twelfth*xidt(i)**2)*step
+            c2(i) = (0.5d0 - 2.0d0*twelfth*xidt(i) + 0.50d0*twelfth*xidt(i)**2)*step
+
+            sigma_r(i) = step*sqrt(temp*(8.0d0*twelfth*xidt(i) - 0.50d0*xidt(i)**2))
+            sigma_v(i) = sqrt(temp*2.0d0*(xidt(i) - xidt(i)**2))
+            c_rv(i)    = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt(i))
+
+            randy(1,i) = normal(0.0d0,1.0d0)
+            randy(2,i) = normal(0.0d0,1.0d0)
+            randy(3,i) = normal(0.0d0,1.0d0)
+
         end if
-    end do
 
-
-    do i =1, s%nofix
-        randy(1,i) = normal(0.0d0,1.0d0)
-        randy(2,i) = normal(0.0d0,1.0d0)
-        randy(3,i) = normal(0.0d0,1.0d0)
     end do
 
     cofm(1,:) = sigma_r*randy(1,:)
@@ -243,35 +254,49 @@ subroutine langevin_2(s, imass)
 
     type(atoms)                   :: s
     real(8)                       :: imass, temp
-    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, sigma_r, sigma_v, c_rv
+    real(8), dimension(  s%nofix) :: c0, c1, c2, xidt, ixidt, sigma_r, sigma_v, c_rv
     real(8), dimension(3,s%nofix) :: randy, cofm
-    integer                       :: i
-    integer     :: nf     ! skip fixed atoms
+    integer                       :: nf, i
 
     nf = s%nofix
 
-    xidt = (s%dens(1:nf)*step)
-    c0 = exp(-xidt)
-    c1 = (1.0d0 - c0)/s%dens(1:nf)
-    c2 = (step - c1)/xidt
-
     temp = kB*Tsurf*imass
-    sigma_r = sqrt(temp*(2.d0*xidt - 3.d0 + 4.d0*c0 - c0*c0))/s%dens(1:nf)
-    sigma_v = sqrt(temp*(1.d0 - c0*c0))
-    c_rv = temp*(1.d0 - c0)**2/(sigma_r*sigma_v*s%dens(1:nf))
+    xidt = (s%dens(1:nf)*step)
+    ixidt = step/xidt
 
-    do i = 1, nf                    ! prevent negative values from too low density
-        if (xidt(i) < 1.0d-5) then
-            sigma_r = 0.0d0
-            sigma_v = 0.0d0
-            c_rv = 0.0d0
+    do i = 1, nf
+
+        ! Preventing problems due to precision issues
+        if (xidt(i) > 1.0d-2) then                      ! use precise expressions
+
+            c0(i) = exp(-xidt(i))
+            c1(i) = (1.0d0 - c0(i))*ixidt(i)
+            c2(i) = (1.0d0 - c1(i)/step)*ixidt(i)
+
+            sigma_r(i) = ixidt(i)*sqrt(temp*(2.d0*xidt(i) - 3.d0 + 4.d0*c0(i) - c0(i)**2))
+            sigma_v(i) = sqrt(temp*(1.d0 - c0(i)**2))
+            c_rv(i)    = ixidt(i)*temp*(1.d0 - c0(i))**2/(sigma_r(i)*sigma_v(i))
+
+            randy(1,i) = normal(0.0d0,1.0d0)
+            randy(2,i) = normal(0.0d0,1.0d0)
+            randy(3,i) = normal(0.0d0,1.0d0)
+
+        else                                            ! use series up to 2nd order in xi*dt
+
+            c0(i) = 1.0d0 - xidt(i) + 0.50d0*xidt(i)**2
+            c1(i) = (1.0d0 - 0.50d0*xidt(i) + 2.0d0*twelfth*xidt(i)**2)*step
+            c2(i) = (0.5d0 - 2.0d0*twelfth*xidt(i) + 0.50d0*twelfth*xidt(i)**2)*step
+
+            sigma_r(i) = step*sqrt(temp*(8.0d0*twelfth*xidt(i) - 0.50d0*xidt(i)**2))
+            sigma_v(i) = sqrt(temp*2.0d0*(xidt(i) - xidt(i)**2))
+            c_rv(i)    = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt(i))
+
+            randy(1,i) = normal(0.0d0,1.0d0)
+            randy(2,i) = normal(0.0d0,1.0d0)
+            randy(3,i) = normal(0.0d0,1.0d0)
+
         end if
-    end do
 
-    do i =1, s%nofix
-        randy(1,i) = normal(0.0d0,1.0d0)
-        randy(2,i) = normal(0.0d0,1.0d0)
-        randy(3,i) = normal(0.0d0,1.0d0)
     end do
 
     cofm(1,:) = sigma_v*sqrt(1 - c_rv*c_rv)*randy(1,:)
@@ -314,7 +339,7 @@ subroutine langevins_1(s, imass)
     sigma_v = sqrt(temp*2.0d0*(1.0d0 - xidt)*xidt)
     c_rv = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt)
 
-    do i =1, s%nofix
+    do i =1, nf
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)
@@ -368,7 +393,7 @@ subroutine langevins_2(s, imass)
     sigma_v = sqrt(temp*2.0d0*(1.0d0 - xidt)*xidt)
     c_rv = 0.5d0*sqrt3*(1.0d0 - 0.125d0*xidt)
 
-    do i =1, s%nofix
+    do i =1, nf
         randy(1,i) = normal(0.0d0,1.0d0)
         randy(2,i) = normal(0.0d0,1.0d0)
         randy(3,i) = normal(0.0d0,1.0d0)

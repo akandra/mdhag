@@ -63,7 +63,7 @@ subroutine full_conf(slab, teil, itraj)
 
 end subroutine full_conf
 
-subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int)
+subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int, imp)
     !
     ! Purpose :
     !           Prints out final information at end of trajectory
@@ -73,7 +73,7 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int)
     real(8) :: Epot, Ekin_l, Ekin_p
     integer :: itraj, q
     real(8), dimension(:,:), allocatable :: rmin_p
-    integer, dimension(:), allocatable   :: col_int
+    integer, dimension(:), allocatable   :: col_int, imp
     character(len=8) str
     character(len=80) filename
 
@@ -103,6 +103,8 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int)
         write(753,'(3f15.5)') rmin_p
         write(753,'(A21)')'Time at surface (fs):'
         write(753,'(1000f15.5)') col_int*step
+        write(753,'(A21)')'Number of bounces:'
+        write(753,'(1000I10)') imp
    end if
 
     close(753)
@@ -113,7 +115,7 @@ end subroutine out_short
 subroutine out_detail(output_info, n, itraj)
     !
     ! Purpose :
-    !           Prints out a lot of trajectory information
+    !           Prints out a lot of trajectory information along trajectory
     !
 
     real(8), dimension(:,:), allocatable :: output_info
@@ -126,8 +128,8 @@ subroutine out_detail(output_info, n, itraj)
     filename = 'traj/mxt_trj'//str//'.dat'
 
     call open_for_write(753,filename)
-    write(753,'(1000A15)') 'time (fs)', 'E_pot (eV)', 'E_kin_l (eV)','E_kin_p (eV)',&
-                           'E_total (eV)', 'dens (A^-3)', 'r_p (A)', 'v_p (A/fs)'
+    write(753,'(1000A15)') 'time(fs)', 'E_pot(eV)', 'E_kin_l(eV)','E_kin_p(eV)',&
+                           'E_total(eV)', 'dens(A^-3)', 'r_p(A)', 'v_p(A/fs)'
 
     do i = 1, n
         write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)

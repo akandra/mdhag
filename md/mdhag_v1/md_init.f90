@@ -25,16 +25,17 @@ module md_init
     real(8) :: inclination  = 0     ! incidence polar angle (degree)
     real(8) :: azimuth      = 0     ! incidence azimuthal angle (degree)
     real(8) :: Tsurf        = 300   ! surface temperature (Kelvin)
-    real(8) :: step         = 0.1   ! time step in fs
+    real(8) :: step         =-1.0d0 ! time step in fs
     integer :: nsteps       = 100   ! number of steps
     integer :: md_algo_l    = 1     ! md propagation algorithm: 1 - verlet
                                     !                           2 - beeman
                                     !                           3 - langevin
                                     !                           4 - langevin (series)
-    integer :: md_algo_p    = 0     ! 0 means no projectile
-    integer :: pip_sign     =-1     ! -1 : assign random positions
-                                    !  0 : coordinates for projectile via key word: top, fcc, hcp
-                                    !  1 : take positions from file
+    integer :: md_algo_p    = 0     !  0 means no projectile
+    integer :: pip_sign     =-1     ! -1 : read in from configuration file. Default.
+                                    !  0 : assign random positions
+                                    !  1 : coordinates for projectile via key word: top, fcc, hcp
+                                    !  2 : take positions from file
     real(8) :: height = 6.0d0       ! Read-in height projectile
     integer, dimension(2) :: wstep   = (/-1,1/)   ! way and interval to save data
     real(8) :: a_lat                ! lattice constant
@@ -84,7 +85,7 @@ subroutine simbox_init(slab, teil)
 
     integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
 
-    real(8) :: cellscale, v_pdof, vinc
+    real(8) :: cellscale, v_pdof, rtemp
 
     real(8), dimension(3,3) :: c_matrix, d_matrix
 
@@ -99,10 +100,9 @@ subroutine simbox_init(slab, teil)
     if (iargc() == 0) stop " I need an input file"
     call getarg(1, pos_init_file)
 
-    ! seed random number generator
-    call random_seed(size=randk)
-    call random_seed(put=randseed)
 
+! size of seed for random number generator
+call random_seed(size=randk)
 
 !------------------------------------------------------------------------------
 !                       READ IN INPUT FILE
@@ -209,7 +209,7 @@ subroutine simbox_init(slab, teil)
                 label = buffer(1:pos1)
                 buffer = buffer(pos1+1:)
                select case(pip_sign)
-                    case(-1)
+                    case(0)
                         read(buffer, *, iostat=ios) height
                         if (ios .ne. 0) then
                             print *, 'Warning: You have not specified a &
@@ -217,7 +217,7 @@ subroutine simbox_init(slab, teil)
                             print *, '         Projectile height set to 6.0 A.'
                         end if
 
-                    case(0)
+                    case(1)
                         read(buffer, *, iostat=ios) key_p_pos, height
                         if (ios .ne. 0) then
                             read(buffer, *, iostat=ios) key_p_pos
@@ -233,7 +233,7 @@ subroutine simbox_init(slab, teil)
                             end if
                         end if
 
-                    case(1)
+                    case(2)
                         if (ios == 0) then
                             read(buffer, *, iostat=ios) key_p_pos
                         else
@@ -241,9 +241,13 @@ subroutine simbox_init(slab, teil)
                                                projectile position.'
                             print *, '         Projectile position assigned to top &
                                                 at 6.0 A.'
-                            pip_sign = 0
+                            pip_sign = 1
                         end if
-
+                    case(-1)
+                    case default
+                        print '(A,I4,A)', 'Warning: Pip Flag value ', pip_sign, ' does not match any possible options.'
+                        print *, '            Setting Pip to top at 6.0 A'
+                        pip_sign = 1
                 end select
 
             case ('rep')
@@ -257,7 +261,7 @@ subroutine simbox_init(slab, teil)
         end if
     end do ! ios
 
-    if (pip_sign == 0) then
+    if (pip_sign == 1) then
         print *, 'Warning: You have selected option ', trim(key_p_pos),&
                  '         Your number of projectiles will be reduced to one.'
         n_p0 = 1
@@ -450,10 +454,80 @@ subroutine simbox_init(slab, teil)
         end if
 
         deallocate(vel_l, pos_l, d_l, start_l)
-    else
 
-        ! Create projectile objects
-        if (md_algo_p_key) teil = atoms(n_p0)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!                                  NOT POSCAR
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    else if (confname == 'mxt') then
+
+        open(unit=38, file='conf/'//confname_file, form='unformatted' )
+
+        read(38) itemp
+        if (step < 0.0d0) then
+            read(38) step
+        else
+            read(38) rtemp
+        end if
+        read(38) rtemp
+        read(38) rtemp
+        if (.not. Tsurf_key) then
+            Tsurf = rtemp
+        else if ( rtemp .ne. Tsurf) then
+            print *, 'Warning: The surface temperature from input and configuration files do not match.'
+            print *, '         Temperature set to', rtemp
+            Tsurf = rtemp
+        end if
+        read(38) nspec
+
+        read(38) name_l, n_l, nlnofix, mass_l, pot_l, npars_l, key_l
+
+        if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
+
+        read(38) pars_l, itemp
+        if (.not. md_algo_l_key) md_algo_l = itemp
+
+        read(38) a_lat        ! lattice constant makes us happy
+        read(38) cell_mat     ! Cell matrix
+        read(38) cell_imat    ! inverse cell matrix
+
+        slab = atoms(n_l)
+        slab%nofix = nlnofix
+
+        read(38) slab%r, slab%v, slab%a, slab%dens
+
+         if (.not. md_algo_p_key) then
+            if (nspec > 1) then
+                ! Projectile hasn't been defined in input file.
+                ! Projectile defined from configuration file
+                read(38) name_p, n_p, npnofix, mass_p, pot_p, npars_p, key_p
+                if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
+                read(38) pars_p, itemp
+                if (.not. md_algo_p_key) md_algo_p = itemp
+                teil = atoms(n_p)
+                read(38) teil%r, teil%v, teil%a, teil%dens
+                teil%nofix = npnofix
+
+            else
+                ! Projectile hasn't been defined in input file.
+                ! It does not exist in configuration file.
+                n_p = 1
+                teil = atoms(n_p)
+                teil%n_atoms = 0
+                teil%nofix = 0
+
+            end if
+
+        else
+            ! Projectile has been defined in input file.
+            ! Definition in input file always outrules other options.
+            teil = atoms(n_p0)
+
+        end if
+
+        close(38)
 
     endif
 
@@ -483,9 +557,10 @@ subroutine traj_init(slab, teil)
 
     type(atoms), intent(inout) :: slab, teil   ! hold r, v and f for atoms in the box
 
-    integer :: traj_no, nspec, n_l, nlnofix, n_p, npnofix
+    integer :: traj_no, nspec, i
     real(8) :: dum
     integer :: ymm
+    character(len=80) :: ddd
 
 
 !------------------------------------------------------------------------------
@@ -496,49 +571,24 @@ subroutine traj_init(slab, teil)
     open(unit=38, file='conf/'//confname_file, form='unformatted' )
 
     read(38) traj_no
-    read(38) step
-    read(38) Epot
     read(38) dum
-    if (.not. Tsurf_key) Tsurf = dum
+    read(38) dum
+    read(38) dum
     read(38) nspec
 
-    read(38) name_l, n_l, nlnofix, mass_l, pot_l, npars_l, key_l
+    read(38) ddd, ymm, ymm, dum, ddd, ymm, ddd
+    read(38) (dum, i=1,ymm), ymm
 
-    if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
-
-
-    read(38) pars_l, ymm
-    if (.not. md_algo_l_key) md_algo_l = ymm
-
-    read(38) a_lat        ! lattice constant makes us happy
-    read(38) cell_mat     ! Cell matrix
-    read(38) cell_imat    ! inverse cell matrix
-
-    slab = atoms(n_l)
+    read(38) dum        ! lattice constant makes us happy
+    read(38) (dum, i=1,9)
+    read(38) (dum, i=1,9)
 
     read(38) slab%r, slab%v, slab%a, slab%dens
 
-    slab%nofix = nlnofix
-
-    if (.not.md_algo_p_key) then
-        if (nspec > 1) then
-
-            read(38) name_p, n_p, npnofix, mass_p, pot_p, npars_p, key_p
-            if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
-            read(38) pars_p, ymm
-            if (.not. md_algo_p_key) md_algo_p = ymm
-            teil = atoms(n_p)
-            read(38) teil%r, teil%v, teil%a, teil%dens
-            teil%nofix = npnofix
-
-        else
-
-            n_p = 1
-            teil = atoms(n_p)
-            teil%n_atoms = 0
-            teil%nofix = 0
-
-        end if
+    if (.not.md_algo_p_key .and. nspec > 1) then
+        read(38) ddd, ymm, ymm, dum, ddd, ymm, ddd
+        read(38) (dum, i=1,ymm), ymm
+        read(38) teil%r, teil%v, teil%a, teil%dens
     end if
 
     close(38)
@@ -554,38 +604,71 @@ subroutine particle_init(s)
     !
 
     type(atoms) :: s
-    integer :: i, j, n
-    real(8), dimension(2) :: c1, c2
+    integer :: i, j, n_p
+    real(8) :: vinc
+    real(8), dimension(2) :: cc1, cc2
 
-    c1 = (/a_lat*isqrt2,0.0d0/)
-    c2 = 0.5d0*c1(1)*(/-1.0d0,sqrt3/)
+    cc1 = (/a_lat*isqrt2,0.0d0/)
+    cc2 = 0.5d0*cc1(1)*(/-1.0d0,sqrt3/)
 
-    select case(pip_sign)
-    case(-1)
+    if (confname == 'mxt') then
 
-        do i=1,s%n_atoms
-            s%r(1:2,i) = matmul((/ran1(), ran1()/),cell_mat(1:2,1:2))
-            s%r(3,i)   = height
-        end do
+        select case(pip_sign)
 
-    case(0)
+        case(0) ! Random positions
 
-        call lower_case(key_p_pos)
-        select case (key_p_pos)
-        case('top')
-            s%r(1:2,1) = (/0.,0./)
-        case('fcc')
-            s%r(1:2,1) = (c1 + 2.0d0*c2)/3.0d0
-        case('hcp')
-            s%r(1:2,1) = (2.0d0*c1 + c2)/3.0d0
-        case('bri')
-            s%r(1:2,1) = (c1 + c2)*0.5d0
+            do i=1,s%n_atoms
+                s%r(1:2,i) = matmul((/ran1(), ran1()/),cell_mat(1:2,1:2))
+                s%r(3,i)   = height
+            end do
+
+        case(1) ! Put atom in designated positions
+
+            call lower_case(key_p_pos)
+            select case (key_p_pos)
+            case('top')
+                s%r(1:2,1) = (/0.,0./)
+            case('fcc')
+                s%r(1:2,1) = (cc1 + 2.0d0*cc2)/3.0d0
+            case('hcp')
+                s%r(1:2,1) = (2.0d0*cc1 + cc2)/3.0d0
+            case('bri')
+                s%r(1:2,1) = (cc1 + cc2)*0.5d0
+            end select
+            s%r(3,:) = height
+
+        case(2) ! Read in projectile positions from other file.
+
+            call open_for_read(44,key_p_pos)
+            read(44,*) n_p
+
+            if (n_p < s%n_atoms) then
+
+                print *, 'Error: Number of atoms in projectile configuration file'
+                print *, '       is smaller than that in input file.'
+                stop ' subroutine: particle_init()'
+
+            else if (n_p > s%n_atoms) then
+
+                print *, 'Warning: Number of atoms in projectile configuration file'
+                print *, '         is larger than that in input file.'
+                print '(A,I4,A)', '         Reading only first ', s%n_atoms, ' positions.'
+            end if
+                read(44,*) s%r
+
+            close(44)
+        case default
+
         end select
-        s%r(3,:) = height
+    end if
 
-    case(1)
-
-    end select
+    if (pip_sign .ne. -1) then
+    !     Assign projectile velocities
+        vinc = sqrt(2.0d0*einc/mass_p)
+        s%v(1,:) =  vinc*sin(inclination)*cos(azimuth)
+        s%v(2,:) =  vinc*sin(inclination)*sin(azimuth)
+        s%v(3,:) = -vinc*cos(inclination)
+    end if
 
 end subroutine particle_init
 
