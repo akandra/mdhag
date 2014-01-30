@@ -25,8 +25,8 @@ real(8), dimension(:,:), allocatable :: rmin_p              ! lowest particle po
 real(8), dimension(:,:), allocatable :: tock                ! collection array for momentum
 integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
 integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
-logical :: exit_key
-real(8), dimension(:), allocatable :: eed                   ! embedded electron density for projectile
+logical :: exit_key, imp_switch
+real(8), dimension(:), allocatable :: eed, eed_prec          ! embedded electron density for projectile
 
 !timing
 !real(8) :: start, fin
@@ -49,7 +49,7 @@ ndata= 4 + 7*teil%n_atoms ! Epot, Ekinl, Ekinp, density, r, v
 allocate(output_info(ndata,nwrites))
 allocate(tock(3,teil%n_atoms))
 allocate(imp(teil%n_atoms), q_imp(teil%n_atoms))
-allocate(eed(teil%n_atoms))
+allocate(eed(teil%n_atoms),eed_prec(teil%n_atoms))
 
 !------------------------------------------------------------------------------
 !
@@ -68,14 +68,16 @@ do itraj = start_tr, ntrajs+start_tr-1
     end do
 
     exit_key    = .false.
+    imp_switch  = .false.
     overwrite   = .true.
-    rmin_p      = 6.1d0
+    rmin_p      = 6.10d0
     col_start   = 0
     col_end     = 0
     nwrites     = 0
     ndata       = 0
     imp         = 0
     q_imp       = 0
+    eed_prec     = 0.0d0
 
     if (confname == 'mxt') call traj_init(slab, teil)
 
@@ -140,14 +142,27 @@ do itraj = start_tr, ntrajs+start_tr-1
                     col_end(i) = q
                 end if
                 ! Collision number. Criterium:
-                ! an angle between previous and current velocity larger than 5 degree
-                rtemp = dot_product(teil%v(:,i),tock(:,i))
-                if (rtemp > crit_imp .or. rtemp < 0.0d0 ) then
-                    if  (q > q_imp(i) + step_imp) then
-                        q_imp(i) = q
-                        imp(i)   = imp(i) + 1
-                    end if
+                ! embedded projectile electron density has maximum
+                if (eed(i) > eed_prec(i))  then
+                    imp_switch = .true.
+                else if (imp_switch .and. q > q_imp(i) + step_imp) then
+                    imp(i) = imp(i) + 1
+                    imp_switch = .false.
+                    q_imp(i) = q
                 end if
+                eed_prec = eed
+
+                ! Collision number. Criterium:
+                ! an angle between previous and current velocity larger than 5 degree
+!                rtemp = sqrt(sum(teil%v(:,i)**2)*sum(tock(:,i)**2))
+!                rtemp = dot_product(teil%v(:,i),tock(:,i))/rtemp
+!                if (rtemp < crit_imp .or. rtemp < 0.0d0 ) then
+!                    if  (q > q_imp(i) + step_imp) then
+!                        q_imp(i) = q
+!                        imp(i)   = imp(i) + 1
+!                        tock(:,i) = teil%v(:,i)
+!                    end if
+!                end if
 
             end do
         end if
@@ -204,7 +219,7 @@ do itraj = start_tr, ntrajs+start_tr-1
 
 end do ! trajectories
 
-deallocate(eed, imp, tock)
+deallocate(eed_prec, eed, imp, tock)
 deallocate(output_info)
 deallocate(col_end, col_start)
 deallocate(rmin_p, pars_l, pars_p)

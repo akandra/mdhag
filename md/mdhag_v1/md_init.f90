@@ -37,6 +37,7 @@ module md_init
                                     !  1 : coordinates for projectile via key word: top, fcc, hcp
                                     !  2 : take positions from file
     real(8) :: height = 6.0d0       ! Read-in height projectile
+    integer :: n_confs = 1          ! Number of configurations to read in
     integer, dimension(2) :: wstep   = (/-1,1/)   ! way and interval to save data
     real(8) :: a_lat                ! lattice constant
     character(len=80) :: name_p = 'Elerium'
@@ -254,7 +255,8 @@ call random_seed(size=randk)
                 read(buffer, *, iostat=ios) rep
             case ('conf')
                 read(buffer, *, iostat=ios) confname, confname_file
-!
+                if (confname == 'mxt') read(buffer, *, iostat=ios) confname, confname_file, n_confs
+
            case default
                 print *, 'Skipping invalid label at line', line, label
             end select
@@ -463,7 +465,7 @@ call random_seed(size=randk)
 
     else if (confname == 'mxt') then
 
-        open(unit=38, file='conf/'//confname_file, form='unformatted' )
+        open(unit=38, file=trim(confname_file)//'/mxt_conf00000001.bin', form='unformatted' )
 
         read(38) itemp
         if (step < 0.0d0) then
@@ -531,7 +533,6 @@ call random_seed(size=randk)
 
     endif
 
-
     ! Create a directory for configuration data
     inquire(directory='conf',exist=exists)
     if (.not. exists) then
@@ -561,6 +562,8 @@ subroutine traj_init(slab, teil)
     real(8) :: dum
     integer :: ymm
     character(len=80) :: ddd
+    character(len=8) :: str
+
 
 
 !------------------------------------------------------------------------------
@@ -568,7 +571,11 @@ subroutine traj_init(slab, teil)
 !                       =====================
 !------------------------------------------------------------------------------
 
-    open(unit=38, file='conf/'//confname_file, form='unformatted' )
+
+    ! Get random integer to open random trajectory for configurations
+    write(str,'(I8.8)') int(ran1()*n_confs)+1
+
+    open(unit=38, file=trim(confname_file)//'/mxt_conf'//str//'.bin', form='unformatted' )
 
     read(38) traj_no
     read(38) dum
@@ -592,7 +599,6 @@ subroutine traj_init(slab, teil)
     end if
 
     close(38)
-
 
 end subroutine traj_init
 
@@ -635,7 +641,10 @@ subroutine particle_init(s)
             case('bri')
                 s%r(1:2,1) = (cc1 + cc2)*0.5d0
             end select
-            s%r(3,:) = height
+
+            s%r(1,1) = s%r(1,1) - height*tan(inclination)*cos(azimuth)
+            s%r(2,1) = s%r(2,1) - height*tan(inclination)*sin(azimuth)
+            s%r(3,1) = height
 
         case(2) ! Read in projectile positions from other file.
 

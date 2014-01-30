@@ -1,10 +1,10 @@
 start 1
-ntrajs 5
-Einc 2.7
+ntrajs 1
+Einc 5
 inclination 45
-azimuth 45
+azimuth 60
 nsteps 10000
-wstep -1 1
+wstep 0 1
 projectile H   1.0079  emt 7 stroem.00.H.nml  lan  1
-conf mxt mxt_conf00000001.bin
-pip 0
+conf mxt '~/git/mdhag/md/mdhag_v1/conf' 5
+pip 1 hcp
