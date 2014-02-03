@@ -98,7 +98,7 @@ program EMT_fit_1
     real(8) :: e_max ! maximum DFT to use in the fit
     real(8) :: sumsq,se ! used to calculate rms error
 
-    integer :: i,j,k ! loop indicies
+    integer :: i,j,k,bb,t ! loop indicies
     integer :: ios ! io status
 
 ! For AIMD readin
@@ -128,6 +128,7 @@ program EMT_fit_1
     character(len=100) :: particle_nml_out
     character(len=100) :: lattice_nml_in
     character(len=100) :: lattice_nml_out
+    character(len=3) :: kk
 
     logical debug
     common /debug/debug(5)
@@ -138,14 +139,21 @@ program EMT_fit_1
     lattice_configuration_fname = 'data/ref_conf_Au111a.dat'
     particle_position_and_DFT_energies_fname= 'data/hau111_plot.E.dat'
 
-
+    call open_for_write(134,'data/parameters_and_fit_results/rms_F272_334_346.dat')
 ! Strömqvist parameters modified in so, so they'll give a good fit.
-    fit_results_fname = 'data/parameters_and_fit_results/stroem_der.249.NLLSQ.out'
-    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.249.H.nml'
-    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.249.Au.nml'
+    bb = 0
+do  t = 347,347
+    bb = bb+1
+    write(kk,'(I3)') t
+    fit_results_fname = 'data/parameters_and_fit_results/rstroem_der.'//kk//'.NLLSQ.out'
+    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.'//kk//'.H.nml'
+    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.'//kk//'.Au.nml'
+!    fit_results_fname = 'data/parameters_and_fit_results/rstroem_der.268.NLLSQ.out'
+!    particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.268.H.nml'
+!    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.268.Au.nml'
 
-    particle_nml_in = 'data/parameters_and_fit_results/stroem_der.247.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem_der.247.Au.nml' !stroem.00.Au.nml'
+    particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.00.Au.nml' !stroem.00.Au.nml'
 
 
 
@@ -201,7 +209,7 @@ program EMT_fit_1
     one_p = .false.
 
 
-    call l_p_position(a_lat, rep, cell_b, control, e_aimd_max, just_l, one_p, time, &
+    call l_p_position(bb, a_lat, rep, cell_b, control, e_aimd_max, just_l, one_p, time, &
                                                 l_aimd, n_l,n_p,celli, x_all, E_all)
 
     print *, 'l_aimd', l_aimd
@@ -216,6 +224,7 @@ program EMT_fit_1
 
 
     call open_for_write(10, fit_results_fname)
+
 
 !    write(*,*) 'q   ', 'EDFT-E_multiple_H   ', 'EDFT-E_single_H'
 !    do q=1,30
@@ -314,7 +323,7 @@ program EMT_fit_1
     ! SET UP NARRAY
     !--------------------------------------------------------------------------
     nparms = 14
-    max_iterations = 200
+    max_iterations = 1000
     NARRAY(1) = npts ! number of data points
     NARRAY(2) = 3 ! number of independent variables (cartesian coordinates)
     NARRAY(3) = nparms ! number of parameters
@@ -370,17 +379,23 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     sumsq=0.0d0
     se=0.0d0
     call emt(a_lat, celli, x_ref, n_l, n_p, part_new, latt_new, e_ref)
-    call open_for_write(1234,'deviation_199.dat')
+
     do q=1,time
             call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, part_new, latt_new, energy)
-            write(1234,'(1X, I5, 5F15.8)') q, energy-e_ref-Y(q)
+     !       write(1234,'(1X, I5, 5F15.8)') q, energy-e_ref-Y(q)
             sumsq=sumsq+((energy-e_ref)/(2*rep+1)**2-Y(q))**2
             se = se+Sqrt(((energy-e_ref)/(2*rep+1)**2-Y(q))**2)
     end do
-    print *, 'rms =',  sqrt(sumsq/time)*1000, 'meV'
-    print*,  'SE =', (se/time)*1000, 'meV'
+    sumsq=sqrt(sumsq/time)*1000
+    se=(se/time)*1000
+    print *, 'rms =',  sumsq, 'meV'
+    print*,  'SE =', se, 'meV'
     write(*,'(7f15.5)'), Ablei
+    write(134,'(I4,2f15.5)') t, sumsq, se
 
+
+end do
+close(134)
 end program
 !-------------------------------------------------------------------------------------------------------|
 ! Variables that were declared in testEMT.f95 but not usef |

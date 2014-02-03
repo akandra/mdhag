@@ -110,7 +110,7 @@ implicit none
     kappadbeta_p = pars_p%kappa / beta
 
 ! 'coupling' parameters between p and l
-    chilp = pars_p%n0 / pars_l%n0
+    chilp = pars_p%n0 / pars_l%n0 * exp(0.5*1.8897261339381413*(pars_l%s0-pars_p%s0))
     chipl = 1.0d0 / chilp
 
 !------------------------------------------------------------------------------
@@ -382,7 +382,7 @@ implicit none
 ! declare the variables that appear in the subroutine and initialise them.
 
     integer :: i,j, k,q                                 ! running parameter
-    real(8) :: r                                        ! distance
+    real(8) :: r, temp                                  ! distance
     real(8) :: rcut= 0.0d0, rr= 0.0d0, acut= 0.0d0      ! values to calculate cut-off
     real(8) :: igamma1p= 0.0d0, igamma2p= 0.0d0         ! inverse gamma for particle
     real(8) :: igamma1l= 0.0d0, igamma2l= 0.0d0         ! inverse gamma for lattice atoms
@@ -445,14 +445,20 @@ implicit none
 ! can be multiplied into the various no and are thus part of the fitting
 ! parameters.
 ! derivatives: (1) derivative over nop, (2) over nol
-    dchilp(1) = 1.0d0 / pars_l%n0         ! d chilp / d nop
-    dchipl(2) = 1.0d0 / pars_p%n0         ! d chipl / d nol
 
-    chilp = pars_p%n0 * dchilp(1)
-    chipl = pars_l%n0 * dchipl(2)
+    temp = 0.5d0*1.8897261339381413d0
+    r = exp(temp*(pars_l%s0-pars_p%s0))
 
-    dchipl(1) = - chipl * dchipl(2)     ! d chipl / d nop
-    dchilp(2) = - chilp * dchilp(1)     ! d chipl / d nol
+    chilp = pars_p%n0 / pars_l%n0 * r
+    chipl = 1.0d0 / chilp
+
+    dchilp(1) = (1.0d0 - temp*pars_p%n0) * r/ pars_l%n0          ! d chilp / d nop
+    dchilp(2) = (temp-1.0d0/pars_l%n0)*r*pars_p%n0/pars_l%n0     ! d chilp / d nol
+
+    r = exp(temp*(pars_p%s0-pars_l%s0))
+    dchipl(1) = (temp-1.0d0/pars_p%n0)*r*pars_l%n0/pars_p%n0      ! d chipl / d nop
+    dchipl(2) = (1.0d0 - temp*pars_l%n0) * r / pars_p%n0          ! d chipl / d nol
+
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF

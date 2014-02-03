@@ -19,7 +19,7 @@ contains
 !           by passing a deferred-array to a subroutine
 
 
-subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, time,  &
+subroutine l_p_position(b, a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, time,  &
                                                 l_aimd, n_l,n_p,celli, x_all, E_all)
 !
 ! Purpose:
@@ -45,6 +45,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
     integer , intent(in)                        :: control
     real(8), intent(in) :: e_aimd_max
     logical :: just_l, one_p
+    integer :: b
 
 
 ! other variables
@@ -67,10 +68,72 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
     real(8), dimension(:), allocatable   :: E_fix    ! energy of fixed lattice geometires
     real(8),allocatable,dimension(:)                 :: E_dft1, prae_E_dft    ! read-in-dft-energy
 
-
+print *, b
+    if (b == 1) then
     position_of_l_and_p = 'data/traj005/XDATCAR_005.dat'
     energy_l_and_p =      'data/traj005/analyse_005.out'
+    end if
 
+
+    if (b == 2) then
+    position_of_l_and_p = 'data/traj010/XDATCAR_010.dat'
+    energy_l_and_p =      'data/traj010/analyse_010.out'
+    end if
+
+    if (b == 3) then
+    position_of_l_and_p = 'data/traj801/XDATCAR_801.dat'
+    energy_l_and_p =      'data/traj801/analyse_801.out'
+    end if
+
+    if (b == 4) then
+    position_of_l_and_p = 'data/traj814/XDATCAR_814.dat'
+    energy_l_and_p =      'data/traj814/analyse_814.out'
+    end if
+
+    if (b == 5) then
+    position_of_l_and_p = 'data/traj817/XDATCAR_817.dat'
+    energy_l_and_p =      'data/traj817/analyse_817.out'
+    end if
+
+    if (b == 6) then
+    position_of_l_and_p = 'data/traj818/XDATCAR_818.dat'
+    energy_l_and_p =      'data/traj818/analyse_818.out'
+    end if
+
+    if (b == 7) then
+    position_of_l_and_p = 'data/traj820/XDATCAR_820.dat'
+    energy_l_and_p =      'data/traj820/analyse_820.out'
+    end if
+
+    if (b == 8) then
+    position_of_l_and_p = 'data/traj821/XDATCAR_821.dat'
+    energy_l_and_p =      'data/traj821/analyse_821.out'
+    end if
+
+    if (b == 9) then
+    position_of_l_and_p = 'data/traj825/XDATCAR_825.dat'
+    energy_l_and_p =      'data/traj825/analyse_825.out'
+    end if
+
+    if (b == 10) then
+    position_of_l_and_p = 'data/traj831/XDATCAR_831.dat'
+    energy_l_and_p =      'data/traj831/analyse_831.out'
+    end if
+
+    if (b == 11) then
+    position_of_l_and_p = 'data/traj832/XDATCAR_832.dat'
+    energy_l_and_p =      'data/traj832/analyse_832.out'
+    end if
+
+    if (b == 12) then
+    position_of_l_and_p = 'data/traj833/XDATCAR_833.dat'
+    energy_l_and_p =      'data/traj833/analyse_833.out'
+    end if
+
+    if (b == 13) then
+    position_of_l_and_p = 'data/traj858/XDATCAR_858.dat'
+    energy_l_and_p =      'data/traj858/analyse_858.out'
+    end if
     ! 187 config, some from aimd, some from dragging Au out
     !position_of_l_and_p = 'data/trajjustau/XDATCAR_move_Au.out'
     !energy_l_and_p =      'data/trajjustau/enery_move_Au.dat'
@@ -111,6 +174,18 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
     end do
     npts = i-1
 
+! Read in Equilibrium position geometries
+    if (control == 300) then
+        call open_for_read(69,'data/points_dft.dat')
+        npts=1500
+        allocate(fix_p(npts,3))
+        do j = 1,npts
+            read(69,*) fix_p(j,:)
+        end do
+
+    control = 200
+    close(69)
+    else
 
     allocate(E_fix(npts),fix_p(npts,3))
 
@@ -129,7 +204,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
         end if
     end do
     close(39)
-
+    end if
 ! Read in the geometry of the fixed lattice
     call open_for_read(38,fix_position)
     read(38,*) emptys
@@ -178,6 +253,7 @@ subroutine l_p_position(a_lat, rep, cell_in, control,e_aimd_max, just_l, one_p, 
     allocate(d_ref(3,k+1))
     d_ref(:,1) = (/0.0d0,0.0d0,0.29618952180d0/)
     d_ref(:,2:k+1) = fix_l
+
 
 
 

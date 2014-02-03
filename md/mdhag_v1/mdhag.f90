@@ -14,19 +14,24 @@ use mdalgo
 
 implicit none
 
-integer :: i, j, itraj, q
+integer :: i, j, itraj, q, k
 
 real(8) :: imass_l, imass_p, norm_l, norm_p
 real(8) :: Epot, Ekin_l, Ekin_p
 real(8) :: delta = 0.001
+character(len=3) :: str
 
 type(atoms) :: slab, teil   ! hold r, v and f for atoms in the box
 
-call open_for_write(10, 'traj249/e_verlet.dat')
-call open_for_write(11, 'traj249/pos_verlet.dat')
+
+k = 310
+write(str,'(I3)') k
+
+call open_for_append(10, 'traj'//str//'/e_verlet.dat')
+call open_for_append(11, 'traj'//str//'/pos_verlet.dat')
 
 ! Construct simulation block and initialize everything
-call simbox_init(slab, teil)
+call simbox_init(slab, teil, str)
 
 imass_l = 1.0d0/mass_l
 imass_p = 1.0d0/mass_p
@@ -168,12 +173,12 @@ do itraj = start_tr, ntrajs+start_tr-1
 
         end if
 
-    if (teil%r(3,1) > 6.1 .or. teil%r(3,1) < -8.0) exit
+    !if (teil%r(3,1) > 6.1 .or. teil%r(3,1) < -8.0) exit
 
     end do ! steps
 end do ! trajectories
 
 close(10)
 close(11)
-
+deallocate(pars_l,pars_p)
 end program mdhag

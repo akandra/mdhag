@@ -36,7 +36,7 @@ subroutine emt(slab, teil, Epot)
 
     integer :: i,j
 
-    real(8) :: betas0_l, betaeta2_l, kappadbeta_l, chipl
+    real(8) :: betas0_l, betaeta2_l, kappadbeta_l, chipl, temp
     real(8) :: betas0_p, betaeta2_p, kappadbeta_p, chilp
     real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1
     real(8) :: igamma1p, igamma2p, igamma1l, igamma2l
@@ -70,8 +70,10 @@ subroutine emt(slab, teil, Epot)
     kappadbeta_l = pars_l(6) / beta
     kappadbeta_p = pars_p(6) / beta
 
+    temp = 0.5d0*1.8897261339381413d0
+    r = exp(temp*(pars_l(7)-pars_p(7)))
     ! 'coupling' parameters between p and l
-    chilp = pars_p(2) / pars_l(2)
+    chilp = pars_p(2) / pars_l(2) * r
     chipl = 1.0d0 / chilp
 
     ! Distances to the nearest, next-nearest and next-next-nearest neighbours
@@ -454,7 +456,7 @@ subroutine emt_e(slab, teil, Epot)
     integer :: i,j
 
     real(8) :: betas0_l, betaeta2_l, kappadbeta_l, chipl
-    real(8) :: betas0_p, betaeta2_p, kappadbeta_p, chilp
+    real(8) :: betas0_p, betaeta2_p, kappadbeta_p, chilp, temp
     real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1
     real(8) :: igamma1p, igamma2p, igamma1l, igamma2l
     real(8) :: V_pl, V_lp, V_ll, V_pp, Ecoh_l, Ecoh_p, vref_l, vref_p
@@ -478,8 +480,11 @@ subroutine emt_e(slab, teil, Epot)
     kappadbeta_l = pars_l(6) / beta
     kappadbeta_p = pars_p(6) / beta
 
+    temp = 0.5d0*1.8897261339381413d0
+    r = exp(temp*(pars_l(7)-pars_p(7)))
     ! 'coupling' parameters between p and l
-    chilp = pars_p(2) / pars_l(2)
+
+    chilp = pars_p(2) / pars_l(2) * r
     chipl = 1.0d0 / chilp
 
     ! Distances to the nearest, next-nearest and next-next-nearest neighbours

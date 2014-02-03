@@ -45,7 +45,7 @@ module md_init
 
 contains
 
-subroutine simbox_init(slab, teil)
+subroutine simbox_init(slab, teil, str)
 !
 ! Purpose:
 !           Initialise the entire system:
@@ -78,7 +78,7 @@ subroutine simbox_init(slab, teil)
     real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, d_p
     real(8), dimension(:,:), allocatable :: pos_l, vel_l, pos_p, vel_p
 !    real(8), dimension(:,:), allocatable :: d_ref
-
+    character(len=3) :: str
     logical :: exists
 
     if (iargc() == 0) stop " I need an input file"
@@ -326,7 +326,7 @@ subroutine simbox_init(slab, teil)
 
     allocate(pars_l(npars_l),pars_p(npars_p))
 
-    call open_for_read(23,key_l)
+    call open_for_read(23,'stroem_der.'//str//'.Au.nml')
     read(23,'(/)')
     do i = 1, npars_l
         read(23,*) buffer, pars_l(i)
@@ -335,7 +335,8 @@ subroutine simbox_init(slab, teil)
 !    print *, 'The parameters for the lattice are:'
 !    print '(f16.8)', pars_l
 
-    call open_for_read(23,key_p)
+
+    call open_for_read(23,'stroem_der.'//str//'.H.nml')
     read(23,'(/)')
     do i = 1, npars_p
         read(23,*) buffer, pars_p(i)
