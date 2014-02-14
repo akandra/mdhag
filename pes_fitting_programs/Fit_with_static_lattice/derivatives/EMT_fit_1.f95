@@ -95,7 +95,7 @@ program EMT_fit_1
     real(8) :: energy ! energy output from emt subroutines
     real(8), dimension(14) :: denergy, dE_ref
     real(8) :: e_ref ! reference energy with particle at infinity
-    real(8) :: e_max ! maximum DFT to use in the fit
+    real(8) :: e_max,z ! maximum DFT to use in the fit
     real(8) :: sumsq,se ! used to calculate rms error
 
     integer :: i,j,k,bb,t ! loop indicies
@@ -142,8 +142,9 @@ program EMT_fit_1
     call open_for_write(134,'data/parameters_and_fit_results/rms_F272_334_346.dat')
 ! Strömqvist parameters modified in so, so they'll give a good fit.
     bb = 0
-do  t = 347,347
+!do  t = 347,347
     bb = bb+1
+    t = 357
     write(kk,'(I3)') t
     fit_results_fname = 'data/parameters_and_fit_results/rstroem_der.'//kk//'.NLLSQ.out'
     particle_nml_out  = 'data/parameters_and_fit_results/stroem_der.'//kk//'.H.nml'
@@ -153,7 +154,7 @@ do  t = 347,347
 !    lattice_nml_out   = 'data/parameters_and_fit_results/stroem_der.268.Au.nml'
 
     particle_nml_in = 'data/parameters_and_fit_results/stroem.00.H.nml' !stroem.00.H.nml'
-    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.00.Au.nml' !stroem.00.Au.nml'
+    lattice_nml_in  = 'data/parameters_and_fit_results/stroem.01.Cu.nml' !stroem.00.Au.nml'
 
 
 
@@ -214,28 +215,27 @@ do  t = 347,347
 
     print *, 'l_aimd', l_aimd
 
+!------------------------------------------------------------------------------------------------------------------
+! Comment in if you'd like to have a few points for a comparison between DFT-points & EMT Fit.
+! Control should be 300
+!
+!    call open_for_write(17,'data/parameters_and_fit_results/newdft_'//kk//'.dat')
+!    call emt_fit(a_lat, celli, x_ref, n_l, n_p, particle_pars, lattice_pars, e_ref, Ablei)
+!    do q=1,1500
+!        z = x_all(q,3,5)
+!        if (z > 6.2) z=z - celli(3,3)
+!        call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
+!        write(17,'(I4, 4f15.5)') (q+150-1)/150, x_all(q,1,5), x_all(q,2,5),z, (energy-e_ref)/(2*rep+1)**2
+!    end do
+!    stop
+!------------------------------------------------------------------------------------------------------------------
+
+
     time = time-1
     X(1:time,:,1:n_l+n_p)=x_all(1:time,:,1:n_l+n_p)
-    Y(1:time)=E_all(1:time)!+E_pseudo
-    !write(*,'(3f15.5)') x(47,:,1:n_l+1)
-    !stop
-
-!    allocate(x_ball(time,3,n_l+1))
-
-
+    Y(1:time)=E_all(1:time)
     call open_for_write(10, fit_results_fname)
 
-
-!    write(*,*) 'q   ', 'EDFT-E_multiple_H   ', 'EDFT-E_single_H'
-!    do q=1,30
-!        x_ball(q,:,1) = x_all(q,:,5)
-!        X(q,:,1)= x_all(q,:,5)
-!        x_ball(q,:,2:n_l+1) = x_all(q,:,n_p+1:n_p+n_l)
-!        X(q,:,2:n_l+1) = x_all(q,:,n_p+1:n_p+n_l)
-!        call emt(a_lat, celli, x_all(q,:,:), n_l, n_p, particle_pars, lattice_pars, energy)
-!        call emt_mixed(a_lat, celli, x_all(q,:,5), x_all(q,:,n_p+1:n_p+n_l), n_l, particle_pars, lattice_pars, e_ref)
-!        write(*,'(I5,5f15.5)') q, x_all(q,3,5), energy-18.14163, e_ref-18.14163, Y(q)+24.99569, Y(q)* (2*rep+1)**2+224.9612
-!    end do
 
     !------------------------------------------------------------------------------------------------------------------
     ! CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
@@ -394,7 +394,7 @@ CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
     write(134,'(I4,2f15.5)') t, sumsq, se
 
 
-end do
+!end do
 close(134)
 end program
 !-------------------------------------------------------------------------------------------------------|

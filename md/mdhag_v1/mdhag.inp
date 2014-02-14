@@ -1,6 +1,7 @@
 start 1
 ntrajs 1
 Einc 5
+<<<<<<< HEAD
 inclination 60
 azimuth 0
 Tsurf 300
@@ -13,3 +14,12 @@ lattice Au 196.96657 emt 7 stroem_der.263.Au.nml 0
 celldim 2 2 4
 rep 2
 conf POSCAR au111_2x2x4.POSCAR
+=======
+inclination 45
+azimuth 60
+nsteps 10000
+wstep 0 1
+projectile H   1.0079  emt 7 stroem.00.H.nml  lan  1
+conf mxt '~/git/mdhag/md/mdhag_v1/conf' 5
+pip 1 hcp
+>>>>>>> 366a95c146d442d719d5880dae4d96d4d2fbc9f4

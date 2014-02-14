@@ -42,7 +42,7 @@ subroutine l_p_position(b, a_lat, rep, cell_in, control,e_aimd_max, just_l, one_
     real(8),dimension(3,6), intent(out)               :: celli
     integer, intent(out)                :: n_l, n_p, l_aimd  ! number of l atoms,number of p atoms, number of aimd contributions
     real(8), dimension(:,:,:), allocatable, intent(out) :: x_all
-    integer , intent(in)                        :: control
+    integer , intent(inout)                        :: control
     real(8), intent(in) :: e_aimd_max
     logical :: just_l, one_p
     integer :: b
@@ -163,7 +163,7 @@ print *, b
 
 ! -------------------------READ IN FIXED LATTICE-------------------------------
 ! read in energies
-    e_max=10.0
+    e_max=20.0
 
     call open_for_read(39,fix_energy)
     i=1
@@ -178,32 +178,33 @@ print *, b
     if (control == 300) then
         call open_for_read(69,'data/points_dft.dat')
         npts=1500
-        allocate(fix_p(npts,3))
+        allocate(fix_p(npts,3), E_fix(npts))
+        E_fix = 0.0d0
         do j = 1,npts
             read(69,*) fix_p(j,:)
         end do
 
-    control = 200
-    close(69)
+        control = 200
+        close(69)
     else
 
-    allocate(E_fix(npts),fix_p(npts,3))
+        allocate(E_fix(npts),fix_p(npts,3))
 
-    rewind(39)
+        rewind(39)
 
-    j=1
-    do
-        read(39,*,iostat=ios) empty, empty3(1), empty3(2), empty3(3), empty
-        if(ios <0) exit
-        !if (abs(empty)<=e_max) then
-        !if (empty<=e_max .and. empty > e_max*2) then
-        if (Abs(empty+ 24.995689)<=e_max ) then
-            E_fix(j) = empty
-            fix_p(j,:) = empty3
-            j=j+1
-        end if
-    end do
-    close(39)
+        j=1
+        do
+            read(39,*,iostat=ios) empty, empty3(1), empty3(2), empty3(3), empty
+            if(ios <0) exit
+            !if (abs(empty)<=e_max) then
+            !if (empty<=e_max .and. empty > e_max*2) then
+            if (Abs(empty+ 24.995689)<=e_max ) then
+                E_fix(j) = empty
+                fix_p(j,:) = empty3
+                j=j+1
+            end if
+        end do
+        close(39)
     end if
 ! Read in the geometry of the fixed lattice
     call open_for_read(38,fix_position)

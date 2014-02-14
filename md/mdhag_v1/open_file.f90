@@ -11,7 +11,7 @@ module open_file
             character, intent(in)   :: file_name
         end subroutine
 
-        subroutine open_for_overwrite(lun, file_name)
+        subroutine open_for_append(lun, file_name)
             integer, intent(in)     :: lun
             character, intent(in)   :: file_name
         end subroutine
@@ -53,12 +53,12 @@ subroutine open_for_write(lun,file_name)
     open(unit=lun, file=file_name, status='new', action='write', iostat=ios, iomsg=error_message)
     if (ios==0) return
 
-    print '( /"Error on open file ", (a), " for write i/o status=", i4 )', TRIM(file_name), ios
-    print '( "error message: ", (a) )', error_message
+!    print '( /"Error on open file ", (a), " for write i/o status=", i4 )', TRIM(file_name), ios
+!    print '( "error message: ", (a) )', error_message
 !    write (*, '( "overwrite existing file (y/n)? ")',advance='no')
 !    read(*,*) answer
-    if (answer /='y' .and. answer/='Y') STOP 102
-    print '((a)/)', 'OVERWRITING EXISTING FILES'
+!    if (answer /='y' .and. answer/='Y') STOP 102
+!    print '((a)/)', 'OVERWRITING EXISTING FILES'
     open(unit=lun, file=file_name, status='replace', action='write', iostat=ios, iomsg=error_message)
 
     if (ios==0) return
@@ -80,13 +80,6 @@ subroutine open_for_append(lun,file_name)
     open(unit=lun, file=file_name, status='new', action='write', iostat=ios, iomsg=error_message)
     if (ios==0) return
 
-    print '( /"Error on open file ", (a), " for write i/o status=", i4 )', TRIM(file_name), ios
-    print '( "error message: ", (a) )', error_message
-    write (*, '( "append to existing file (y/n)? ")',advance='no')
-!    read(*,*) answer
-    answer = 'y'
-    if (answer /='y' .and. answer/='Y') STOP 102
-    print '((a)/)', 'OVERWRITING EXISTING FILES'
     open(unit=lun, file=file_name, status='old', access='append', action='write', iostat=ios, iomsg=error_message)
 
     if (ios==0) return
