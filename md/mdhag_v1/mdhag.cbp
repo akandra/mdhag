@@ -34,11 +34,7 @@
 			<Option weight="2" />
 		</Unit>
 		<Unit filename="mdalgo.f90">
-<<<<<<< HEAD
-			<Option weight="3" />
-=======
 			<Option weight="4" />
->>>>>>> 366a95c146d442d719d5880dae4d96d4d2fbc9f4
 		</Unit>
 		<Unit filename="mdhag.f90">
 			<Option weight="5" />
