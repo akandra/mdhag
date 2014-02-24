@@ -61,7 +61,7 @@ module md_init
 
 contains
 
-subroutine simbox_init(slab, teil, str)
+subroutine simbox_init(slab, teil)
 !
 ! Purpose:
 !           Initialise the entire system:

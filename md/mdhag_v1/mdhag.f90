@@ -34,7 +34,7 @@ real(8), dimension(:), allocatable :: eed, eed_prec          ! embedded electron
 
 
 ! Construct simulation block and initialize everything
-call simbox_init(slab, teil, str)
+call simbox_init(slab, teil)
 
 ! Inverse Mass
 imass_l = 1.0d0/mass_l

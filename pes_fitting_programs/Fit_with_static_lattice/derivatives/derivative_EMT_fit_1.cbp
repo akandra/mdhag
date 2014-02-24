@@ -31,32 +31,29 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="EMT_fit_1.f95">
+		<Unit filename="EMT_fit_1.f90">
 			<Option weight="2" />
 		</Unit>
-		<Unit filename="EMTparms_class_v2.f95">
+		<Unit filename="EMTparms_class_v2.f90">
 			<Option weight="1" />
 		</Unit>
-		<Unit filename="emt_init.f95">
+		<Unit filename="emt_init.f90">
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="hau111_plot.E.dat" />
-		<Unit filename="model.f95">
+		<Unit filename="model.f90">
 			<Option weight="2" />
 		</Unit>
 		<Unit filename="nllsq.dbl.f">
 			<Option weight="0" />
 		</Unit>
-		<Unit filename="open_file.f95">
+		<Unit filename="open_file.f90">
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="parameters_and_fit_results/stroem.00.Au.nml" />
 		<Unit filename="parameters_and_fit_results/stroem.00.H.nml" />
 		<Unit filename="ref_conf_Au111.dat" />
 		<Unit filename="ref_conf_Au111a.dat" />
-		<Unit filename="whatever.f95">
-			<Option weight="0" />
-		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
